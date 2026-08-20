@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ====== 浅色主题 ====== -->
+    <style name="Theme.KgmDecoder" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bg_root</item>
+        <item name="android:colorBackground">@color/bg_root</item>
+        <item name="android:textColorPrimary">@color/text_console</item>
+    </style>
+
+    <!-- ====== 深色主题（夜晚模式）====== -->
+    <style name="Theme.KgmDecoder.Dark" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/night_bg_root</item>
+        <item name="android:colorBackground">@color/night_bg_root</item>
+        <item name="android:textColorPrimary">@color/night_text_console</item>
+    </style>
+</resources>

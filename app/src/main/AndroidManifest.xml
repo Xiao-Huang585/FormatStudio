@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.kgmdecoder.app"
+    android:versionCode="1"
+    android:versionName="1.01">
+
+    <!-- ========== 硬件声明：SDL3 + OpenGL ES 渲染必需 ========== -->
+    <uses-feature
+        android:name="android.hardware.opengles.glES20"
+        android:required="true" />
+
+    <!-- ========== 存储 & 媒体 全套权限 ========== -->
+    <!-- Android 11+ 全部文件访问权限（访问任意目录/文件必备） -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <!-- 通用读权限 全版本兼容 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- 写权限：仅 Android 12 及以下生效 -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <!-- Android 13+ 媒体细分权限（图片/视频/音频） -->
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_IMAGES"
+        android:maxSdkVersion="33" />
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_VIDEO"
+        android:maxSdkVersion="33" />
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_AUDIO"
+        android:maxSdkVersion="33" />
+    <!-- 音频权限（SDL3 播放音频可选，按需保留） -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- ========== 应用全局配置 ========== -->
+    <application
+        android:label="@string/app_name"
+        android:icon="@drawable/yujie"
+        android:hardwareAccelerated="true"
+        android:allowBackup="true"
+        android:supportsRtl="true"
+    android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+
+    <!-- 主 Activity -->
+    <activity
+        android:name="com.kgmdecoder.app.MainActivity"
+        android:exported="true"
+        android:windowSoftInputMode="adjustResize"
+        android:configChanges="orientation|screenSize|keyboardHidden">
+
+        <!-- 桌面启动入口 -->
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
+        
+    <activity android:name="com.kgmdecoder.app.Help" android:exported="false" />
+    <activity android:name="com.kgmdecoder.app.Selecting" android:exported="false" />
+
+</application>
+
+    </manifest>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ====== 浅色主题 ====== -->
+    <!-- 使用 android: 原生主题，不依赖 Material Components -->
+    <style name="Theme.KgmDecoder" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bg_root</item>
+        <item name="android:colorBackground">@color/bg_root</item>
+        <item name="android:textColorPrimary">@color/text_console</item>
+        <item name="android:statusBarColor">@color/bg_title_bar</item>
+    </style>
+
+    <!-- ====== 深色主题（夜晚模式）====== -->
+    <style name="Theme.KgmDecoder.Dark" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/night_bg_root</item>
+        <item name="android:colorBackground">@color/night_bg_root</item>
+        <item name="android:textColorPrimary">@color/night_text_console</item>
+        <item name="android:statusBarColor">@color/night_bg_title_bar</item>
+    </style>
+
+    <!--
+        ★ 兼容旧主题名
+        如果 AndroidManifest.xml 中引用的是以下主题之一，
+        保留别名避免链接错误
+    -->
+    <style name="Theme.App" parent="Theme.KgmDecoder" />
+
+    <!--
+        ★ 如果项目中有引用 Theme.MaterialComponents.DayNight.DarkActionBar 的地方
+        用别名指向原生主题，消除依赖
+    -->
+    <style name="Theme.MaterialComponents.DayNight.DarkActionBar" parent="android:Theme.Material.Light.DarkActionBar" />
+
+</resources>

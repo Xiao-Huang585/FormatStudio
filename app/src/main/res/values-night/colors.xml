@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ====== 深色模式（values-night 自动覆盖）====== -->
+    <color name="bg_title_bar">@color/night_bg_title_bar</color>
+    <color name="bg_console">@color/night_bg_console</color>
+    <color name="bg_input_bar">@color/night_bg_input_bar</color>
+    <color name="bg_root">@color/night_bg_root</color>
+    <color name="text_console">@color/night_text_console</color>
+    <color name="text_title">@color/night_text_title</color>
+    <color name="text_hint">@color/night_text_hint</color>
+    <color name="btn_pick_bg">@color/night_btn_pick_bg</color>
+    <color name="btn_pick_text">@color/night_btn_pick_text</color>
+    <color name="night_text_blue">#516880</color>
+    <color name="night_window_color">#8891E2</color>
+</resources>

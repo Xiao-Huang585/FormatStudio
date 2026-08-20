@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# 打印帮助
+usage() {
+    echo "Usage: $0 libxxx.a"
+    echo "Check whether static archive library is compiled with -fPIC"
+    exit 1
+}
+
+# 参数校验
+if [ $# -ne 1 ]; then
+    usage
+fi
+LIB="$1"
+
+# 判断文件存在且是静态库
+if [ ! -f "$LIB" ]; then
+    echo "ERROR: File $LIB not exists!"
+    exit 2
+fi
+if [[ "$LIB" != *.a ]]; then
+    echo "WARN: $LIB is not a .a static library file, continue anyway..."
+fi
+
+echo "============================================="
+echo "Checking PIC flag for static library: $LIB"
+echo "============================================="
+
+# 提取所有重定位，过滤非PIC绝对重定位符号
+# x86_64: R_X86_64_32 / R_X86_64_32S
+# i386: R_386_32
+BAD_RELOC=$(objdump -r "$LIB" 2>/dev/null | grep -E 'R_X86_64_32(S)?|R_386_32')
+
+if [ -z "$BAD_RELOC" ]; then
+    echo -e "\033[32m[OK] This library is -fPIC compiled, no absolute relocation found\033[0m"
+    exit 0
+else
+    echo -e "\033[31m[BAD] Found non-PIC absolute relocation entries (must recompile with -fPIC):\033[0m"
+    echo "$BAD_RELOC"
+    exit 3
+fi

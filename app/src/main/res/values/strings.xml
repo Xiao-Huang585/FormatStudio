@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 应用名称，对应 AndroidManifest.xml 中的 @string/app_name -->
+    <string name="app_name">Format Studio</string>
+    
+    <!-- 可选：如果你的界面有标题栏，可添加此属性 -->
+    <string name="title_activity_main">解码</string>
+</resources>
+

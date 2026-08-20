@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ====== 缺失的系统默认颜色（修复链接错误）====== -->
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- ====== 浅色模式（默认）====== -->
+    <color name="bg_title_bar">#212121</color>
+    <color name="bg_console">#FAFAFA</color>
+    <color name="bg_input_bar">#FFFFFF</color>
+    <color name="bg_root">#F5F5F5</color>
+    <color name="text_console">#000000</color>
+    <color name="text_title">#FFFFFF</color>
+    <color name="text_hint">#888888</color>
+    <color name="btn_pick_bg">#9C27B0</color>
+    <color name="btn_pick_text">#FFFFFF</color>
+
+    <!-- ====== 深色模式专用颜色 ====== -->
+    <color name="night_bg_title_bar">#1A1A1A</color>
+    <color name="night_bg_console">#121212</color>
+    <color name="night_bg_input_bar">#1E1E1E</color>
+    <color name="night_bg_root">#000000</color>
+    <color name="night_text_console">#E0E0E0</color>
+    <color name="night_text_title">#FFFFFF</color>
+    <color name="night_text_hint">#AAAAAA</color>
+    <color name="night_btn_pick_bg">#6A1B9A</color>
+    <color name="night_btn_pick_text">#FFFFFF</color>
+    <color name="night_text_blue">#4D6783</color>
+    <color name="night_window_color">#8891E2</color>
+</resources>

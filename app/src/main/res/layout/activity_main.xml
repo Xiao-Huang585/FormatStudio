@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ============================================================ -->
+<!-- activity_main.xml                                             -->
+<!-- 根布局ConstraintLayout，修复跨层级约束报错，SurfaceView底部对齐input_bar顶部 -->
+<!-- ============================================================ -->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_root"
+    tools:context=".MainActivity">
+
+    <!-- 标题栏 -->
+    <LinearLayout
+        android:id="@+id/title_bar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:background="@color/bg_title_bar"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingLeft="16dp"
+            android:text="KGM解码"
+            android:textColor="@color/text_title"
+            android:textSize="20sp" />
+
+        <ImageView
+            android:id="@+id/iv_close"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:scaleType="centerInside"
+            android:clickable="true"
+            android:focusable="true"
+            android:src="@android:drawable/ic_menu_close_clear_cancel" />
+
+        <ImageButton
+            android:background="@android:color/transparent"
+            android:id="@+id/btn_setting"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
+            android:src="@drawable/baseline_settings_24" />
+    </LinearLayout>
+
+    <!-- 底部输入栏（一级直接子View，可作为约束目标） -->
+    <LinearLayout
+        android:id="@+id/input_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/bg_input_bar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <EditText
+            android:id="@+id/et_input"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.85"
+            android:padding="10dp"
+            android:hint="请输入内容，按回车确认 >>"
+            android:textColorHint="@color/text_hint"
+            android:textColor="@color/text_console"
+            android:textSize="16sp"
+            android:background="@android:color/transparent"
+            android:inputType="text"
+            android:imeOptions="actionSend" />
+
+        <TextView
+            android:id="@+id/btn_pick"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.15"
+            android:background="@color/btn_pick_bg"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="选择"
+            android:textColor="@color/btn_pick_text"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- 控制台输出区域：标题栏下方、输入栏上方填充剩余空间 -->
+    <ScrollView
+        android:id="@+id/sv_console"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@color/bg_console"
+        app:layout_constraintTop_toBottomOf="@id/title_bar"
+        app:layout_constraintBottom_toTopOf="@id/input_bar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/tv_console"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="4dp"
+            android:textSize="18sp"
+            android:textColor="@color/text_console"
+            android:fontFamily="monospace"
+            android:scrollbars="vertical"
+            android:textIsSelectable="true" />
+    </ScrollView>
+
+    <!-- 视频播放层：底部约束绑定一级控件input_bar，解决跨层级报错 -->
+    <SurfaceView
+        android:id="@+id/surface_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:focusable="true"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/input_bar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:clickable="true"/>
+
+    <ImageView
+        android:id="@+id/playArrow"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:src="@drawable/round_play_arrow_24"
+        android:visibility="gone"
+        android:alpha="1"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
