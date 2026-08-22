@@ -1,6 +1,7 @@
 #pragma once
 
 #include "functions.h"
+#include "strings.h"
 
 // ============================
 // avcpp 头文件（替代原生 FFmpeg C API）

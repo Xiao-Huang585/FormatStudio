@@ -69,7 +69,7 @@ public:
     explicit AndroidInBuf(JNIEnv* env);
 };
 
-// ===================== 输入流 仅声明（修复blockReadInput私有问题） =================
+// ===================== 输入流 仅声明 =================
 class androidInStream : public std::istream
 {
 private:
@@ -77,6 +77,17 @@ private:
 public:
     static std::string blockReadInput(JNIEnv* env);
     explicit androidInStream(JNIEnv* env);
+
+    // 按回车/换行读取一整行，保留中间空格，不再以空格作为分隔符
+    std::string readLine();
+
+    // 让 operator>> 直接按行读取（行为与 readLine() 一致），
+    // 这样代码里原本写 in >> str 的地方不需要改动就能读完整行。
+    friend androidInStream& operator>>(androidInStream& is, std::string& str)
+    {
+        str = is.readLine();
+        return is;
+    }
 };
 
 // ====== 全局 JavaVM 指针 ======
@@ -90,6 +101,7 @@ extern jmethodID g_showVideoViewMethodID;
 extern jmethodID g_callJavaIsSurfaceClickedMethodID;
 extern jmethodID g_callJavaControlPlayArrowVisibilityMethodID;
 extern jmethodID g_callJavaSetETHintTextMethodID;
+extern jmethodID g_callJavaGetLanguageID;
 // ====== 线程相关 ======
 extern std::mutex g_inputMutex;
 extern std::condition_variable g_inputCv;
@@ -149,6 +161,7 @@ void callJavaShowVideoView(bool show);
 bool callJavaIsSurfaceClicked();
 void callJavaControlPlayArrowVisibility(bool visibility);
 void callJavaSetETHintText(const char *text);
+int callJavaGetLanguage();
 
 // ============================
 // Surface 管理函数

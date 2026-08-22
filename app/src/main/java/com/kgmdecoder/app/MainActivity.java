@@ -1,8 +1,13 @@
 package com.kgmdecoder.app;
 
 import android.app.Activity;
+import android.app.LocaleManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
+import android.os.Build;
+import android.os.LocaleList;
 import android.provider.DocumentsContract;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -19,8 +24,8 @@ import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.util.Log;
-
 import java.io.File;
+import java.util.Locale;
 
 /**
  * MainActivity — 控制台 UI + 视频播放 Demo
@@ -29,13 +34,11 @@ import java.io.File;
  * 1. 添加 SurfaceView 用于视频渲染
  * 2. 添加 nativeSetSurface() JNI 方法
  * 3. 当 C++ 层播放视频时，显示 SurfaceView
- *
- * 测试用，后面要删掉重写
+ * 4. 新增获取App生效语言接口 getCurrentEffectiveLanguageTag()
  */
 public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private static MainActivity sInstance;
-
     private TextView tvConsole;
     private static EditText etInput;
     private ScrollView svConsole;
@@ -43,15 +46,13 @@ public class MainActivity extends Activity {
     private ImageButton btnSetting;
     private static ImageView playArrow;
     private TextView btnPick;
-
     // 视频播放 SurfaceView
     private SurfaceView surfaceView;
 
     // ====== Native 方法声明 ======
     public native void triggerCppToCallJava();
     public native void passInputToCpp(String input);
-
-    // Surface JNI 方法（新增）
+    // Surface JNI 方法
     public native void nativeSetSurface(Surface surface);
     public native void nativeShowVideoView(boolean show);
 
@@ -81,7 +82,6 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode != RESULT_OK || data == null) return;
-
         if (requestCode == 100) {
             // 文件选择完成 → 保存路径 → 跳转 Selecting 选功能
             Uri uri = data.getData();
@@ -113,7 +113,8 @@ public class MainActivity extends Activity {
             if (path != null && path.startsWith("/storage")) {
                 return path;
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        }
         try {
             if (DocumentsContract.isDocumentUri(this, uri)) {
                 String docId = DocumentsContract.getDocumentId(uri);
@@ -122,7 +123,8 @@ public class MainActivity extends Activity {
                     return "/storage/emulated/0/" + split[1];
                 }
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        }
         return uri.toString();
     }
 
@@ -133,30 +135,24 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sInstance = this;
-
         setContentView(R.layout.activity_main);
-
         tvConsole = findViewById(R.id.tv_console);
         svConsole = findViewById(R.id.sv_console);
-        etInput   = findViewById(R.id.et_input);
-        ivClose   = findViewById(R.id.iv_close);
+        etInput = findViewById(R.id.et_input);
+        ivClose = findViewById(R.id.iv_close);
         btnSetting = findViewById(R.id.btn_setting);
-        btnPick   = findViewById(R.id.btn_pick);
+        btnPick = findViewById(R.id.btn_pick);
         surfaceView = findViewById(R.id.surface_view);
         playArrow = findViewById(R.id.playArrow);
 
-
         // 关闭按钮
         ivClose.setOnClickListener(new CloseButtonClickListener());
-
         // 输入框：回车确认
         etInput.setOnEditorActionListener(new InputEditorActionListener());
         etInput.setOnKeyListener(new InputKeyListener());
-
         // 选择文件按钮
         btnPick.setOnClickListener(new PickFileButtonClickListener());
 
-        // Surface 点击回调(C++侧)
         surfaceView.setOnClickListener(v -> {
             clickTimestamp = System.currentTimeMillis();
         });
@@ -166,7 +162,7 @@ public class MainActivity extends Activity {
             startActivity(intent);
         });
 
-        // ====== Surface 回调（新增） ======
+        // ====== Surface 回调 ======
         surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
@@ -185,11 +181,49 @@ public class MainActivity extends Activity {
                 nativeSetSurface(null);
             }
         });
-
         surfaceView.callOnClick();
+
+        //【新增】App启动获取当前生效语言
+        String initLang = getCurrentEffectiveLanguageTag();
+        Log.d(TAG, "init app language tag: " + initLang);
 
         // 启动 C++ 主线程
         triggerCppToCallJava();
+    }
+
+
+    //【核心对外接口】
+    /**
+     * 获取App当前实际生效语言Tag
+     * Android13+: 用户单独设置App语言则返回该语言；选择跟随系统，返回系统语言
+     * @return 标准B‑47语言tag，永远不会返回null，示例："zh‑CN"、"en‑US"
+     */
+    public String getCurrentEffectiveLanguageTag() {
+        Locale effectiveLocale;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            LocaleManager lm = (LocaleManager) getSystemService(Context.LOCALE_SERVICE);
+            LocaleList appSetLocales = lm.getApplicationLocales();
+            if (!appSetLocales.isEmpty()) {
+                effectiveLocale = appSetLocales.get(0);
+            } else {
+                //跟随系统，取资源生效Locale
+                effectiveLocale = getResources().getConfiguration().getLocales().get(0);
+            }
+        } else {
+            //Android12及以下，无应用独立语言
+            effectiveLocale = getResources().getConfiguration().getLocales().get(0);
+        }
+        return effectiveLocale.toLanguageTag();
+    }
+
+    /**
+     * 监听配置变更：系统设置页修改App语言会触发此回调
+     */
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        String newLang = getCurrentEffectiveLanguageTag();
+        Log.d(TAG, "config changed, new lang tag:" + newLang);
     }
 
     // ============================
@@ -245,6 +279,16 @@ public class MainActivity extends Activity {
         }
     }
 
+    public static String callJavaGetLanguage() {
+        if(sInstance == null){
+            //Activity还没创建，兜底返回英文
+            return "en";
+        }
+        //通过全局实例，调用【非静态实例方法】
+        return sInstance.getCurrentEffectiveLanguageTag();
+    }
+
+
     public static void callJavaSetETHintText(String text) {
         sInstance.runOnUiThread(() -> {
             etInput.setHint(text);
@@ -272,7 +316,6 @@ public class MainActivity extends Activity {
     // YsPlayer 回调方法（YsCallJava 通过 JNI GetMethodID 查找）
     // 必须是非静态实例方法
     // ============================
-
     /** 准备完成 */
     public void onCallPrepare() {
         Log.d(TAG, "YsPlayer: onCallPrepare 准备完成");
@@ -287,7 +330,6 @@ public class MainActivity extends Activity {
     /** NV12 硬解数据 */
     public void onCallNV12Data(int width, int height, byte[] y, byte[] uv) {
         Log.d(TAG, "YsPlayer: onCallNV12Data " + width + "x" + height);
-        // TODO: 将 NV12 数据传递给 GLSurfaceView 渲染
     }
 
     /** 播放进度回调 */
@@ -298,7 +340,6 @@ public class MainActivity extends Activity {
     /** RGB24 渲染数据 */
     public void onCallRGB24Data(int width, int height, byte[] rgb) {
         Log.d(TAG, "YsPlayer: onCallRGB24Data " + width + "x" + height);
-        // TODO: 将 RGB24 数据传递给 SurfaceView 渲染
     }
 
     @Override
@@ -381,9 +422,11 @@ public class MainActivity extends Activity {
 
     private static class ShowTextRunnable implements Runnable {
         private final String text;
+
         public ShowTextRunnable(String text) {
             this.text = text;
         }
+
         @Override
         public void run() {
             sInstance.tvConsole.append(text + "\n");

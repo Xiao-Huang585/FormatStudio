@@ -58,6 +58,7 @@ add_library(native SHARED
         native-lib.cpp
         functions.cpp
         FFmpeg.cpp
+        strings.cpp
         ${AVCPP_SOURCES}
         ${YSPLAYER_SOURCES}
 )

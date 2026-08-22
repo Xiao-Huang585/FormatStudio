@@ -10,6 +10,7 @@
 
 #include "functions.h"
 #include "FFmpeg.h"
+#include "strings.h"
 #include "YsPlayer/YsFFmpegPlayer.h"
 #include "YsPlayer/YsCallJava.h"
 
@@ -428,17 +429,20 @@ void cppMain(jobject thiz) {
     androidInStream cin(env);
     androidOutStream cout(env);
     FFmpeg ffmpeg(cout, cin);
+    g_languageCode = callJavaGetLanguage();
 
     g_log.open("/storage/emulated/0/Android/data/com.kgmdecoder.app/files/log.txt");
     g_log << "C++ I/O is ready..." << std::endl;
 
-    cout << "KGM-Decoder Version Test测试版 小黄牛逼";
+    cout << String("FormatStudio Version Test测试版; 作者: Huang",
+                    "FormatStudio Version Test beta; Author: Huang");
     cout.flush();
 
     while (true) {
         callJavaShowText(env, "---------------------");
-        callJavaShowText(env, "支持类型：mp3 wav mp4 avi kgm(kgm.flac)");
-        callJavaShowText(env, "请输入输入文件路径:");
+        cout << String("支持类型: ", "Supported type: ") << "mp3 wav mp4 avi kgm(kgm.flac)";
+        cout << String("请输入文件路径", "Please input file path.");
+        cout.flush();
 
         std::string input;
         cin >> input;
@@ -462,16 +466,16 @@ void cppMain(jobject thiz) {
 
         std::string fullPath =
                 (input[0] == '/') ? input : "/storage/emulated/0/" + input;
-        cout << "访问:" << fullPath << endl;
+        cout << String("访问文件: ", "Access path: ") << fullPath << endl;
         if (!functionName.empty()) {
-            cout << "功能: " << functionName << endl;
+            cout << String("功能: ", "Function: ") << functionName << endl;
         }
         cout.flush();
 
         std::ifstream test(fullPath);
         if (!test.is_open()) {
-            cout << "文件不存在！" << endl;
-            cout << "三秒后自动退出..." << endl;
+            cout << String("文件不存在", "File don't exist") << endl;
+            cout << String("三秒钟后继续...", "Program will continue in 3 seconds...") << endl;
             std::this_thread::sleep_for(std::chrono::milliseconds(3000));
             callJavaClear();
             continue;
@@ -497,7 +501,7 @@ void cppMain(jobject thiz) {
 
                 // 功能名分发
                 if (functionName == "GetMediaInfo") {
-                    cout << "输入任意键继续..." << endl;
+                    cout << String("输入任意键继续...", "Press any key to continue...") << endl;
                     cout.flush();
                     std::string dummy;
                     cin >> dummy;
@@ -509,11 +513,12 @@ void cppMain(jobject thiz) {
                     ffmpeg.close();
                     callJavaClear();
 
-                    cout << "开始播放..." << endl;
+                    cout << String("开始播放...", "Playback starts...") << endl;
                     cout.flush();
                     playVideo(cout, cin, fullPath, thiz);
 
-                    cout << "\n播放完毕，输入任意键继续..." << endl;
+                    cout << String("\n播放完毕，输入任意键继续...",
+                                   "\nPlayback is over, press any key to continue") << endl;
                     cout.flush();
                     std::string dummy;
                     cin >> dummy;
@@ -523,8 +528,8 @@ void cppMain(jobject thiz) {
 
                 // 无功能名 → 手动交互
                 if (ffmpeg.hasVideo()) {
-                    cout << "\n检测到视频流！" << endl;
-                    cout << "输入 play 播放视频，输入其他跳过" << endl;
+                    cout << String("\n检测到视频流！", "There is video stream here.") << endl;
+                    cout << String("输入 play 播放视频，输入其他跳过", "Input \"play\" play video or jump.") << endl;
                     cout.flush();
 
                     std::string cmd;
@@ -534,11 +539,11 @@ void cppMain(jobject thiz) {
                         ffmpeg.close();
                         callJavaClear();
 
-                        cout << "开始播放..." << endl;
+                        cout << String("开始播放...", "Playback starts...") << endl;
                         cout.flush();
                         playVideo(cout, cin, fullPath, thiz);
 
-                        cout << "\n播放完毕，输入任意键继续..." << endl;
+                        cout << String("\n播放完毕，输入任意键继续...", "\nPlayback is over, press any key to continue") << endl;
                         cout.flush();
                         std::string dummy;
                         cin >> dummy;
@@ -547,13 +552,14 @@ void cppMain(jobject thiz) {
                     }
                 }
 
-                cout << "在缓冲区输入任意键回车..." << endl;
+                cout << String("在缓冲区输入任意键回车...", "Press enter")<< endl;
                 cout.flush();
 
                 std::string dummy;
                 cin >> dummy;
                 if (dummy == "1") {
                     cout << "输入压缩倍数:";
+                    cout.flush();
                     int rate = 0;
                     cin >> rate;
                     if (rate >= 0) {

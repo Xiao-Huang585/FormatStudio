@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_root">
@@ -9,17 +10,41 @@
         android:id="@+id/textView"
         android:layout_width="291dp"
         android:layout_height="94dp"
-        android:layout_weight="1"
-        android:text="帮助"
+        android:text="@string/Help_title"
         android:textColor="@color/text_console"
-        android:textSize="50dp" />
+        android:textSize="50sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <ImageButton
         android:id="@+id/btnBack"
         android:layout_width="33dp"
         android:layout_height="74dp"
-        android:layout_weight="1"
         android:background="@android:color/transparent"
         android:src="@drawable/baseline_arrow_back_24"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/text_console" />
-</LinearLayout>
+
+    <TextView
+        android:layout_width="410dp"
+        android:layout_height="59dp"
+        android:layout_marginBottom="4dp"
+        android:text="Made By Huang"
+        android:textColor="@color/text_console"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+<!--
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="184dp"
+        android:src="@drawable/friend"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+-->
+
+</androidx.constraintlayout.widget.ConstraintLayout>

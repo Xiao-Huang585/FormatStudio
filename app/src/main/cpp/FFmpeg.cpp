@@ -65,13 +65,13 @@ int FFmpeg::openInput(const char* url) {
 
     fmtCtx_.openInput(url, ec);
     if (ec) {
-        cout << "打开文件失败: " << ec.message() << endl;
+        cout << String("打开文件失败: ", "Fail to open file: ") << ec.message() << endl;
         return ec.value();
     }
 
     fmtCtx_.findStreamInfo(ec);
     if (ec) {
-        cout << "获取流信息失败: " << ec.message() << endl;
+        cout << String("获取流信息失败: ", "Fail to receive stream info: ") << ec.message() << endl;
         close();
         return ec.value();
     }
@@ -119,13 +119,13 @@ int FFmpeg::openInput(const char* url) {
 int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID) {
     outFmtCtx_.openOutput(outPath_);
     if (!fmtCtx_.isOpened()) {
-        cout << "未打开输入文件..." << endl;
+        cout << String("未打开输入文件...", "Didn't open input file...") << endl;
         LOGD("未打开输入文件...");
         return -EINVAL;
     }
 
     if (!hasVideo() && !hasAudio()) {
-        cout << "未找到音视频流..." << endl;
+        cout << String("未找到音视频流...", "Can not find video/audio stream...") << endl;
         LOGD("未找到音视频流...");
         return -EINVAL;
     }
@@ -133,7 +133,7 @@ int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID) {
     std::error_code ec;
     outFmtCtx_.openOutput(outPath_, ec);
     if (ec) {
-        cout << "打开输出文件失败..." << endl;
+        cout << String("打开输出文件失败...", "Fail to open output file...") << endl;
         LOGD("打开输出文件失败...");
         return ec.value();
     }
@@ -142,7 +142,7 @@ int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID) {
     if (hasVideo() && videoID != AV_CODEC_ID_NONE) {
         av::Codec vCodec = av::findEncodingCodec(videoID);
         if (vCodec.isNull()) {
-            cout << "找不到视频编码器..." << endl;
+            cout << String("找不到视频编码器...", "Can not find video encoder...") << endl;
             LOGD("找不到视频编码器...");
             return -EINVAL;
         }
@@ -166,13 +166,13 @@ int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID) {
         }
         venc_.open(ec);
         if (ec) {
-            cout << "打开视频编码器失败:" << ec.message() << endl;
+            cout << String("打开视频编码器失败:", "Fail to open video encoder: ") << ec.message() << endl;
             LOGD("打开视频编码器失败: %s", ec.message().c_str());
             return ec.value();
         }
         outVStream_ = outFmtCtx_.addStream(venc_, ec);
         if (ec) {
-            cout << "创建输出视频流失败:" << ec.message() << endl;
+            cout << String("创建输出视频流失败: ", "Fail to create output video stream: ") << ec.message() << endl;
             LOGD("创建输出视频流失败: %s", ec.message().c_str());
             return ec.value();
         }
@@ -184,12 +184,12 @@ int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID) {
             SWS_BILINEAR, nullptr, nullptr, nullptr
         );
         if (!swsCtx_) {
-            cout << "初始化像素格式失败..." << endl;
+            cout << String("初始化像素格式失败...", "Fail to init pixel format...") << endl;
             LOGD("初始化像素格式失败...");
             return -ENOMEM;
         }
 
-        cout << "视频编码器: " << avcodec_get_name(videoID) << '\n' << outWidth << 'x' <<
+        cout << String("视频编码器: ", "Video encoder: ") << avcodec_get_name(videoID) << '\n' << outWidth << 'x' <<
         outHeight << endl;
     }
 
@@ -197,7 +197,8 @@ int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID) {
     if (hasAudio() && audioID != AV_CODEC_ID_NONE) {
         av::Codec aCodec = av::findEncodingCodec(audioID);
         if (aCodec.isNull()) {
-            cout << "找不到音频编码器, 已取消音频..." << endl;
+            cout << String("找不到音频编码器, 已取消音频...",
+                           "Can not find audio stream, audio stream is canceled now.") << endl;
             LOGD("找不到音频编码器, 已取消音频...");
         } else {
             aenc_ = av::AudioEncoderContext(aCodec);
@@ -222,13 +223,14 @@ int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID) {
 
             aenc_.open(ec);
             if (ec) {
-                cout << "打开音频编码器失败:" << ec.message() << endl;
+                cout << String("打开音频编码器失败: ", "Fail to open audio encoder: ") << ec.message() << endl;
                 LOGD("打开音频编码器失败: %s", ec.message().c_str());
                 aenc_ = av::AudioEncoderContext();
             } else {
                 outAStream_ = outFmtCtx_.addStream(aenc_, ec);
                 if (ec) {
-                    cout << "创建输出音频流失败:" << ec.message() << endl;
+                    cout << String("创建输出音频流失败: ",
+                                   "Fail to create output audio stream: ") << ec.message() << endl;
                     LOGD("创建输出音频流失败: %s", ec.message().c_str());
                     aenc_ = av::AudioEncoderContext();
                 } else {
@@ -247,19 +249,18 @@ int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID) {
                     if (swrCtx_ && swrRet >= 0) {
                         swrRet = swr_init(swrCtx_);
                         if (swrRet < 0) {
-                            cout << "初始化重采样失败..." << endl;
+                            cout << String("初始化重采样失败...", "Fail to init swr...") << endl;
                             LOGD("初始化重采样失败...");
                             swr_free(&swrCtx_);
                             swrCtx_ = nullptr;
                         }
                     }
-                    cout << "音频编码器: " << avcodec_get_name(audioID) << '\n' <<
+                    cout << String("音频编码器: ", "Audio encoder: ") << avcodec_get_name(audioID) << '\n' <<
                     adec_.bitRate() / 1000 << "kbps" << '\n' << adec_.sampleRate() << "Hz" << endl;
                 }
             }
         }
     }
-    cout << "已成功修改编码器..." << endl;
     return 0;
 }
 
@@ -268,95 +269,96 @@ int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID) {
 // ============================
 bool FFmpeg::getMediaInfo() const {
     if (!fmtCtx_.isOpened()) {
-        cout << "未打开任何媒体文件" << endl;
+        cout << String("未打开媒体文件", "Didn't open file.") << endl;
         return false;
     }
 
     const AVFormatContext* rawCtx = fmtCtx_.raw();
 
-    cout << "===== 媒体信息 =====" << endl;
-    cout << "文件路径: " << url_ << endl;
-    cout << "封装格式: " << (rawCtx->iformat ? rawCtx->iformat->name : "未知") << endl;
+    cout << String("===== 媒体信息 =====", "=== Media information ===") << endl;
+    cout << String("文件路径: ", "Path: ") << url_ << endl;
+    cout << String("封装格式: ", "Format: ") <<
+    (rawCtx->iformat ? String(rawCtx->iformat->name, rawCtx->iformat->name) : String("未知", "Unknown")) << endl;
 
     const int64_t fileSize = avio_size(rawCtx->pb);
     if ((fileSize / (1024.0 * 1024.0 * 1024.0 * 1024.0)) > 1.5)
-        cout << "文件大小(Tb):" << (fileSize / (1024.0 * 1024.0 * 1024.0 * 1024.0)) << endl;
+        cout << String("文件大小(Tb): ", "File size(Tb): ") << (fileSize / (1024.0 * 1024.0 * 1024.0 * 1024.0)) << endl;
     else if (fileSize / (1024.0 * 1024.0 * 1024.0) > 1.5)
-        cout << "文件大小(Gb):" << (fileSize / (1024.0 * 1024.0 * 1024.0)) << endl;
+        cout << String("文件大小(Gb): ", "File size(Gb): ") << (fileSize / (1024.0 * 1024.0 * 1024.0)) << endl;
     else if (fileSize / (1024.0 * 1024.0) > 1.5)
-        cout << "文件大小(Mb):" << (fileSize / (1024.0 * 1024.0)) << endl;
+        cout << String("文件大小(Mb): ", "File size(Mb): ") << (fileSize / (1024.0 * 1024.0)) << endl;
     else if (fileSize / (1024.0) > 1.5)
-        cout << "文件大小(Kb):" << (fileSize / (1024.0)) << endl;
+        cout << String("文件大小(Kb): ", "File size(Kb):") << (fileSize / (1024.0)) << endl;
     else
-        cout << "文件大小(byte):" << fileSize << endl;
+        cout << String("文件大小(byte): ", "File size(byte): ") << fileSize << endl;
 
     if (rawCtx->duration != AV_NOPTS_VALUE) {
         const std::array<int, 4> duration =
                 secondsToMicroseconds(rawCtx->duration / (AV_TIME_BASE / 1000));
-        cout << "时长: " << duration[0] << ":" << duration[1] << ":"
+        cout << String("时长: ", "Duration: ") << duration[0] << ":" << duration[1] << ":"
              << duration[2] << "." << duration[3] << endl;
     } else {
-        cout << "时长: 未知" << endl;
+        cout << String("时长: 未知", "Duration: Unknown") << endl;
     }
 
     if (rawCtx->bit_rate > 0) {
-        cout << "总码率: " << (rawCtx->bit_rate / 1000) << " kbps" << endl;
+        cout << String("总码率: ", "Total bitrate: ") << (rawCtx->bit_rate / 1000) << " kbps" << endl;
     } else {
-        cout << "总码率: 未知" << endl;
+        cout << String("总码率: 未知", "Total bitrate: Unknown") << endl;
     }
 
-    cout << "流的数量: " << fmtCtx_.streamsCount() << endl;
+    cout << String("流的数量: ", "Stream number: ") << fmtCtx_.streamsCount() << endl;
 
     if (hasVideo()) {
         AVStream* vStream = rawCtx->streams[videoStreamIndex_];
         AVRational frameRate = vStream->avg_frame_rate;
 
-        cout << "\n[视频流]" << endl;
-        cout << "  流索引: " << videoStreamIndex_ << endl;
-        cout << "  分辨率: " << vdec_.width() << "x" << vdec_.height() << endl;
+        cout << String("\n[视频流]", "\n[Video Stream]") << endl;
+        cout << String("  流索引: ", "  Index: ") << videoStreamIndex_ << endl;
+        cout << String("  分辨率: ", "  Resolution: ") << vdec_.width() << "x" << vdec_.height() << endl;
 
         const char* pixName = av_get_pix_fmt_name(vdec_.pixelFormat());
-        cout << "  像素格式: " << (pixName ? pixName : "未知") << endl;
+        cout << String("  像素格式: ", "  Pixel format: ") << (pixName ? String(pixName, pixName) : String("未知", "Unknown")) << endl;
 
         if (frameRate.den > 0 && frameRate.num > 0) {
-            cout << "  帧率: " << av_q2d(frameRate) << " fps" << endl;
+            cout << String("  帧率: ", "  Frame rate: ") << av_q2d(frameRate) << " fps" << endl;
         }
 
         AVCodecParameters* codecpar = vStream->codecpar;
-        cout << "  编码器: " << avcodec_get_name(codecpar->codec_id) << endl;
+        cout << String("  编码器: ", "  Encoder: ") << avcodec_get_name(codecpar->codec_id) << endl;
         if (codecpar->bit_rate > 0) {
-            cout << "  码率: " << (codecpar->bit_rate / 1000) << " kbps" << endl;
+            cout << String("  码率: ", "  Bitrate:") << (codecpar->bit_rate / 1000) << " kbps" << endl;
         }
     }
 
     if (hasAudio()) {
         AVStream* aStream = rawCtx->streams[audioStreamIndex_];
 
-        cout << "\n[音频流]" << endl;
-        cout << "  流索引: " << audioStreamIndex_ << endl;
-        cout << "  采样率: " << adec_.sampleRate() << " Hz" << endl;
+        cout << String("\n[音频流]", "\n[Audio Stream]") << endl;
+        cout << String("  流索引: ", "  Index: ") << audioStreamIndex_ << endl;
+        cout << String("  采样率: ", "  Sample rate: ") << adec_.sampleRate() << " Hz" << endl;
 
         char chLayoutDesc[256] = {0};
         av_channel_layout_describe(&adec_.raw()->ch_layout, chLayoutDesc, sizeof(chLayoutDesc));
-        cout << "  声道布局: " << chLayoutDesc << endl;
+        cout << String("  声道布局: ", "  Channel layout: ") << chLayoutDesc << endl;
 
         AVCodecParameters* codecpar = aStream->codecpar;
-        cout << "  编码器: " << avcodec_get_name(codecpar->codec_id) << endl;
+        cout << String("  编码器: ", "  Encoder: ") << avcodec_get_name(codecpar->codec_id) << endl;
 
         if (codecpar->bit_rate > 0) {
-            cout << "  码率: " << (codecpar->bit_rate / 1000) << " kbps" << endl;
+            cout << String("  码率: ", "  Bitrate:") << (codecpar->bit_rate / 1000) << " kbps" << endl;
         }
 
         AVDictionaryEntry* entry = nullptr;
         entry = av_dict_get(rawCtx->metadata, "artist", nullptr, 0);
         if (entry && entry->value)
-            cout << "  艺术家: " << entry->value << endl;
+            cout << String("  艺术家: ", "Artist: ") << entry->value << endl;
         entry = av_dict_get(rawCtx->metadata, "album", nullptr, 0);
         if (entry && entry->value)
-            cout << "  专辑: " << entry->value << endl;
+            cout << String("  专辑: ", "  Album") << entry->value << endl;
         entry = av_dict_get(rawCtx->metadata, "encoder", nullptr, 0);
         if (entry && entry->value)
-            cout << "  编码器: " << entry->value << endl;
+            cout << String("  编码器: ", "  Encoder: ") << entry->value << endl;
     }
 
     cout.flush();

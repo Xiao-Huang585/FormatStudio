@@ -1,4 +1,5 @@
 #include "functions.h"
+#include "strings.h"
 #include "avcpp/av.h"
 #include "avcpp/avlog.h"
 extern "C" {
@@ -16,6 +17,7 @@ jmethodID g_showVideoViewMethodID = nullptr;
 jmethodID g_callJavaIsSurfaceClickedMethodID = nullptr;
 jmethodID g_callJavaControlPlayArrowVisibilityMethodID = nullptr;
 jmethodID g_callJavaSetETHintTextMethodID = nullptr;
+jmethodID g_callJavaGetLanguageID = nullptr;
 std::mutex g_inputMutex;
 std::condition_variable g_inputCv;
 std::string g_inputData;
@@ -93,6 +95,7 @@ bool initGlobalRefs(JNIEnv *env) {
     g_callJavaIsSurfaceClickedMethodID = env->GetStaticMethodID(g_MainActivityClass, "callJavaIsSurfaceClicked", "()Z");
     g_callJavaControlPlayArrowVisibilityMethodID = env->GetStaticMethodID(g_MainActivityClass, "callJavaControlPlayArrowVisibility", "(Z)V");
     g_callJavaSetETHintTextMethodID = env->GetStaticMethodID(g_MainActivityClass, "callJavaSetETHintText", "(Ljava/lang/String;)V");
+    g_callJavaGetLanguageID = env->GetStaticMethodID(g_MainActivityClass, "callJavaGetLanguage", "()Ljava/lang/String;");
     return true;
 }
 void releaseGlobalRefs(JNIEnv *env) {
@@ -167,6 +170,7 @@ void androidOutStream::flush()
 
 // ===================== AndroidInBuf 实现 =====================
 AndroidInBuf::AndroidInBuf(JNIEnv* env) : m_env(env) {}
+
 int AndroidInBuf::underflow()
 {
     if (!m_inputCache.empty())
@@ -178,13 +182,13 @@ int AndroidInBuf::underflow()
         setg(m_buf, m_buf, m_buf + copyLen);
         return static_cast<unsigned char>(*gptr());
     }
+
     m_inputCache = androidInStream::blockReadInput(m_env);
     if (m_inputCache.empty())
         return EOF;
-    // 关键：在输入末尾追加换行符
-    // std::istream::operator>>(string&) 读到非空白字符后会持续读取，
-    // 直到遇到空白字符或 EOF。如果不加换行，读完整个输入后 operator>>
-    // 会再次调用 underflow() → blockReadInput() 阻塞等待新输入，导致死锁
+
+    // 关键：在输入末尾追加换行符，作为一行的结束标记。
+    // 配合 readLine() / std::getline() 使用时，可读取包含空格的完整一行。
     m_inputCache += '\n';
     return underflow();
 }
@@ -193,6 +197,19 @@ int AndroidInBuf::underflow()
 androidInStream::androidInStream(JNIEnv* env)
         : std::istream(&m_buf), m_buf(env)
 {}
+
+std::string androidInStream::readLine()
+{
+    std::string line;
+    std::getline(*this, line);
+
+    // 兼容 Windows 换行 \r\n
+    if (!line.empty() && line.back() == '\r')
+        line.pop_back();
+
+    return line;
+}
+
 std::string androidInStream::blockReadInput(JNIEnv* env)
 {
     std::unique_lock<std::mutex> lock(g_inputMutex);
@@ -304,6 +321,25 @@ void callJavaSetETHintText(const char* text) {
         env->ExceptionClear();
         return;
     }
+}
+int callJavaGetLanguage() {
+    JNIEnv *env = getThreadJNIEnv();
+    if (env == nullptr) {
+        LOGD("callJavaGetLanguage: 获取JNIEnv失败");
+        return String::EN;
+    }
+    if (!g_MainActivityClass || !g_callJavaGetLanguageID) {
+        LOGD("callJavaGetLanguage: 未初始化");
+        return String::EN;
+    }
+    jstring jstr = (jstring)env->CallStaticObjectMethod(g_MainActivityClass, g_callJavaGetLanguageID);
+    if (jstr != nullptr) {
+        const std::string str = env->GetStringUTFChars(jstr, nullptr);
+        if (str.substr(0, 2) == "zh") return String::CH;
+        else return String::EN;
+        env->ReleaseStringUTFChars(jstr, str.c_str());
+    }
+    return String::EN;
 }
 
 // ============================
