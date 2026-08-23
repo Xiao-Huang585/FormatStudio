@@ -10,13 +10,14 @@
 - 音视频媒体信息解析（容器、编码器、分辨率、码率、时长等）
 - 视频播放（基于 FFmpeg + ANativeWindow 直接渲染）
 - 深色/浅色主题自适应
-- 多 Activity 页面导航（主界面、功能选择、帮助页）
+- 多 Activity 页面导航（主界面、功能选择）
+- 适配英文
 
 ## 系统要求
 
 - Android Studio Hedgehog / Iguana 或更高版本
 - Android SDK 24+（minSdk 24）
-- C++17 标准（CMake 编译）
+- C++23 标准（CMake 编译）
 - 仅支持 `arm64-v8a` 架构（暂不兼容 32 位）
 
 ## 构建步骤
@@ -26,7 +27,7 @@
 3. 等待 Gradle Sync 完成
 4. 点击 Build → Make Project
 
-> **注意**：本项目需要预编译的 FFmpeg 动态库。请确保 `app/src/main/jniLibs/arm64-v8a/` 下包含所需的 `.so` 文件。
+> **注意**：本项目需要预编译的 FFmpeg 静态库。请确保 `app/src/main/cpp/libs/`（或你的 CMake 配置路径）下包含所需的 `.a` 文件。
 
 ## 项目结构
 
@@ -36,7 +37,7 @@ app/src/main/
 │   ├── 3rdparty/avcpp/           # avcpp（FFmpeg C++ 封装）
 │   ├── YsPlayer/                 # YsPlayer 播放器源码
 │   ├── include/                  # FFmpeg / OpenSSL / 第三方库头文件
-│   ├── libs/                     # 预编译第三方库
+│   ├── libs/                     # 预编译第三方静态库（.a）
 │   ├── FFmpeg.cpp / .h           # FFmpeg 封装层
 │   ├── functions.cpp / .h        # JNI 桥接函数
 │   └── native-lib.cpp            # C++ 主入口
@@ -54,7 +55,7 @@ app/src/main/
 | 组件 | 技术 |
 |------|------|
 | 语言 | Java + C++ (JNI) |
-| 媒体处理 | FFmpeg 5.x (LGPL) |
+| 媒体处理 | FFmpeg 5.x / 6.x / 7.x (GPL) |
 | C++ 封装 | avcpp (BSD-3) |
 | 视频播放 | YsPlayer (Apache-2.0) |
 | 渲染 | ANativeWindow + OpenGL ES |
@@ -72,7 +73,7 @@ app/src/main/
 
 | 库 | 许可证 | 说明 |
 |----|--------|------|
-| FFmpeg | GPL-2.0+ | 动态链接，启用了 GPL 组件 |
+| FFmpeg | GPL-2.0+ / GPL-3.0+（整体作品） | 静态链接，启用了 GPL 组件 |
 | avcpp | BSD-3-Clause | FFmpeg C++ 封装 |
 | YsPlayer | Apache-2.0 | 视频播放器 |
 | OpenSSL | Apache-2.0 | 加密支持 |
@@ -80,6 +81,6 @@ app/src/main/
 
 ## 许可证
 
-由于本项目使用了启用 `--enable-gpl`、`--enable-libx264` 和 `--enable-libx265` 构建的 FFmpeg，整体作品必须按 GNU 通用公共许可证（GPL）第 2.0 版或更高版本分发。本项目源代码因此按 **GPL-2.0-or-later** 发布。详见 [LICENSE](LICENSE)。
+由于本项目以 **静态链接（`.a`）** 方式使用了启用 `--enable-gpl`、`--enable-libx264` 和 `--enable-libx265` 构建的 FFmpeg，所形成的整体作品必须按 GNU 通用公共许可证（GPL）分发。本项目源代码因此按 **GPL-3.0-or-later** 发布。详见 [LICENSE](LICENSE)。
 
 第三方库各自的许可证仍需单独遵守。

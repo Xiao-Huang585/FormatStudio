@@ -1,26 +1,33 @@
 # 第三方库许可证声明
 
-本项目使用了以下开源第三方库。由于本项目使用了启用 GPL 组件的 FFmpeg 构建，整个项目按 GPL-2.0-or-later 分发。各第三方库各自的许可证仍需单独遵守。
+本项目使用了以下开源第三方库。由于本项目以静态链接方式使用了启用 GPL 组件的 FFmpeg 构建，整个项目按 **GPL-3.0-or-later** 分发。各第三方库各自的许可证仍需单独遵守。
 
 [English](THIRD_PARTY_NOTICES.md)
 
----
+***
 
 ## FFmpeg
 
-- **许可证**: GPL-2.0-or-later
-- **用途**: 音视频解码、编码、格式转换
-- **仓库**: https://git.ffmpeg.org/ffmpeg.git
-- **合规要求**:
-  - 使用动态链接
-  - 编译时启用了 `--enable-gpl`、`--enable-libx264`、`--enable-libx265`
-  - 本项目作为整体按 GPL-2.0-or-later 分发
-  - 需在应用内声明使用了 FFmpeg 及其 GPL 许可证
+* **许可证**: GPL-2.0-or-later / GPL-3.0-or-later（整体作品）
+
+* **用途**: 音视频解码、编码、格式转换
+
+* **仓库**: <https://git.ffmpeg.org/ffmpeg.git>
+
+* **合规要求**:
+
+  * 使用 **静态链接**（`.a`）
+
+  * 编译时启用了 `--enable-gpl`、`--enable-libx264`、`--enable-libx265`
+
+  * 本项目作为整体按 GPL-3.0-or-later 分发
+
+  * 需在应用内声明使用了 FFmpeg 及其 GPL 许可证
 
 ```
 FFmpeg is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
+the Free Software Foundation; either version 3 of the License, or
 (at your option) any later version.
 
 FFmpeg is distributed in the hope that it will be useful,
@@ -28,16 +35,21 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ```
 
----
+***
 
 ## avcpp
 
-- **许可证**: BSD-3-Clause
-- **用途**: FFmpeg C++ 封装层
-- **仓库**: https://github.com/himpossible/avcpp
-- **合规要求**:
-  - 保留版权声明
-  - 不得使用贡献者名称进行背书
+* **许可证**: BSD-3-Clause
+
+* **用途**: FFmpeg C++ 封装层
+
+* **仓库**: <https://github.com/himpossible/avcpp>
+
+* **合规要求**:
+
+  * 保留版权声明
+
+  * 不得使用贡献者名称进行背书
 
 ```
 Copyright (c) respective contributors
@@ -51,15 +63,19 @@ modification, are permitted provided that the following conditions are met:
    without specific prior written permission.
 ```
 
----
+***
 
 ## YsPlayer
 
-- **许可证**: Apache-2.0
-- **用途**: Android 视频播放器（基于 FFmpeg）
-- **合规要求**:
-  - 保留版权声明和许可证文本
-  - 不得使用贡献者名称进行背书
+* **许可证**: Apache-2.0
+
+* **用途**: Android 视频播放器（基于 FFmpeg）
+
+* **合规要求**:
+
+  * 保留版权声明和许可证文本
+
+  * 不得使用贡献者名称进行背书
 
 ```
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,16 +91,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
----
+***
 
 ## OpenSSL
 
-- **许可证**: Apache-2.0 (OpenSSL 3.0+)
-- **用途**: 加密支持
-- **仓库**: https://www.openssl.org/
-- **合规要求**:
-  - 保留版权声明和许可证文本
-  - 在产品文档中声明使用了 OpenSSL
+* **许可证**: Apache-2.0 (OpenSSL 3.0+)
+
+* **用途**: 加密支持
+
+* **仓库**: <https://www.openssl.org/>
+
+* **合规要求**:
+
+  * 保留版权声明和许可证文本
+
+  * 在产品文档中声明使用了 OpenSSL
 
 ```
 Copyright (c) 1998-2024 The OpenSSL Project Authors. All Rights Reserved.
@@ -96,17 +117,23 @@ You may obtain a copy of the License at
     https://www.openssl.org/source/license.html
 ```
 
----
+***
 
 ## kugou-kgm-decoder
 
-- **许可证**: 反 996 许可证版本 1.0
-- **用途**: 生成 `libkgm_decoder.so`，用于解密酷狗 `.kgm` 格式
-- **仓库**: https://github.com/ghtz08/kugou-kgm-decoder
-- **合规要求**:
-  - 保留版权声明和许可证文本
-  - 不得修改许可证内容
-  - 请遵守所在司法管辖区劳动与就业相关法律法规
+* **许可证**: 反 996 许可证版本 1.0
+
+* **用途**: 生成 `libkgm_decoder.so`，用于解密酷狗 `.kgm` 格式
+
+* **仓库**: <https://github.com/ghtz08/kugou-kgm-decoder>
+
+* **合规要求**:
+
+  * 保留版权声明和许可证文本
+
+  * 不得修改许可证内容
+
+  * 请遵守所在司法管辖区劳动与就业相关法律法规
 
 ```
 版权所有（c）<年份><版权持有人>
@@ -128,14 +155,17 @@ You may obtain a copy of the License at
 本软件的使用或其他交易而产生、引起或与之相关的任何索赔、损害或其他责任。
 ```
 
----
+***
 
 ## 合规建议
 
-1. **FFmpeg 源码分发**: 如果你以二进制形式（APK）分发应用，应提供获取 FFmpeg 源码的方式（链接或直接提供）。推荐做法是在 README 或 About 页面中给出 FFmpeg 源码下载链接。
+1. **FFmpeg 源码分发**: 如果你以二进制形式（APK）分发应用，必须提供获取 FFmpeg 源码的方式（链接或直接提供）。推荐做法是在 README 或 About 页面中给出 FFmpeg 源码下载链接。
 
-2. **许可证文件**: 各第三方库的完整许可证文本应包含在项目中，或提供可访问的链接。
+2. **静态链接声明**: 由于 FFmpeg 以静态链接（`.a`）方式与 GPL 组件组合，所形成的整体作品按 GPL-3.0-or-later 分发。请确保本项目的全部源代码以相同许可证公开。
 
-3. **声明页面**: 建议在应用内添加「开源声明」页面，列出所有使用的第三方库及其许可证。
+3. **许可证文件**: 各第三方库的完整许可证文本应包含在项目中，或提供可访问的链接。
 
-4. **GPL 合规**: 由于本项目的 FFmpeg 构建包含 GPL 组件（`--enable-gpl`、`libx264`、`libx265`），作为整体必须按 GPL-2.0-or-later 分发。本项目源代码因此按 GPL-2.0-or-later 发布。
+4. **声明页面**: 建议在应用内添加「开源声明」页面，列出所有使用的第三方库及其许可证。
+
+5. **GPL 合规**: 由于本项目的 FFmpeg 构建包含 GPL 组件（`--enable-gpl`、`libx264`、`libx265`）且为静态链接，作为整体必须按 GPL-3.0-or-later 分发。本项目源代码因此按 GPL-3.0-or-later 发布。
+
