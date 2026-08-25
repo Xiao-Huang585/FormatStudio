@@ -131,6 +131,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.core:core:1.12.0")
+    implementation("androidx.cardview:cardview:1.0.0")
 
     // 如果 YsPlayer 的 native 库依赖 c++_shared，
     // 它已通过 jniLibs 引入，不需要额外依赖

@@ -1,0 +1,3 @@
+<resources>
+    <dimen name="ui_radius_input">10dp</dimen>
+</resources>

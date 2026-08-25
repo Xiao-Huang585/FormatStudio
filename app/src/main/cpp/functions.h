@@ -108,6 +108,11 @@ extern std::condition_variable g_inputCv;
 extern std::string g_inputData;
 extern std::atomic<bool> g_inputReady;
 extern std::string g_pendingFunction; // Selecting Activity 返回的功能名
+// 编码器参数（由 MainActivity 通过 passEncoderConfig 传入）
+// 空串表示不编码对应流
+extern std::string g_encoderOutputPath;
+extern std::string g_encoderVideoCodec;   // 视频编码器名，如 "libx264"
+extern std::string g_encoderAudioCodec;   // 音频编码器名，如 "pcm_s16le"
 // ====== 日志相关 ======
 extern std::fstream g_log;
 // ====== Surface 相关（YsPlayer 渲染用）======
@@ -180,6 +185,10 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_triggerCppToCallJava(JNIEnv *env, jobject thiz);
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passInputToCpp(JNIEnv *env, jclass clazz, jstring jInput);
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passEncoderConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jstring jVideoCodec, jstring jAudioCodec);
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_kgmdecoder_app_MainActivity_nativeOpenFile(JNIEnv *env, jobject thiz, jstring jPath);
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_nativeSetSurface(JNIEnv *env, jobject thiz, jobject surface);
 extern "C" JNIEXPORT void JNICALL

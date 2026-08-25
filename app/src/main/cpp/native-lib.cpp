@@ -428,14 +428,14 @@ void cppMain(jobject thiz) {
     JNIEnv *env = getThreadJNIEnv();
     androidInStream cin(env);
     androidOutStream cout(env);
-    FFmpeg ffmpeg(cout, cin);
+    if (!ffmpeg) ffmpeg = new FFmpeg(cout, cin);
     g_languageCode = callJavaGetLanguage();
 
     g_log.open("/storage/emulated/0/Android/data/com.kgmdecoder.app/files/log.txt");
     g_log << "C++ I/O is ready..." << std::endl;
 
     cout << String("FormatStudio Version Test测试版; 作者: Huang",
-                    "FormatStudio Version Test beta; Author: Huang");
+                   "FormatStudio Version Test beta; Author: Huang");
     cout.flush();
 
     while (true) {
@@ -493,10 +493,10 @@ void cppMain(jobject thiz) {
             decryptKGMFile(env, fullPath, cout, cin, secondDot);
             callJavaClear();
         } else {
-            int openRet = ffmpeg.openInput(fullPath.c_str());
+            int openRet = ffmpeg->openInput(fullPath.c_str());
             LOGD("openInput 返回: %d", openRet);
             if (openRet == 0) {
-                ffmpeg.getMediaInfo();
+                ffmpeg->getMediaInfo();
                 LOGD("解析完成");
 
                 // 功能名分发
@@ -509,8 +509,42 @@ void cppMain(jobject thiz) {
                     continue;
                 }
 
-                if (functionName == "PlayVideo" && ffmpeg.hasVideo()) {
-                    ffmpeg.close();
+                if (functionName == "EncodeWithOtherEncoders") {
+                    cout << String("===== 开始编码 =====", "===== Start encoding =====") << endl;
+                    cout << String("输出路径: ", "Output path: ") << g_encoderOutputPath << endl;
+                    cout << String("视频编码器: ", "Video encoder: ")
+                         << (g_encoderVideoCodec.empty()
+                             ? String("无", "(none)") : String(g_encoderVideoCodec.c_str(), g_encoderVideoCodec.c_str())) << endl;
+                    cout << String("音频编码器: ", "Audio encoder: ")
+                         << (g_encoderAudioCodec.empty()
+                             ? String("无", "(none)") : String(g_encoderAudioCodec.c_str(), g_encoderAudioCodec.c_str())) << endl;
+                    cout.flush();
+
+                    // 调用独立的编码输出函数（空串 = 不编码对应流）
+                    int encRet = ffmpeg->encodeToFile(
+                            g_encoderOutputPath.c_str(),
+                            g_encoderVideoCodec.empty() ? nullptr : g_encoderVideoCodec.c_str(),
+                            g_encoderAudioCodec.empty() ? nullptr : g_encoderAudioCodec.c_str()
+                    );
+
+                    if (encRet == 0) {
+                        cout << String("编码完成！", "Encoding finished!") << endl;
+                    } else {
+                        cout << String("编码失败，错误码: ", "Encoding failed, error code: ")
+                             << encRet << endl;
+                    }
+                    cout.flush();
+
+                    cout << String("输入任意键继续...", "Press any key to continue...") << endl;
+                    cout.flush();
+                    std::string dummy;
+                    cin >> dummy;
+                    callJavaClear();
+                    continue;
+                }
+
+                if (functionName == "PlayVideo" && ffmpeg->hasVideo()) {
+                    ffmpeg->close();
                     callJavaClear();
 
                     cout << String("开始播放...", "Playback starts...") << endl;
@@ -527,7 +561,7 @@ void cppMain(jobject thiz) {
                 }
 
                 // 无功能名 → 手动交互
-                if (ffmpeg.hasVideo()) {
+                if (ffmpeg->hasVideo()) {
                     cout << String("\n检测到视频流！", "There is video stream here.") << endl;
                     cout << String("输入 play 播放视频，输入其他跳过", "Input \"play\" play video or jump.") << endl;
                     cout.flush();
@@ -536,7 +570,7 @@ void cppMain(jobject thiz) {
                     cin >> cmd;
 
                     if (cmd == "play") {
-                        ffmpeg.close();
+                        ffmpeg->close();
                         callJavaClear();
 
                         cout << String("开始播放...", "Playback starts...") << endl;
@@ -557,18 +591,6 @@ void cppMain(jobject thiz) {
 
                 std::string dummy;
                 cin >> dummy;
-                if (dummy == "1") {
-                    cout << "输入压缩倍数:";
-                    cout.flush();
-                    int rate = 0;
-                    cin >> rate;
-                    if (rate >= 0) {
-                        ffmpeg.compressMedia("/sdcard/Download/a.mp4");
-                        cin >> dummy;
-                        callJavaClear();
-                        continue;
-                    }
-                }
             } else {
                 cout << "打开文件失败，错误码: " << openRet << endl;
             }

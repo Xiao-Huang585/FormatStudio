@@ -43,6 +43,11 @@ public:
     FFmpeg(androidOutStream &os, androidInStream &is);
     ~FFmpeg();
 
+    /**
+     * @brief 使未被初始化的FFmpeg实例对象初始化
+     */
+    void init(androidOutStream &os, androidInStream &is);
+
     // 禁止拷贝
     FFmpeg(const FFmpeg&) = delete;
     FFmpeg& operator=(const FFmpeg&) = delete;
@@ -94,6 +99,25 @@ public:
     int openOutPutWithEncoder(AVCodecID videoId, AVCodecID audioID);
 
     /**
+     * @brief 用指定名称的视频/音频编码器将当前打开的媒体重新编码输出到新文件
+     *
+     * 封装格式由输出路径的扩展名决定（如 .mp4/.mkv/.wav/.mp3/.flac）
+     *
+     * @param outputPath 输出文件路径（扩展名决定封装格式）
+     * @param videoEncoderName 视频编码器名称（如 "libx264"/"libx265"/"mpeg4"），
+     *                         空指针或空串表示不输出视频流
+     * @param audioEncoderName 音频编码器名称（如 "aac"/"libmp3lame"/"pcm_s16le"/"flac"），
+     *                         空指针或空串表示不输出音频流
+     * @return 0 表示成功，负数表示错误码
+     *
+     * @note 音频采样格式会根据编码器支持的格式自动匹配
+     *       （aac→FLTP, pcm_s16le→S16, flac→S16 等）
+     */
+    int encodeToFile(const char* outputPath,
+                     const char* videoEncoderName,
+                     const char* audioEncoderName);
+
+    /**
      * @brief 设置输出文件的位置
      */
     inline void setOutputPath(std::string path) { outPath_ = path; }
@@ -101,6 +125,9 @@ public:
     inline int audioStreamIndex() const { return audioStreamIndex_; }
 
 private:
+
+    bool inited = false;
+
     // avcpp 格式上下文（RAII 管理）
     av::FormatContext fmtCtx_;
     av::FormatContext outFmtCtx_;
@@ -131,3 +158,17 @@ private:
     androidOutStream &cout;
     androidInStream &cin;
 };
+
+extern FFmpeg *ffmpeg;
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_kgmdecoder_app_Selecting_hasVideo(JNIEnv *env, jobject thiz);
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_kgmdecoder_app_Selecting_hasAudio(JNIEnv *env, jobject thiz);
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_releaseFFmpeg(JNIEnv *env, jobject thiz);
+
+// 释放全局 FFmpeg 实例
+void releaseGlobalFFmpeg();

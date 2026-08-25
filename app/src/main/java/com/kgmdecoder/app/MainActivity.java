@@ -52,9 +52,13 @@ public class MainActivity extends Activity {
     // ====== Native 方法声明 ======
     public native void triggerCppToCallJava();
     public native void passInputToCpp(String input);
+    public native void passEncoderConfig(String outputPath, String videoCodec, String audioCodec);
+    // 同步打开媒体文件（跳转 Selecting 前调用，使 hasVideo/hasAudio 生效）
+    public native boolean nativeOpenFile(String path);
     // Surface JNI 方法
     public native void nativeSetSurface(Surface surface);
     public native void nativeShowVideoView(boolean show);
+    public native void releaseFFmpeg();
 
     // 普通变量
     private static long clickTimestamp = 0; // 点击时间戳, 0表示无效
@@ -88,6 +92,9 @@ public class MainActivity extends Activity {
             String path = getRealPath(uri);
             if (path != null) {
                 selectedFilePath = path;
+                // 先在 C++ 同步打开文件，Selecting 中 hasVideo()/hasAudio() 才能识别流
+                boolean opened = nativeOpenFile(path);
+                Log.d(TAG, "预打开文件: " + path + " → " + (opened ? "成功" : "失败"));
                 Intent intent = new Intent(this, Selecting.class);
                 startActivityForResult(intent, 200);
             }
@@ -96,8 +103,22 @@ public class MainActivity extends Activity {
             String function = data.getStringExtra("Function");
             if (function != null && selectedFilePath != null) {
                 Log.d(TAG, "文件: " + selectedFilePath + " 功能: " + function);
-                // 传给 C++ 处理，格式: 路径\n功能名
-                passInputToCpp(selectedFilePath + "\n" + function);
+                if ("EncodeWithOtherEncoders".equals(function)) {
+                    // 编码功能需要额外参数：输出路径 + 视频/音频编码器名
+                    String outputPath = data.getStringExtra("OutputPath");
+                    String videoCodec = data.getStringExtra("VideoCodec");
+                    String audioCodec = data.getStringExtra("AudioCodec");
+                    Log.d(TAG, "编码参数: 输出=" + outputPath
+                            + " 视频编码器=" + videoCodec
+                            + " 音频编码器=" + audioCodec);
+                    passEncoderConfig(outputPath,
+                            videoCodec != null ? videoCodec : "",
+                            audioCodec != null ? audioCodec : "");
+                    passInputToCpp(selectedFilePath + "\n" + function);
+                } else {
+                    // 传给 C++ 处理，格式: 路径\n功能名
+                    passInputToCpp(selectedFilePath + "\n" + function);
+                }
                 selectedFilePath = null;
             }
         }
@@ -189,6 +210,8 @@ public class MainActivity extends Activity {
 
         // 启动 C++ 主线程
         triggerCppToCallJava();
+
+        releaseFFmpeg();
     }
 
 

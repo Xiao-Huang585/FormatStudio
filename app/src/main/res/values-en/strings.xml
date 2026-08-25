@@ -20,6 +20,22 @@
 
     <string name="Selecting_playVideo">Play video(video only)</string>
 
+    <string name="Selecting_encodeWithOtherEncoders">Use other encoder to encode</string>
+
     <string name="Selecting_parametersTitle">Set Parameters</string>
+
+    <string name="Help_content">  </string>
+
+    <string name="Selecting_subtitle">Please select a function...</string>
+
+    <string name="Selecting_parameter1">Output path: </string>
+
+    <string name="Selecting_encoder">encoder</string>
+
+    <string name="Selecting_videoEncoderLabel">Video encoder</string>
+
+    <string name="Selecting_audioEncoderLabel">Audio encoder</string>
+
+    <string name="Selecting_confirm">confirm</string>
 </resources>
 

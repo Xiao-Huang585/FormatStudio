@@ -1,5 +1,6 @@
 #include "functions.h"
 #include "strings.h"
+#include "FFmpeg.h"
 #include "avcpp/av.h"
 #include "avcpp/avlog.h"
 extern "C" {
@@ -23,6 +24,9 @@ std::condition_variable g_inputCv;
 std::string g_inputData;
 std::atomic<bool> g_inputReady = false;
 std::string g_pendingFunction;
+std::string g_encoderOutputPath;
+std::string g_encoderVideoCodec;   // 空串 = 不编码视频
+std::string g_encoderAudioCodec;   // 空串 = 不编码音频
 std::fstream g_log;
 
 // ====== Surface 全局变量 ======
@@ -233,6 +237,7 @@ void callJavaShowText(JNIEnv *env, const char *text) {
 // 业务回调函数实现（修复g_callExitMethodID笔误）
 // ============================
 void Jexit() {
+    releaseGlobalFFmpeg();
     JNIEnv *env = getThreadJNIEnv();
     env->CallStaticVoidMethod(g_MainActivityClass, g_callJavaExitMethodID);
     g_javaVM->DetachCurrentThread();
@@ -416,6 +421,50 @@ Java_com_kgmdecoder_app_MainActivity_passInputToCpp(JNIEnv *env, jclass clazz, j
     }
     g_inputReady = true;
     g_inputCv.notify_one();
+}
+
+// ============================
+// JNI 传递编码器参数给C++
+// ============================
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passEncoderConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jstring jVideoCodec, jstring jAudioCodec) {
+    std::lock_guard<std::mutex> lock(g_inputMutex);
+    const char *outputPath = env->GetStringUTFChars(jOutputPath, nullptr);
+    const char *videoCodec = jVideoCodec ? env->GetStringUTFChars(jVideoCodec, nullptr) : nullptr;
+    const char *audioCodec = jAudioCodec ? env->GetStringUTFChars(jAudioCodec, nullptr) : nullptr;
+    g_encoderOutputPath = outputPath ? outputPath : "";
+    g_encoderVideoCodec = videoCodec ? videoCodec : "";
+    g_encoderAudioCodec = audioCodec ? audioCodec : "";
+    env->ReleaseStringUTFChars(jOutputPath, outputPath);
+    if (videoCodec) env->ReleaseStringUTFChars(jVideoCodec, videoCodec);
+    if (audioCodec) env->ReleaseStringUTFChars(jAudioCodec, audioCodec);
+    LOGD("编码参数: output=%s vCodec=%s aCodec=%s",
+         g_encoderOutputPath.c_str(),
+         g_encoderVideoCodec.c_str(),
+         g_encoderAudioCodec.c_str());
+}
+
+// ============================
+// JNI 同步打开媒体文件
+// 供 MainActivity 在跳转 Selecting 之前调用，
+// 这样 Selecting 里的 hasVideo()/hasAudio() 才能返回正确结果
+// ============================
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_kgmdecoder_app_MainActivity_nativeOpenFile(JNIEnv *env, jobject thiz, jstring jPath) {
+    if (!ffmpeg) {
+        LOGD("nativeOpenFile: ffmpeg 实例未初始化");
+        return JNI_FALSE;
+    }
+    const char *path = env->GetStringUTFChars(jPath, nullptr);
+    if (!path || !path[0]) {
+        if (path) env->ReleaseStringUTFChars(jPath, path);
+        return JNI_FALSE;
+    }
+
+    LOGD("nativeOpenFile: %s", path);
+    int ret = ffmpeg->openInput(path);
+    env->ReleaseStringUTFChars(jPath, path);
+    return (ret == 0) ? JNI_TRUE : JNI_FALSE;
 }
 
 // ============================
