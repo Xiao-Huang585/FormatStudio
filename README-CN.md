@@ -40,7 +40,8 @@ app/src/main/
 │   ├── libs/                     # 预编译第三方静态库（.a）
 │   ├── FFmpeg.cpp / .h           # FFmpeg 封装层
 │   ├── functions.cpp / .h        # JNI 桥接函数
-│   └── native-lib.cpp            # C++ 主入口
+│   ├── native-lib.cpp            # C++ 主入口
+│   └── strings.cpp / .h          # C++侧多语言字符串实现
 ├── java/com/kgmdecoder/app/      # Java 源码
 │   ├── MainActivity.java         # 主界面（控制台 + 视频播放）
 │   ├── Selecting.java            # 功能选择页

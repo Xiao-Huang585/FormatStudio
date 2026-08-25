@@ -48,7 +48,8 @@ app/src/main/
 │   ├── libs/                     # Pre-built third-party static libraries (.a)
 │   ├── FFmpeg.cpp / .h           # FFmpeg wrapper layer
 │   ├── functions.cpp / .h        # JNI bridge functions
-│   └── native-lib.cpp            # C++ main entry
+│   ├── native-lib.cpp            # C++ main entry
+│   └── strings.cpp / .h          # C++ language library.
 ├── java/com/kgmdecoder/app/      # Java source
 │   ├── MainActivity.java         # Main screen (console + video playback)
 │   ├── Selecting.java            # Feature selection page
