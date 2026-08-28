@@ -27,7 +27,7 @@ extern "C" {
 // 设为 0 用 playVideoSimple（不依赖 YsPlayer）
 // 设为 1 用 playVideoWithYsPlayer（依赖 YsPlayer C++ 源码）
 #define ENABLE_YSPLAYER true
-constexpr const char* defaultHint = "请输入内容，按回车确认 >>";
+const String defaultHint("请输入内容，按回车确认 >>", "Please provide the content >>");
 
 // ============================================================
 // Surface 点击轮询线程
@@ -267,7 +267,7 @@ static void playVideoSimple(androidOutStream &cout, androidInStream &cin,
 // ============================================================
 #if ENABLE_YSPLAYER
 static void playVideoWithYsPlayer(androidOutStream &cout, androidInStream &cin,
-                                  const std::string &path, jobject activity) {
+                                  const std::string &path, jobject activity, bool hasVideo, bool hasAudio) {
     cout << "===== YsPlayer 播放 =====" << endl;
     cout << "文件: " << path << endl;
 
@@ -293,26 +293,28 @@ static void playVideoWithYsPlayer(androidOutStream &cout, androidInStream &cin,
     player->enableMediaCodec(true);
 
     // 4. 显示 SurfaceView（Java 端的 GLSurfaceView 会接收 YUV 数据渲染）
-    callJavaShowVideoView(true);
+    callJavaShowVideoView(hasVideo);
 
     // 5. 准备（内部创建解码线程，完成后回调 onCallPrepare）
-    cout << "正在准备..." << endl;
+    cout << String("正在准备...", "Preparing...") << endl;
     cout.flush();
     player->prepare(path.c_str());
 
     // 5.5 等待 prepare 完成
     // prepare() 只是启动了一个线程做初始化（创建 ysVideoPlayer/ysAudioPlayer）
     // 必须等它们创建完毕后才能调用 start()，否则空指针崩溃
-    cout << "等待初始化完成..." << endl;
+    cout << String("等待初始化完成...", "Wait for init...") << endl;
     cout.flush();
+
     for (int i = 0; i < 100; i++) {  // 最多等 10 秒
-        if (player->ysVideoPlayer != nullptr && player->ysAudioPlayer != nullptr) {
+
+        if ((player->ysVideoPlayer != nullptr) == hasVideo && (player->ysAudioPlayer != nullptr) == hasAudio) {
             break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    if (player->ysVideoPlayer == nullptr || player->ysAudioPlayer == nullptr) {
-        cout << "初始化超时！可能是不支持的视频格式" << endl;
+    if ((player->ysVideoPlayer != nullptr) != hasVideo || (player->ysAudioPlayer != nullptr) != hasAudio) {
+        cout << String("初始化超时！可能是不支持的视频格式", "Initialization time out! Format is not support") << endl;
         cout.flush();
         player->release();
         delete player;
@@ -322,20 +324,31 @@ static void playVideoWithYsPlayer(androidOutStream &cout, androidInStream &cin,
 
     // 6. 开始播放
     player->start();
-    cout << "播放中... 点击视频暂停/恢复，输入 stop 停止" << endl;
+    if (hasVideo) cout << String("播放中... 点击视频暂停/恢复，输入 stop 停止", "Playing...") << endl;
+    else cout << String("播放中... 输入 stop 停止", "Playing...") << endl;
     cout.flush();
 
+    // 点击轮询是否开启
+    bool clickingThreadStarted = false;
+    // 点击轮询线程
+    pthread_t clickThread;
+
     // ============================================================
-    // 7. 启动 Surface 点击轮询线程
+    // 7. 启动 Surface 点击轮询线程(在有视频流的情况下)
     //    cin >> cmd 会阻塞等待文字输入，无法及时响应点击事件
     //    所以开一个独立线程来轮询 callJavaIsSurfaceClicked()
     // ============================================================
-    g_currentPlayer = player;
-    g_videoPlaying = true;
-    pthread_t clickThread;
-    pthread_create(&clickThread, nullptr, surfaceClickPollThread, nullptr);
+    if (hasVideo) {
+        g_currentPlayer = player;
+        g_videoPlaying = true;
+        pthread_create(&clickThread, nullptr, surfaceClickPollThread, nullptr);
+        clickingThreadStarted = true;
+    }
     // 设置输入框提示
-    callJavaSetETHintText("输入\"stop\"退出, 点击屏幕可暂停/继续");
+    if (hasVideo) callJavaSetETHintText(String("输入\"stop\"退出, 点击屏幕可暂停/继续",
+            "Input \"stop\" to exit, click screen to pause/continue"));
+    else callJavaSetETHintText(String("输入\"stop\"退出",
+            "Input \"stop\" to exit"));
 
     // 8. 等待用户输入命令
     while (true) {
@@ -346,31 +359,51 @@ static void playVideoWithYsPlayer(androidOutStream &cout, androidInStream &cin,
             break;
         } else if (cmd == "pause") {
             player->pause();
-            callJavaControlPlayArrowVisibility(true);
+            if (hasVideo) callJavaControlPlayArrowVisibility(true);
             cout << "已暂停" << endl;
         } else if (cmd == "resume") {
             player->resume();
-            callJavaControlPlayArrowVisibility(false);
+            if (hasVideo) callJavaControlPlayArrowVisibility(false);
             cout << "已恢复" << endl;
+        } else if (cmd[0] == '-') {
+            try {
+                double second = std::stod(cmd.substr(1));
+                double seekSeconds = player->now() - second;
+                player->seek(static_cast<int>(seekSeconds));
+                cout << String("跳转到: ", "Jump to:") << seekSeconds << String(" 秒", "s") << endl;
+            } catch (...) {
+                cout << String("未知命令: ", "Unknown command: ") << cmd << endl;
+            }
+        }  else if (cmd[0] == '+') {
+            try {
+                double second = std::stod(cmd.substr(1));
+                double seekSeconds = player->now() + second;
+                player->seek(static_cast<int>(seekSeconds));
+                cout << String("跳转到: ", "Jump to:") << seekSeconds << String(" 秒", "s") << endl;
+            } catch (...) {
+                cout << String("未知命令: ", "Unknown command: ") << cmd << endl;
+            }
         } else {
             // seek 参数是秒（不是毫秒）
             try {
                 int seekSeconds = std::stoi(cmd);
                 player->seek(seekSeconds);
-                cout << "跳转到: " << seekSeconds << " 秒" << endl;
+                cout << String("跳转到: ", "Jump to:") << seekSeconds << String(" 秒", "s") << endl;
             } catch (...) {
-                cout << "未知命令: " << cmd << endl;
+                cout << String("未知命令: ", "Unknown command: ") << cmd << endl;
             }
         }
         cout.flush();
     }
 
     callJavaSetETHintText(defaultHint);
-    callJavaControlPlayArrowVisibility(false);
-    // 9. 停止点击轮询线程
-    g_videoPlaying = false;
-    pthread_join(clickThread, nullptr);
-    g_currentPlayer = nullptr;
+    if (hasVideo) callJavaControlPlayArrowVisibility(false);
+    // 9. 停止点击轮询线程(仅视频)
+    if (hasVideo) {
+        g_videoPlaying = false;
+        pthread_join(clickThread, nullptr);
+        g_currentPlayer = nullptr;
+    }
 
     // 10. 释放（注意是 release() 不是 stop()）
     player->release();
@@ -380,9 +413,9 @@ static void playVideoWithYsPlayer(androidOutStream &cout, androidInStream &cin,
     // 如果 release 已删除 callJava，这里不要重复 delete
     // 安全起见只 delete player，让 player 的析构管理 callJava
 
-    callJavaShowVideoView(false);
+    if (hasVideo) callJavaShowVideoView(false);
 
-    cout << "播放器已释放" << endl;
+    cout << String("播放器已释放", "Player is released") << endl;
     cout.flush();
 }
 #endif
@@ -391,9 +424,9 @@ static void playVideoWithYsPlayer(androidOutStream &cout, androidInStream &cin,
 // 播放视频入口
 // ============================================================
 static void playVideo(androidOutStream &cout, androidInStream &cin,
-                      const std::string &path, jobject activity) {
+                      const std::string &path, jobject activity, bool hasVideo, bool hasAudio) {
 #if ENABLE_YSPLAYER
-    playVideoWithYsPlayer(cout, cin, path, activity);
+    playVideoWithYsPlayer(cout, cin, path, activity, hasVideo, hasAudio);
 #else
     playVideoSimple(cout, cin, path);
 #endif
@@ -405,17 +438,17 @@ static void playVideo(androidOutStream &cout, androidInStream &cin,
 static void decryptKGMFile(JNIEnv *env, const std::string &inputPath,
                            androidOutStream &cout, androidInStream &cin,
                            size_t dot) {
-    cout << "===== KGM解密模式 =====" << endl;
+    cout << String("===== KGM解密模式 =====", "===== Decoding KGM =====") << endl;
     std::string outPath;
     outPath = inputPath.substr(0, dot + 1);
     outPath += "mp3";
-    cout << "输出" << outPath << endl;
+    cout << String("输出: ", "Output: ") << outPath << endl;
 
     KuGou code = (KuGou)kgmDecodeFile(inputPath.c_str(), outPath.c_str());
     if ((int)code == 0) {
-        cout << "解密成功！输出到: " << outPath << endl;
+        cout << String("解密成功！输出到: ", "Decode success! path: ") << outPath << endl;
     } else {
-        cout << "解密失败！因为: " << std::to_string(code) << endl;
+        cout << String("解密失败！因为: ", "Decode failed! Because: ") << std::to_string(code) << endl;
     }
     cout << "三秒后自动退出..." << endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
@@ -447,13 +480,20 @@ void cppMain(jobject thiz) {
         std::string input;
         cin >> input;
 
+        if (input.empty()) {
+            continue;   // 空输入，重新等待
+        }
+
+        // 新命令到达：清空上一轮输出，开始新一轮
+        // （不能用 "输入任意键继续" 等待输入，否则会吞掉下一次 Selecting 传来的命令）
+        callJavaClear();
+
         if (input == "exit") {
             Jexit();
             return;
         }
         if (input == "clear") {
-            callJavaClear();
-            continue;
+            continue;   // 控制台已在上面清空
         }
 
         // 从全局变量读取功能名（passInputToCpp 已拆分）
@@ -501,11 +541,8 @@ void cppMain(jobject thiz) {
 
                 // 功能名分发
                 if (functionName == "GetMediaInfo") {
-                    cout << String("输入任意键继续...", "Press any key to continue...") << endl;
-                    cout.flush();
-                    std::string dummy;
-                    cin >> dummy;
-                    callJavaClear();
+                    // 媒体信息已输出，直接回主循环等待下一条命令
+                    // （结果保留在控制台，下一条命令到达时主循环会自动清空）
                     continue;
                 }
 
@@ -535,33 +572,27 @@ void cppMain(jobject thiz) {
                     }
                     cout.flush();
 
-                    cout << String("输入任意键继续...", "Press any key to continue...") << endl;
-                    cout.flush();
-                    std::string dummy;
-                    cin >> dummy;
-                    callJavaClear();
+                    // 结果保留在控制台，下一条命令到达时主循环会自动清空
+                    // （不再等待"任意键"，否则会吞掉下一次 Selecting 的编码命令）
                     continue;
                 }
 
-                if (functionName == "PlayVideo" && ffmpeg->hasVideo()) {
-                    ffmpeg->close();
+                if (functionName == "PlayVideo" && (ffmpeg->hasVideo() || ffmpeg->hasAudio())) {
                     callJavaClear();
+                    bool hasAudio = ffmpeg->hasAudio(), hasVideo = ffmpeg->hasVideo();
+                    ffmpeg->close();
 
                     cout << String("开始播放...", "Playback starts...") << endl;
                     cout.flush();
-                    playVideo(cout, cin, fullPath, thiz);
+                    playVideo(cout, cin, fullPath, thiz, hasVideo, hasAudio);
 
-                    cout << String("\n播放完毕，输入任意键继续...",
-                                   "\nPlayback is over, press any key to continue") << endl;
+                    cout << String("\n播放完毕。", "\nPlayback is over.") << endl;
                     cout.flush();
-                    std::string dummy;
-                    cin >> dummy;
-                    callJavaClear();
                     continue;
                 }
 
                 // 无功能名 → 手动交互
-                if (ffmpeg->hasVideo()) {
+                if (ffmpeg->hasVideo() || ffmpeg->hasAudio()) {
                     cout << String("\n检测到视频流！", "There is video stream here.") << endl;
                     cout << String("输入 play 播放视频，输入其他跳过", "Input \"play\" play video or jump.") << endl;
                     cout.flush();
@@ -570,12 +601,13 @@ void cppMain(jobject thiz) {
                     cin >> cmd;
 
                     if (cmd == "play") {
+                        bool hasVideo = ffmpeg->hasVideo(), hasAudio = ffmpeg->hasAudio();
                         ffmpeg->close();
                         callJavaClear();
 
                         cout << String("开始播放...", "Playback starts...") << endl;
                         cout.flush();
-                        playVideo(cout, cin, fullPath, thiz);
+                        playVideo(cout, cin, fullPath, thiz, hasVideo, hasAudio);
 
                         cout << String("\n播放完毕，输入任意键继续...", "\nPlayback is over, press any key to continue") << endl;
                         cout.flush();
@@ -592,7 +624,7 @@ void cppMain(jobject thiz) {
                 std::string dummy;
                 cin >> dummy;
             } else {
-                cout << "打开文件失败，错误码: " << openRet << endl;
+                cout << String("打开文件失败，错误码: ", "Can not open files, error code: ") << openRet << endl;
             }
             callJavaClear();
             continue;

@@ -5,6 +5,7 @@
 #include "avcpp/avlog.h"
 extern "C" {
 #include <libavutil/log.h>
+#include <libavformat/avformat.h>
 }
 
 // ====== 全局变量定义 ======
@@ -27,6 +28,9 @@ std::string g_pendingFunction;
 std::string g_encoderOutputPath;
 std::string g_encoderVideoCodec;   // 空串 = 不编码视频
 std::string g_encoderAudioCodec;   // 空串 = 不编码音频
+// 当前选中文件的流信息（nativeOpenFile 探测结果）
+std::atomic<bool> g_fileHasVideo = false;
+std::atomic<bool> g_fileHasAudio = false;
 std::fstream g_log;
 
 // ====== Surface 全局变量 ======
@@ -308,7 +312,7 @@ bool callJavaIsSurfaceClicked() {
     }
     return res == JNI_TRUE;
 }
-void callJavaSetETHintText(const char* text) {
+void callJavaSetETHintText(const String text) {
     JNIEnv *env = getThreadJNIEnv();
     if (env == nullptr) {
         LOGD("callJavaSetETHintText: 获取JNIEnv失败");
@@ -318,7 +322,8 @@ void callJavaSetETHintText(const char* text) {
         LOGD("callJavaSetETHintText: 未初始化");
         return;
     }
-    jstring jstr = env->NewStringUTF(text);
+    std::string cstr = text[g_languageCode];
+    jstring jstr = env->NewStringUTF(cstr.c_str());
     env->CallStaticVoidMethod(g_MainActivityClass, g_callJavaSetETHintTextMethodID, jstr);
     env->DeleteLocalRef(jstr);
     if (env->ExceptionCheck()) {
@@ -445,26 +450,52 @@ Java_com_kgmdecoder_app_MainActivity_passEncoderConfig(JNIEnv *env, jobject thiz
 }
 
 // ============================
-// JNI 同步打开媒体文件
+// JNI 同步探测媒体文件
 // 供 MainActivity 在跳转 Selecting 之前调用，
-// 这样 Selecting 里的 hasVideo()/hasAudio() 才能返回正确结果
+// Selecting 里的 hasVideo()/hasAudio() 返回正确结果
+//
+// 重要：用局部 AVFormatContext 探测，不使用全局 ffmpeg 实例！
+// 原因：此函数在主线程调用；若 cppMain 线程正在编码，
+//       对同一实例 openInput→close() 会破坏编码中的上下文（数据竞争）
 // ============================
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_kgmdecoder_app_MainActivity_nativeOpenFile(JNIEnv *env, jobject thiz, jstring jPath) {
-    if (!ffmpeg) {
-        LOGD("nativeOpenFile: ffmpeg 实例未初始化");
-        return JNI_FALSE;
-    }
     const char *path = env->GetStringUTFChars(jPath, nullptr);
     if (!path || !path[0]) {
         if (path) env->ReleaseStringUTFChars(jPath, path);
+        g_fileHasVideo = false;
+        g_fileHasAudio = false;
         return JNI_FALSE;
     }
 
-    LOGD("nativeOpenFile: %s", path);
-    int ret = ffmpeg->openInput(path);
+    AVFormatContext *probe = nullptr;
+    if (avformat_open_input(&probe, path, nullptr, nullptr) < 0) {
+        LOGD("nativeOpenFile: 打开失败: %s", path);
+        env->ReleaseStringUTFChars(jPath, path);
+        g_fileHasVideo = false;
+        g_fileHasAudio = false;
+        return JNI_FALSE;
+    }
+
+    avformat_find_stream_info(probe, nullptr);
+
+    bool hasV = false, hasA = false;
+    for (unsigned i = 0; i < probe->nb_streams; i++) {
+        const AVCodecParameters *par = probe->streams[i]->codecpar;
+        if (par->codec_type == AVMEDIA_TYPE_VIDEO && par->width > 0 && par->height > 0) {
+            hasV = true;
+        } else if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
+            hasA = true;
+        }
+    }
+    avformat_close_input(&probe);
+
+    g_fileHasVideo = hasV;
+    g_fileHasAudio = hasA;
+    LOGD("nativeOpenFile: %s → video=%d audio=%d", path, hasV ? 1 : 0, hasA ? 1 : 0);
+
     env->ReleaseStringUTFChars(jPath, path);
-    return (ret == 0) ? JNI_TRUE : JNI_FALSE;
+    return JNI_TRUE;
 }
 
 // ============================

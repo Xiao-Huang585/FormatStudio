@@ -4,6 +4,7 @@
 extern "C" {
 #include <libavutil/pixdesc.h>
 #include <libavutil/channel_layout.h>
+#include <libavutil/audio_fifo.h>
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 #include <libavutil/opt.h>
@@ -403,6 +404,13 @@ int FFmpeg::compressMedia(const char* outputPath,
         return ec.value();
     }
 
+    // 关键：mp4/m4a/flac 等容器带 AVFMT_GLOBALHEADER 标志，
+    // 编码器必须在 avcodec_open2 之前设置 AV_CODEC_FLAG_GLOBAL_HEADER，
+    // 否则不会生成 extradata(h264 的 SPS/PPS、aac 的 ASC)，
+    // 写出的 mp4 缺少 avcC/esds 盒子 → 播放器无法初始化解码器。
+    // avcpp 的 addStream() 不会自动设置，必须手动加！
+    const bool needGlobalHeader = !!(outCtx.raw()->oformat->flags & AVFMT_GLOBALHEADER);
+
     // 2. 视频编码器初始化
     av::VideoEncoderContext vEnc;
     av::Stream outVStream;
@@ -442,6 +450,10 @@ int FFmpeg::compressMedia(const char* outputPath,
             vEnc.setOption("crf", crfStr);
         }
 
+        if (needGlobalHeader) {
+            vEnc.raw()->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        }
+
         vEnc.open(ec);
         if (ec) {
             cout << "打开视频编码器失败: " << ec.message() << endl;
@@ -467,6 +479,10 @@ int FFmpeg::compressMedia(const char* outputPath,
     av::AudioEncoderContext aEnc;
     av::Stream outAStream;
     SwrContext* swrCtx = nullptr;
+    // 音频 FIFO：aac 要求每帧恰好 1024 个样本，mp3 解码每包 1152 个，必须切帧
+    AVAudioFifo *afifo = nullptr;
+    int encFrameSize = 0;
+    bool varFrameSize = false;
 
     if (hasAudio()) {
         av::Codec aCodec = av::findEncodingCodec(AV_CODEC_ID_AAC);
@@ -481,37 +497,60 @@ int FFmpeg::compressMedia(const char* outputPath,
             AVChannelLayout stereoLayout = AV_CHANNEL_LAYOUT_STEREO;
             av_channel_layout_copy(&aEnc.raw()->ch_layout, &stereoLayout);
 
+            if (needGlobalHeader) {
+                aEnc.raw()->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+            }
+
             aEnc.open(ec);
             if (ec) {
                 cout << "打开音频编码器失败: " << ec.message() << endl;
                 aEnc = av::AudioEncoderContext();
             } else {
-                outAStream = outCtx.addStream(aEnc, ec);
-                if (ec) {
-                    cout << "创建输出音频流失败: " << ec.message() << endl;
+                // 初始化重采样上下文
+                AVChannelLayout outLayout = AV_CHANNEL_LAYOUT_STEREO;
+                AVChannelLayout inLayout = {};
+                av_channel_layout_copy(&inLayout, &adec_.raw()->ch_layout);
+
+                int swrRet = swr_alloc_set_opts2(&swrCtx,
+                                                 &outLayout, AV_SAMPLE_FMT_FLTP, adec_.sampleRate(),
+                                                 &inLayout, adec_.sampleFormat(), adec_.sampleRate(),
+                                                 0, nullptr);
+
+                av_channel_layout_uninit(&inLayout);
+
+                bool swrOk = false;
+                if (swrCtx && swrRet >= 0) {
+                    swrRet = swr_init(swrCtx);
+                    if (swrRet < 0) {
+                        cout << "初始化重采样失败" << endl;
+                        swr_free(&swrCtx);
+                        swrCtx = nullptr;
+                    } else {
+                        swrOk = true;
+                    }
+                }
+
+                if (!swrOk) {
                     aEnc = av::AudioEncoderContext();
                 } else {
-                    // 初始化重采样上下文
-                    AVChannelLayout outLayout = AV_CHANNEL_LAYOUT_STEREO;
-                    AVChannelLayout inLayout = {};
-                    av_channel_layout_copy(&inLayout, &adec_.raw()->ch_layout);
-
-                    int swrRet = swr_alloc_set_opts2(&swrCtx,
-                                                     &outLayout, AV_SAMPLE_FMT_FLTP, adec_.sampleRate(),
-                                                     &inLayout, adec_.sampleFormat(), adec_.sampleRate(),
-                                                     0, nullptr);
-
-                    av_channel_layout_uninit(&inLayout);
-
-                    if (swrCtx && swrRet >= 0) {
-                        swrRet = swr_init(swrCtx);
-                        if (swrRet < 0) {
-                            cout << "初始化重采样失败" << endl;
-                            swr_free(&swrCtx);
-                            swrCtx = nullptr;
-                        }
+                    // 编码器打开后才能读到 frame_size（aac=1024）
+                    encFrameSize = aEnc.raw()->frame_size;
+                    varFrameSize = !!(aCodec.raw()->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE);
+                    if (!varFrameSize && encFrameSize > 0) {
+                        afifo = av_audio_fifo_alloc(AV_SAMPLE_FMT_FLTP, 2 /*stereo*/, encFrameSize * 4);
                     }
-                    cout << "音频编码: AAC 128kbps" << endl;
+
+                    outAStream = outCtx.addStream(aEnc, ec);
+                    if (ec) {
+                        cout << "创建输出音频流失败: " << ec.message() << endl;
+                        aEnc = av::AudioEncoderContext();
+                        if (afifo) {
+                            av_audio_fifo_free(afifo);
+                            afifo = nullptr;
+                        }
+                    } else {
+                        cout << "音频编码: AAC 128kbps" << endl;
+                    }
                 }
             }
         } else {
@@ -530,7 +569,9 @@ int FFmpeg::compressMedia(const char* outputPath,
 
     // 5. 创建 YUV 帧（avcpp VideoFrame 构造函数自动分配缓冲区）
     av::VideoFrame yuvFrame;
-    int64_t aEncNextPts = 0;
+    int64_t aEncNextPts = 0;   // 音频 pts（按样本数累计）
+    int writtenVPkts = 0;
+    int writtenAPkts = 0;
 
     if (hasVideo() && vEnc.isOpened()) {
         yuvFrame = av::VideoFrame(AV_PIX_FMT_YUV420P, outWidth, outHeight);
@@ -543,6 +584,103 @@ int FFmpeg::compressMedia(const char* outputPath,
     }
 
     cout << "正在压缩..." << endl;
+
+    // ------------------------------------------------------------
+    // avcpp 语义陷阱：无参 encode() 会发送 null frame（flush 信号），
+    // 编码中途调用会让编码器进入 drain 状态，之后的帧全部被拒绝。
+    // 每帧只调用一次 encode(frame)，至多取回一个包。
+    // ------------------------------------------------------------
+
+    // 写出一个已编码包
+    auto writePkt = [&](av::Packet &pkt, const av::Stream &st, const AVRational &encTb) -> bool {
+        if (!st.isValid() || !pkt) return false;
+        pkt.raw()->stream_index = st.index();
+        av_packet_rescale_ts(pkt.raw(), encTb, st.raw()->time_base);
+        std::error_code writeEc;
+        outCtx.writePacket(pkt, writeEc);
+        if (writeEc) {
+            LOGD("写包失败: %s", writeEc.message().c_str());
+            return false;
+        }
+        return true;
+    };
+
+    // 处理一帧解码后的视频
+    auto feedVideoFrame = [&](av::VideoFrame &decFrame) {
+        if (!swsCtx || !vEnc.isOpened() || !decFrame) return;
+
+        // 像素格式转换（通过 raw() 访问底层 AVFrame）
+        sws_scale(swsCtx,
+                  decFrame.raw()->data, decFrame.raw()->linesize,
+                  0, decFrame.height(),
+                  yuvFrame.raw()->data, yuvFrame.raw()->linesize);
+
+        yuvFrame.raw()->pts = av_rescale_q(decFrame.raw()->pts,
+                                           vInTimeBase, vEnc.raw()->time_base);
+
+        std::error_code encEc;
+        av::Packet encPkt = vEnc.encode(yuvFrame, encEc);
+        if (encEc) {
+            LOGD("视频编码错误: %s", encEc.message().c_str());
+            return;
+        }
+        if (writePkt(encPkt, outVStream, vEnc.raw()->time_base)) {
+            ++writtenVPkts;
+        }
+    };
+
+    // 处理一段解码后的音频：重采样 → FIFO 切帧 → 编码
+    auto feedAudioSamples = [&](av::AudioSamples &decSamples) {
+        if (!swrCtx || !aEnc.isOpened() || !decSamples) return;
+
+        int dstNbSamples = swr_get_out_samples(swrCtx, decSamples.samplesCount());
+        if (dstNbSamples <= 0) return;
+
+        av::AudioSamples encSamples(AV_SAMPLE_FMT_FLTP, dstNbSamples,
+                                    AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+
+        int swrRet = swr_convert(swrCtx,
+                                 encSamples.raw()->data, dstNbSamples,
+                                 (const uint8_t**)decSamples.raw()->data,
+                                 decSamples.samplesCount());
+        if (swrRet < 0) return;
+
+        if (afifo) {
+            av_audio_fifo_write(afifo, (void**)encSamples.raw()->data, swrRet);
+            while (av_audio_fifo_size(afifo) >= encFrameSize) {
+                av::AudioSamples encFrame(AV_SAMPLE_FMT_FLTP, encFrameSize,
+                                          AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+                av_audio_fifo_read(afifo, (void**)encFrame.raw()->data, encFrameSize);
+
+                encFrame.raw()->pts = aEncNextPts;
+                aEncNextPts += encFrameSize;
+
+                std::error_code encEc;
+                av::Packet encPkt = aEnc.encode(encFrame, encEc);
+                if (encEc) {
+                    LOGD("音频编码错误: %s", encEc.message().c_str());
+                    return;
+                }
+                if (writePkt(encPkt, outAStream, aEnc.raw()->time_base)) {
+                    ++writtenAPkts;
+                }
+            }
+        } else {
+            encSamples.raw()->nb_samples = swrRet;
+            encSamples.raw()->pts = aEncNextPts;
+            aEncNextPts += swrRet;
+
+            std::error_code encEc;
+            av::Packet encPkt = aEnc.encode(encSamples, encEc);
+            if (encEc) {
+                LOGD("音频编码错误: %s", encEc.message().c_str());
+                return;
+            }
+            if (writePkt(encPkt, outAStream, aEnc.raw()->time_base)) {
+                ++writtenAPkts;
+            }
+        }
+    };
 
     // 6. 主转码循环
     while (true) {
@@ -566,32 +704,8 @@ int FFmpeg::compressMedia(const char* outputPath,
                 LOGD("视频解码错误: %s", decEc.message().c_str());
                 continue;
             }
-            if (!decFrame) {
-                continue;
-            }
-
-            // 像素格式转换（通过 raw() 访问底层 AVFrame）
-            sws_scale(swsCtx,
-                      decFrame.raw()->data, decFrame.raw()->linesize,
-                      0, decFrame.height(),
-                      yuvFrame.raw()->data, yuvFrame.raw()->linesize);
-
-            // 时间戳
-            AVRational vOutTb = vEnc.raw()->time_base;
-            yuvFrame.raw()->pts = av_rescale_q(decFrame.raw()->pts, vInTimeBase, vOutTb);
-
-            // 编码
-            std::error_code encEc;
-            av::Packet encPkt = vEnc.encode(yuvFrame, encEc);
-            while (encPkt) {
-                if (outVStream.isValid()) {
-                    encPkt.raw()->stream_index = outVStream.index();
-                    AVRational outStreamTb = outVStream.raw()->time_base;
-                    av_packet_rescale_ts(encPkt.raw(), vOutTb, outStreamTb);
-                    std::error_code writeEc;
-                    outCtx.writePacket(encPkt, writeEc);
-                }
-                encPkt = vEnc.encode(encEc);
+            if (decFrame) {
+                feedVideoFrame(decFrame);
             }
         }
 
@@ -603,102 +717,112 @@ int FFmpeg::compressMedia(const char* outputPath,
                 LOGD("音频解码错误: %s", decEc.message().c_str());
                 continue;
             }
-            if (!decSamples) {
-                continue;
+            if (decSamples) {
+                feedAudioSamples(decSamples);
             }
+        }
+    }
 
-            // 重采样
-            int dstNbSamples = swr_get_out_samples(swrCtx, decSamples.samplesCount());
-            av::AudioSamples encSamples(
-                    AV_SAMPLE_FMT_FLTP, dstNbSamples,
-                    AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+    // 7. 冲洗解码器（取出解码器内部缓存的最后几帧）
+    if (hasVideo() && vEnc.isOpened() && swsCtx) {
+        avcodec_send_packet(vdec_.raw(), nullptr);
+        while (true) {
+            std::error_code decEc;
+            av::VideoFrame decFrame = vdec_.decode(av::Packet(), decEc);
+            if (decEc || !decFrame) break;
+            feedVideoFrame(decFrame);
+        }
+    }
+    if (hasAudio() && aEnc.isOpened() && swrCtx) {
+        avcodec_send_packet(adec_.raw(), nullptr);
+        while (true) {
+            std::error_code decEc;
+            av::AudioSamples decSamples = adec_.decode(av::Packet(), decEc);
+            if (decEc || !decSamples) break;
+            feedAudioSamples(decSamples);
+        }
+    }
 
+    // 8. 冲洗重采样器 + FIFO 中剩余样本
+    if (aEnc.isOpened() && swrCtx) {
+        while (true) {
+            int avail = swr_get_out_samples(swrCtx, 0);
+            if (avail <= 0) break;
+
+            av::AudioSamples encSamples(AV_SAMPLE_FMT_FLTP, avail,
+                                        AV_CH_LAYOUT_STEREO, adec_.sampleRate());
             int swrRet = swr_convert(swrCtx,
-                                     encSamples.raw()->data, dstNbSamples,
-                                     (const uint8_t**)decSamples.raw()->data,
-                                     decSamples.samplesCount());
-            if (swrRet < 0) continue;
+                                     encSamples.raw()->data, avail,
+                                     nullptr, 0);
+            if (swrRet <= 0) break;
 
-            encSamples.raw()->pts = aEncNextPts;
-            aEncNextPts += dstNbSamples;
-
-            // 编码
-            std::error_code encEc;
-            av::Packet encPkt = aEnc.encode(encSamples, encEc);
-            while (encPkt) {
-                if (outAStream.isValid()) {
-                    encPkt.raw()->stream_index = outAStream.index();
-                    AVRational aEncTb = aEnc.raw()->time_base;
-                    AVRational outStreamTb = outAStream.raw()->time_base;
-                    av_packet_rescale_ts(encPkt.raw(), aEncTb, outStreamTb);
-                    std::error_code writeEc;
-                    outCtx.writePacket(encPkt, writeEc);
-                }
-                encPkt = aEnc.encode(encEc);
-            }
-        }
-    }
-
-    // 7. 刷新视频编码器
-    if (vEnc.isOpened()) {
-        std::error_code encEc;
-        av::Packet encPkt = vEnc.encode(encEc);
-        while (encPkt) {
-            if (outVStream.isValid()) {
-                encPkt.raw()->stream_index = outVStream.index();
-                AVRational vOutTb = vEnc.raw()->time_base;
-                AVRational outStreamTb = outVStream.raw()->time_base;
-                av_packet_rescale_ts(encPkt.raw(), vOutTb, outStreamTb);
-                std::error_code writeEc;
-                outCtx.writePacket(encPkt, writeEc);
-            }
-            encPkt = vEnc.encode(encEc);
-        }
-    }
-
-    // 8. 刷新音频编码器
-    if (aEnc.isOpened()) {
-        // 先 flush 重采样器
-        if (swrCtx) {
-            int dstNbSamples = swr_get_out_samples(swrCtx, 0);
-            if (dstNbSamples > 0) {
-                av::AudioSamples encSamples(
-                        AV_SAMPLE_FMT_FLTP, dstNbSamples,
-                        AV_CH_LAYOUT_STEREO, adec_.sampleRate());
-
-                swr_convert(swrCtx,
-                            encSamples.raw()->data, dstNbSamples,
-                            nullptr, 0);
-
+            if (afifo) {
+                av_audio_fifo_write(afifo, (void**)encSamples.raw()->data, swrRet);
+            } else {
+                encSamples.raw()->nb_samples = swrRet;
                 encSamples.raw()->pts = aEncNextPts;
+                aEncNextPts += swrRet;
+
                 std::error_code encEc;
-                aEnc.encode(encSamples, encEc);
+                av::Packet encPkt = aEnc.encode(encSamples, encEc);
+                if (writePkt(encPkt, outAStream, aEnc.raw()->time_base)) {
+                    ++writtenAPkts;
+                }
             }
         }
 
-        std::error_code encEc;
-        av::Packet encPkt = aEnc.encode(encEc);
-        while (encPkt) {
-            if (outAStream.isValid()) {
-                encPkt.raw()->stream_index = outAStream.index();
-                AVRational aEncTb = aEnc.raw()->time_base;
-                AVRational outStreamTb = outAStream.raw()->time_base;
-                av_packet_rescale_ts(encPkt.raw(), aEncTb, outStreamTb);
-                std::error_code writeEc;
-                outCtx.writePacket(encPkt, writeEc);
+        if (afifo) {
+            while (av_audio_fifo_size(afifo) > 0) {
+                int fifoSize = av_audio_fifo_size(afifo);
+                int n = (fifoSize < encFrameSize) ? fifoSize : encFrameSize;
+
+                av::AudioSamples encFrame(AV_SAMPLE_FMT_FLTP, n,
+                                          AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+                av_audio_fifo_read(afifo, (void**)encFrame.raw()->data, n);
+
+                encFrame.raw()->pts = aEncNextPts;
+                aEncNextPts += n;
+
+                std::error_code encEc;
+                av::Packet encPkt = aEnc.encode(encFrame, encEc);
+                if (writePkt(encPkt, outAStream, aEnc.raw()->time_base)) {
+                    ++writtenAPkts;
+                }
             }
-            encPkt = aEnc.encode(encEc);
         }
     }
 
-    // 9. 写文件尾
+    // 9. 冲洗编码器（此时才允许用无参 encode() 发送 null frame）
+    if (vEnc.isOpened()) {
+        while (true) {
+            std::error_code encEc;
+            av::Packet encPkt = vEnc.encode(encEc);
+            if (!encPkt) break;
+            if (writePkt(encPkt, outVStream, vEnc.raw()->time_base)) {
+                ++writtenVPkts;
+            }
+        }
+    }
+    if (aEnc.isOpened()) {
+        while (true) {
+            std::error_code encEc;
+            av::Packet encPkt = aEnc.encode(encEc);
+            if (!encPkt) break;
+            if (writePkt(encPkt, outAStream, aEnc.raw()->time_base)) {
+                ++writtenAPkts;
+            }
+        }
+    }
+
+    // 10. 写文件尾
     outCtx.writeTrailer(ec);
 
-    cout << "压缩完成！" << endl;
+    cout << "压缩完成！视频包: " << writtenVPkts << ", 音频包: " << writtenAPkts << endl;
 
-    // 10. 释放资源（avcpp 对象通过 RAII 自动释放，仅清理 C API 资源）
+    // 11. 释放资源（avcpp 对象通过 RAII 自动释放，仅清理 C API 资源）
     if (swsCtx) sws_freeContext(swsCtx);
     if (swrCtx) swr_free(&swrCtx);
+    if (afifo) av_audio_fifo_free(afifo);
 
     return 0;
 }
@@ -707,16 +831,29 @@ int FFmpeg::compressMedia(const char* outputPath,
 // 辅助：根据编码器支持的采样格式自动挑选输出采样格式
 // ============================
 static AVSampleFormat pickEncoderSampleFormat(const AVCodec *codec) {
-    if (!codec || !codec->sample_fmts) {
+    if (!codec) {
+        return AV_SAMPLE_FMT_FLTP;
+    }
+
+    const enum AVSampleFormat *sampleFmts = nullptr;
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(61, 13, 100)
+    // FFmpeg 7.1+ 的官方接口（sample_fmts 字段已废弃）
+    avcodec_get_supported_config(nullptr, codec, AV_CODEC_CONFIG_SAMPLE_FORMAT, 0,
+                                 reinterpret_cast<const void**>(&sampleFmts), nullptr);
+#else
+    sampleFmts = codec->sample_fmts;
+#endif
+
+    if (!sampleFmts) {
         return AV_SAMPLE_FMT_FLTP;
     }
     // 优先 FLTP（aac 等常用），否则取第一个支持的格式
-    for (int i = 0; codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++) {
-        if (codec->sample_fmts[i] == AV_SAMPLE_FMT_FLTP) {
+    for (int i = 0; sampleFmts[i] != AV_SAMPLE_FMT_NONE; i++) {
+        if (sampleFmts[i] == AV_SAMPLE_FMT_FLTP) {
             return AV_SAMPLE_FMT_FLTP;
         }
     }
-    return codec->sample_fmts[0];
+    return sampleFmts[0];
 }
 
 // ============================
@@ -728,38 +865,78 @@ int FFmpeg::encodeToFile(const char* outputPath,
     if (!fmtCtx_.isOpened() || !outputPath || !outputPath[0]) {
         return -EINVAL;
     }
-
-    // 空串/空指针 → 不编码对应流
     bool wantVideo = videoEncoderName && videoEncoderName[0] && hasVideo();
     bool wantAudio = audioEncoderName && audioEncoderName[0] && hasAudio();
-
     if (!wantVideo && !wantAudio) {
         cout << String("没有可编码的音视频流...", "No audio/video stream to encode...") << endl;
         return -EINVAL;
     }
-
     LOGD("开始编码: video=%s audio=%s",
          wantVideo ? videoEncoderName : "(none)",
          wantAudio ? audioEncoderName : "(none)");
     cout << "===== 开始编码 =====" << endl;
     cout << String("输出: ", "Output: ") << outputPath << endl;
-
     std::error_code ec;
 
-    // 1. 创建输出格式上下文（根据输出路径扩展名推断封装格式）
+    const AVOutputFormat *ofmt = av_guess_format(nullptr, outputPath, nullptr);
+    if (!ofmt) {
+        cout << String("无法根据扩展名识别输出格式: ", "Can't recognize output format by extension: ")
+             << outputPath << endl;
+        LOGD("av_guess_format 失败: %s", outputPath);
+        return -EINVAL;
+    }
+    if (wantVideo) {
+        const AVCodec *probe = avcodec_find_encoder_by_name(videoEncoderName);
+        if (!probe) {
+            cout << String("找不到视频编码器: ", "Can not find video encoder: ")
+                 << videoEncoderName << endl;
+            LOGD("找不到视频编码器: %s", videoEncoderName);
+            return -EINVAL;
+        }
+        if (avformat_query_codec(ofmt, probe->id, FF_COMPLIANCE_NORMAL) == 0) {
+            cout << String("容器不支持视频编码器 ", "Container doesn't support video encoder ")
+                 << videoEncoderName;
+            cout << String("，已跳过视频流", ", video stream skipped") << endl;
+            LOGD("容器不支持视频编码器 %s，跳过视频流", videoEncoderName);
+            wantVideo = false;
+        }
+    }
+    if (wantAudio) {
+        const AVCodec *probe = avcodec_find_encoder_by_name(audioEncoderName);
+        if (!probe) {
+            cout << String("找不到音频编码器: ", "Can not find audio encoder: ")
+                 << audioEncoderName << endl;
+            LOGD("找不到音频编码器: %s", audioEncoderName);
+            return -EINVAL;
+        }
+        if (avformat_query_codec(ofmt, probe->id, FF_COMPLIANCE_NORMAL) == 0) {
+            cout << String("容器不支持音频编码器 ", "Container doesn't support audio encoder ")
+                 << audioEncoderName;
+            cout << String("，已跳过音频流", ", audio stream skipped") << endl;
+            LOGD("容器不支持音频编码器 %s，跳过音频流", audioEncoderName);
+            wantAudio = false;
+        }
+    }
+    if (!wantVideo && !wantAudio) {
+        cout << String("没有可编码的音视频流...", "No audio/video stream to encode...") << endl;
+        return -EINVAL;
+    }
+
     av::FormatContext outCtx;
     outCtx.openOutput(outputPath, ec);
     if (ec) {
         cout << String("创建输出上下文失败: ", "Fail to create output context: ") << ec.message() << endl;
+        LOGD("创建输出上下文失败: %s", ec.message().c_str());
         return ec.value();
     }
+    const bool needGlobalHeader = !!(outCtx.raw()->oformat->flags & AVFMT_GLOBALHEADER);
+    LOGD("输出容器: %s, needGlobalHeader=%d", ofmt->name, (int)needGlobalHeader);
 
-    // 2. 视频编码器初始化（按名称查找）
     av::VideoEncoderContext vEnc;
     av::Stream outVStream;
     SwsContext* swsCtx = nullptr;
     int outWidth = 0, outHeight = 0;
-
+    bool videoStreamOk = false;
     if (wantVideo) {
         const AVCodec *vCodecRaw = avcodec_find_encoder_by_name(videoEncoderName);
         if (!vCodecRaw) {
@@ -768,316 +945,411 @@ int FFmpeg::encodeToFile(const char* outputPath,
             return -EINVAL;
         }
         av::Codec vCodec(vCodecRaw);
-
         vEnc = av::VideoEncoderContext(vCodec);
-
         outWidth  = vdec_.width();
         outHeight = vdec_.height();
-        outWidth  &= ~1;   // 保证偶数
+        outWidth  &= ~1;
         outHeight &= ~1;
-
         vEnc.setWidth(outWidth);
         vEnc.setHeight(outHeight);
         vEnc.setPixelFormat(AV_PIX_FMT_YUV420P);
-
         AVRational inFrameRate = fmtCtx_.raw()->streams[videoStreamIndex_]->avg_frame_rate;
         if (inFrameRate.den <= 0 || inFrameRate.num <= 0) {
             inFrameRate = {25, 1};
         }
-        vEnc.setTimeBase(av::Rational(inFrameRate.num, inFrameRate.den));
+        vEnc.setTimeBase(av::Rational(inFrameRate.den, inFrameRate.num));
         vEnc.setGopSize(50);
-        // x264/x265 默认参数
         if (strstr(videoEncoderName, "264") || strstr(videoEncoderName, "265")) {
             vEnc.setOption("preset", "medium");
             vEnc.setOption("crf", "23");
+        } else {
+            vEnc.setBitRate(2000000);
         }
-
+        if (needGlobalHeader) {
+            vEnc.raw()->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        }
         vEnc.open(ec);
         if (ec) {
             cout << String("打开视频编码器失败: ", "Fail to open video encoder: ")
                  << ec.message() << endl;
+            LOGD("打开视频编码器失败: %s", ec.message().c_str());
             return ec.value();
         }
-
-        outVStream = outCtx.addStream(vEnc, ec);
-        if (ec) {
-            cout << String("创建输出视频流失败: ", "Fail to create output video stream: ")
-                 << ec.message() << endl;
-            return ec.value();
-        }
-
         swsCtx = sws_getContext(
                 vdec_.width(), vdec_.height(), vdec_.pixelFormat(),
                 outWidth, outHeight, AV_PIX_FMT_YUV420P,
                 SWS_BILINEAR, nullptr, nullptr, nullptr);
         if (!swsCtx) {
             cout << String("初始化像素格式转换失败...", "Fail to init sws...") << endl;
-            return -ENOMEM;
+            LOGD("sws_getContext 失败");
+            vEnc = av::VideoEncoderContext();
+        } else {
+            outVStream = outCtx.addStream(vEnc, ec);
+            if (ec) {
+                cout << String("创建输出视频流失败: ", "Fail to create output video stream: ")
+                     << ec.message() << endl;
+                LOGD("创建输出视频流失败: %s", ec.message().c_str());
+                vEnc = av::VideoEncoderContext();
+                sws_freeContext(swsCtx);
+                swsCtx = nullptr;
+            } else {
+                videoStreamOk = true;
+                cout << String("视频编码器: ", "Video encoder: ") << videoEncoderName
+                     << " (" << outWidth << "x" << outHeight << ")" << endl;
+            }
         }
-
-        cout << String("视频编码器: ", "Video encoder: ") << videoEncoderName
-             << " (" << outWidth << "x" << outHeight << ")" << endl;
     }
 
-    // 3. 音频编码器初始化（按名称查找，采样格式自动匹配）
     av::AudioEncoderContext aEnc;
     av::Stream outAStream;
     SwrContext* swrCtx = nullptr;
     AVSampleFormat outSampleFmt = AV_SAMPLE_FMT_NONE;
-
+    AVAudioFifo *afifo = nullptr;
+    int encFrameSize = 0;
+    bool varFrameSize = false;
+    bool audioStreamOk = false;
     if (wantAudio) {
         const AVCodec *aCodecRaw = avcodec_find_encoder_by_name(audioEncoderName);
         if (!aCodecRaw) {
             cout << String("找不到音频编码器: ", "Can not find audio encoder: ")
                  << audioEncoderName << endl;
-            if (swsCtx) sws_freeContext(swsCtx);
+            if (swrCtx) swr_free(&swrCtx);
             return -EINVAL;
         }
         av::Codec aCodec(aCodecRaw);
-
         aEnc = av::AudioEncoderContext(aCodec);
-
-        // 根据编码器支持的采样格式自动挑选（aac→FLTP, pcm_s16le→S16, flac→S16）
         outSampleFmt = pickEncoderSampleFormat(aCodecRaw);
-
         aEnc.setSampleRate(adec_.sampleRate());
         aEnc.setSampleFormat(outSampleFmt);
         aEnc.setBitRate(128 * 1000);
         aEnc.setTimeBase(av::Rational(1, adec_.sampleRate()));
-
-        // 输出立体声
         AVChannelLayout stereoLayout = AV_CHANNEL_LAYOUT_STEREO;
         av_channel_layout_copy(&aEnc.raw()->ch_layout, &stereoLayout);
-
+        if (needGlobalHeader) {
+            aEnc.raw()->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        }
         aEnc.open(ec);
         if (ec) {
             cout << String("打开音频编码器失败: ", "Fail to open audio encoder: ")
                  << ec.message() << endl;
+            LOGD("打开音频编码器失败: %s", ec.message().c_str());
             aEnc = av::AudioEncoderContext();
         } else {
-            outAStream = outCtx.addStream(aEnc, ec);
-            if (ec) {
-                cout << String("创建输出音频流失败: ", "Fail to create output audio stream: ")
-                     << ec.message() << endl;
+            AVChannelLayout outLayout = AV_CHANNEL_LAYOUT_STEREO;
+            AVChannelLayout inLayout = {};
+            av_channel_layout_copy(&inLayout, &adec_.raw()->ch_layout);
+            int swrRet = swr_alloc_set_opts2(&swrCtx,
+                                             &outLayout, outSampleFmt, adec_.sampleRate(),
+                                             &inLayout, adec_.sampleFormat(), adec_.sampleRate(),
+                                             0, nullptr);
+            av_channel_layout_uninit(&inLayout);
+            bool swrOk = false;
+            if (swrCtx && swrRet >= 0) {
+                swrRet = swr_init(swrCtx);
+                if (swrRet < 0) {
+                    cout << String("初始化重采样失败...", "Fail to init swr...") << endl;
+                    swr_free(&swrCtx);
+                    swrCtx = nullptr;
+                } else {
+                    swrOk = true;
+                }
+            }
+            if (!swrOk) {
                 aEnc = av::AudioEncoderContext();
             } else {
-                // 初始化重采样：解码器格式 → 编码器格式
-                AVChannelLayout outLayout = AV_CHANNEL_LAYOUT_STEREO;
-                AVChannelLayout inLayout = {};
-                av_channel_layout_copy(&inLayout, &adec_.raw()->ch_layout);
-
-                int swrRet = swr_alloc_set_opts2(&swrCtx,
-                                                 &outLayout, outSampleFmt, adec_.sampleRate(),
-                                                 &inLayout, adec_.sampleFormat(), adec_.sampleRate(),
-                                                 0, nullptr);
-                av_channel_layout_uninit(&inLayout);
-
-                if (swrCtx && swrRet >= 0) {
-                    swrRet = swr_init(swrCtx);
-                    if (swrRet < 0) {
-                        cout << String("初始化重采样失败...", "Fail to init swr...") << endl;
-                        swr_free(&swrCtx);
-                        swrCtx = nullptr;
-                    }
+                encFrameSize = aEnc.raw()->frame_size;
+                varFrameSize = !!(aCodecRaw->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE);
+                if (!varFrameSize && encFrameSize > 0) {
+                    afifo = av_audio_fifo_alloc(outSampleFmt, 2 /*stereo*/, encFrameSize * 4);
                 }
-                cout << String("音频编码器: ", "Audio encoder: ") << audioEncoderName << endl;
+                outAStream = outCtx.addStream(aEnc, ec);
+                // =========修复复制bit_rate=========
+                if(outAStream.isValid()){
+                    outAStream.raw()->codecpar->bit_rate = aEnc.raw()->bit_rate;
+                }
+                if (ec) {
+                    cout << String("创建输出音频流失败: ", "Fail to create output audio stream: ")
+                         << ec.message() << endl;
+                    LOGD("创建输出音频流失败: %s", ec.message().c_str());
+                    aEnc = av::AudioEncoderContext();
+                    if (afifo) {
+                        av_audio_fifo_free(afifo);
+                        afifo = nullptr;
+                    }
+                } else {
+                    audioStreamOk = true;
+                    cout << String("音频编码器: ", "Audio encoder: ") << audioEncoderName << endl;
+                }
             }
         }
     }
 
-    // 4. 写文件头
+    if (!videoStreamOk && !audioStreamOk) {
+        cout << String("音视频输出流均未建立，编码取消...", "No output stream created, encoding canceled...") << endl;
+        LOGD("无可用输出流，编码取消");
+        if (swsCtx) sws_freeContext(swsCtx);
+        if (swrCtx) swr_free(&swrCtx);
+        if (afifo) av_audio_fifo_free(afifo);
+        return -EINVAL;
+    }
+
     outCtx.writeHeader(ec);
     if (ec) {
         cout << String("写文件头失败: ", "Fail to write header: ") << ec.message() << endl;
+        cout << String("（提示: 输出扩展名对应的容器可能不支持所选编码器组合）",
+                       "(Hint: the container of the output extension may not support the selected encoders)") << endl;
+        LOGD("写文件头失败: %s", ec.message().c_str());
         if (swsCtx) sws_freeContext(swsCtx);
         if (swrCtx) swr_free(&swrCtx);
+        if (afifo) av_audio_fifo_free(afifo);
         return ec.value();
     }
 
-    // 5. 创建 YUV 帧缓冲
     av::VideoFrame yuvFrame;
     int64_t aEncNextPts = 0;
-
-    if (wantVideo && vEnc.isOpened()) {
+    int64_t vEncNextPts = 0;
+    int writtenVPkts = 0;
+    int writtenAPkts = 0;
+    if (videoStreamOk) {
         yuvFrame = av::VideoFrame(AV_PIX_FMT_YUV420P, outWidth, outHeight);
     }
-
-    // 输入视频时间基
-    AVRational vInTimeBase = {0, 0};
-    if (wantVideo) {
-        vInTimeBase = fmtCtx_.raw()->streams[videoStreamIndex_]->time_base;
-    }
+    AVRational vInTimeBase = {0,0};
+    if(videoStreamOk) vInTimeBase = fmtCtx_.raw()->streams[videoStreamIndex_]->time_base;
 
     cout << String("正在编码...", "Encoding...") << endl;
 
-    // 6. 主转码循环
-    while (true) {
-        std::error_code readEc;
-        av::Packet pkt = fmtCtx_.readPacket(readEc);
-        if (readEc) break;   // 读取错误/结束
-        if (!pkt) break;     // 文件结束
-
-        bool isVideo = (wantVideo && pkt.streamIndex() == videoStreamIndex_);
-        bool isAudio = (wantAudio && aEnc.isOpened() && pkt.streamIndex() == audioStreamIndex_);
-
-        if (!isVideo && !isAudio) {
-            continue;
+    auto writePkt = [&](av::Packet &pkt, const av::Stream &st, const AVRational &encTb, int64_t frameNbSamples) -> bool {
+        if (!st.isValid() || !pkt) return false;
+        AVPacket* rawPkt = pkt.raw();
+        rawPkt->stream_index = st.index();
+        if(aEnc.isOpened() && rawPkt->duration <=0){
+            if(frameNbSamples>0){
+                rawPkt->duration = frameNbSamples;
+            }else if(aEnc.raw()->frame_size>0){
+                rawPkt->duration = aEnc.raw()->frame_size;
+            }
         }
+        av_packet_rescale_ts(rawPkt, encTb, st.raw()->time_base);
+        std::error_code writeEc;
+        outCtx.writePacket(pkt, writeEc);
+        if (writeEc) {
+            LOGD("写包失败: %s", writeEc.message().c_str());
+            return false;
+        }
+        return true;
+    };
 
-        // ---- 视频处理 ----
-        if (isVideo && vEnc.isOpened()) {
-            std::error_code decEc;
-            av::VideoFrame decFrame = vdec_.decode(pkt, decEc);
-            if (decEc) {
-                LOGD("视频解码错误: %s", decEc.message().c_str());
-                continue;
-            }
-            if (!decFrame) {
-                continue;
-            }
+    auto feedVideoFrame = [&](av::VideoFrame &decFrame) {
+        if (!swsCtx || !vEnc.isOpened() || !decFrame) return;
+        sws_scale(swsCtx,
+                  decFrame.raw()->data, decFrame.raw()->linesize,
+                  0, decFrame.height(),
+                  yuvFrame.raw()->data, yuvFrame.raw()->linesize);
+        if (decFrame.raw()->pts != AV_NOPTS_VALUE && vInTimeBase.num > 0) {
+            yuvFrame.raw()->pts = av_rescale_q(decFrame.raw()->pts, vInTimeBase, vEnc.raw()->time_base);
+        } else {
+            yuvFrame.raw()->pts = vEncNextPts;
+        }
+        vEncNextPts = yuvFrame.raw()->pts + 1;
+        std::error_code encEc;
+        av::Packet encPkt = vEnc.encode(yuvFrame, encEc);
+        if (encEc) {
+            LOGD("视频编码错误: %s", encEc.message().c_str());
+            return;
+        }
+        if (writePkt(encPkt, outVStream, vEnc.raw()->time_base, 0)) {
+            ++writtenVPkts;
+        }
+    };
 
-            // 像素格式转换到 YUV420P
-            sws_scale(swsCtx,
-                      decFrame.raw()->data, decFrame.raw()->linesize,
-                      0, decFrame.height(),
-                      yuvFrame.raw()->data, yuvFrame.raw()->linesize);
-
-            // 时间戳换算
-            AVRational vOutTb = vEnc.raw()->time_base;
-            yuvFrame.raw()->pts = av_rescale_q(decFrame.raw()->pts, vInTimeBase, vOutTb);
-
-            // 编码并写出
-            std::error_code encEc;
-            av::Packet encPkt = vEnc.encode(yuvFrame, encEc);
-            while (encPkt) {
-                if (outVStream.isValid()) {
-                    encPkt.raw()->stream_index = outVStream.index();
-                    AVRational outStreamTb = outVStream.raw()->time_base;
-                    av_packet_rescale_ts(encPkt.raw(), vOutTb, outStreamTb);
-                    std::error_code writeEc;
-                    outCtx.writePacket(encPkt, writeEc);
+    auto feedAudioSamples = [&](av::AudioSamples &decSamples) {
+        if (!swrCtx || !aEnc.isOpened() || !decSamples) return;
+        int dstNbSamples = swr_get_out_samples(swrCtx, decSamples.samplesCount());
+        if (dstNbSamples <= 0) return;
+        av::AudioSamples encSamples(outSampleFmt, dstNbSamples,
+                                    AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+        int swrRet = swr_convert(swrCtx,
+                                 encSamples.raw()->data, dstNbSamples,
+                                 (const uint8_t**)decSamples.raw()->data,
+                                 decSamples.samplesCount());
+        if (swrRet < 0) return;
+        if (afifo) {
+            av_audio_fifo_write(afifo, (void**)encSamples.raw()->data, swrRet);
+            while (av_audio_fifo_size(afifo) >= encFrameSize) {
+                av::AudioSamples encFrame(outSampleFmt, encFrameSize,
+                                          AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+                av_audio_fifo_read(afifo, (void**)encFrame.raw()->data, encFrameSize);
+                encFrame.raw()->pts = aEncNextPts;
+                aEncNextPts += encFrameSize;
+                std::error_code encEc;
+                av::Packet encPkt = aEnc.encode(encFrame, encEc);
+                if (encEc) {
+                    LOGD("音频编码错误: %s", encEc.message().c_str());
+                    return;
                 }
-                encPkt = vEnc.encode(encEc);
+                if (writePkt(encPkt, outAStream, aEnc.raw()->time_base, encFrameSize)) {
+                    ++writtenAPkts;
+                }
             }
-        }
-
-        // ---- 音频处理 ----
-        if (isAudio && swrCtx) {
-            std::error_code decEc;
-            av::AudioSamples decSamples = adec_.decode(pkt, decEc);
-            if (decEc) {
-                LOGD("音频解码错误: %s", decEc.message().c_str());
-                continue;
-            }
-            if (!decSamples) {
-                continue;
-            }
-
-            // 重采样到编码器需要的格式
-            int dstNbSamples = swr_get_out_samples(swrCtx, decSamples.samplesCount());
-            if (dstNbSamples <= 0) continue;
-
-            av::AudioSamples encSamples(
-                    outSampleFmt, dstNbSamples,
-                    AV_CH_LAYOUT_STEREO, adec_.sampleRate());
-
-            int swrRet = swr_convert(swrCtx,
-                                     encSamples.raw()->data, dstNbSamples,
-                                     (const uint8_t**)decSamples.raw()->data,
-                                     decSamples.samplesCount());
-            if (swrRet < 0) continue;
-
+        } else {
+            encSamples.raw()->nb_samples = swrRet;
             encSamples.raw()->pts = aEncNextPts;
-            aEncNextPts += dstNbSamples;
-
-            // 编码并写出
+            int64_t nbSmpl = swrRet;
+            aEncNextPts += nbSmpl;
             std::error_code encEc;
             av::Packet encPkt = aEnc.encode(encSamples, encEc);
-            while (encPkt) {
-                if (outAStream.isValid()) {
-                    encPkt.raw()->stream_index = outAStream.index();
-                    AVRational aEncTb = aEnc.raw()->time_base;
-                    AVRational outStreamTb = outAStream.raw()->time_base;
-                    av_packet_rescale_ts(encPkt.raw(), aEncTb, outStreamTb);
-                    std::error_code writeEc;
-                    outCtx.writePacket(encPkt, writeEc);
-                }
-                encPkt = aEnc.encode(encEc);
+            if (encEc) {
+                LOGD("音频编码错误: %s", encEc.message().c_str());
+                return;
             }
+            if (writePkt(encPkt, outAStream, aEnc.raw()->time_base, nbSmpl)) {
+                ++writtenAPkts;
+            }
+        }
+    };
+
+    int processedPkts = 0;
+    while(true){
+        std::error_code readEc;
+        av::Packet pkt = fmtCtx_.readPacket(readEc);
+        if(readEc) { LOGD("读包结束/出错: %s", readEc.message().c_str()); break; }
+        if(!pkt) break;
+        bool isVideo = (videoStreamOk && pkt.streamIndex() == videoStreamIndex_);
+        bool isAudio = (audioStreamOk && pkt.streamIndex() == audioStreamIndex_);
+        if(!isVideo && !isAudio) continue;
+        if((++processedPkts % 200) == 0){
+            cout << String("进度: 已处理 ", "Progress: processed ") << processedPkts;
+            cout << String(" 包", " packets") << endl;
+        }
+        if(isVideo && vEnc.isOpened()){
+            std::error_code decEc;
+            av::VideoFrame decFrame = vdec_.decode(pkt, decEc);
+            if(decEc){ LOGD("视频解码错误: %s", decEc.message().c_str()); continue; }
+            if(decFrame) feedVideoFrame(decFrame);
+        }
+        if(isAudio && swrCtx){
+            std::error_code decEc;
+            av::AudioSamples decSamples = adec_.decode(pkt, decEc);
+            if(decEc){ LOGD("音频解码错误: %s", decEc.message().c_str()); continue; }
+            if(decSamples) feedAudioSamples(decSamples);
         }
     }
 
-    // 7. 刷新视频编码器
-    if (vEnc.isOpened()) {
-        std::error_code encEc;
-        av::Packet encPkt = vEnc.encode(encEc);
-        while (encPkt) {
-            if (outVStream.isValid()) {
-                encPkt.raw()->stream_index = outVStream.index();
-                AVRational vOutTb = vEnc.raw()->time_base;
-                AVRational outStreamTb = outVStream.raw()->time_base;
-                av_packet_rescale_ts(encPkt.raw(), vOutTb, outStreamTb);
-                std::error_code writeEc;
-                outCtx.writePacket(encPkt, writeEc);
-            }
-            encPkt = vEnc.encode(encEc);
+    if(videoStreamOk && swsCtx){
+        avcodec_send_packet(vdec_.raw(), nullptr);
+        while(true){
+            std::error_code decEc;
+            av::VideoFrame decFrame = vdec_.decode(av::Packet(), decEc);
+            if(decEc || !decFrame) break;
+            feedVideoFrame(decFrame);
+        }
+    }
+    if(audioStreamOk && swrCtx){
+        avcodec_send_packet(adec_.raw(), nullptr);
+        while(true){
+            std::error_code decEc;
+            av::AudioSamples decSamples = adec_.decode(av::Packet(), decEc);
+            if(decEc || !decSamples) break;
+            feedAudioSamples(decSamples);
         }
     }
 
-    // 8. 刷新音频编码器
-    if (aEnc.isOpened()) {
-        if (swrCtx) {
-            int dstNbSamples = swr_get_out_samples(swrCtx, 0);
-            if (dstNbSamples > 0) {
-                av::AudioSamples encSamples(
-                        outSampleFmt, dstNbSamples,
-                        AV_CH_LAYOUT_STEREO, adec_.sampleRate());
-
-                swr_convert(swrCtx,
-                            encSamples.raw()->data, dstNbSamples,
-                            nullptr, 0);
-
+    if(audioStreamOk && swrCtx){
+        while(true){
+            int avail = swr_get_out_samples(swrCtx,0);
+            if(avail <=0) break;
+            av::AudioSamples encSamples(outSampleFmt, avail,
+                                        AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+            int swrRet = swr_convert(swrCtx, encSamples.raw()->data, avail, nullptr,0);
+            if(swrRet <=0) break;
+            if(afifo){
+                av_audio_fifo_write(afifo, (void**)encSamples.raw()->data, swrRet);
+            }else{
+                encSamples.raw()->nb_samples = swrRet;
                 encSamples.raw()->pts = aEncNextPts;
+                int64_t nbSmpl = swrRet;
+                aEncNextPts += nbSmpl;
                 std::error_code encEc;
-                aEnc.encode(encSamples, encEc);
+                av::Packet encPkt = aEnc.encode(encSamples, encEc);
+                if (writePkt(encPkt, outAStream, aEnc.raw()->time_base, nbSmpl)) {
+                    ++writtenAPkts;
+                }
             }
         }
-
-        std::error_code encEc;
-        av::Packet encPkt = aEnc.encode(encEc);
-        while (encPkt) {
-            if (outAStream.isValid()) {
-                encPkt.raw()->stream_index = outAStream.index();
-                AVRational aEncTb = aEnc.raw()->time_base;
-                AVRational outStreamTb = outAStream.raw()->time_base;
-                av_packet_rescale_ts(encPkt.raw(), aEncTb, outStreamTb);
-                std::error_code writeEc;
-                outCtx.writePacket(encPkt, writeEc);
+        if(afifo){
+            while(av_audio_fifo_size(afifo) >0){
+                int fifoSize = av_audio_fifo_size(afifo);
+                int n = (fifoSize < encFrameSize) ? fifoSize : encFrameSize;
+                av::AudioSamples encFrame(outSampleFmt, n,
+                                          AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+                av_audio_fifo_read(afifo, (void**)encFrame.raw()->data, n);
+                encFrame.raw()->pts = aEncNextPts;
+                aEncNextPts += n;
+                std::error_code encEc;
+                av::Packet encPkt = aEnc.encode(encFrame, encEc);
+                if (writePkt(encPkt, outAStream, aEnc.raw()->time_base, n)) {
+                    ++writtenAPkts;
+                }
             }
-            encPkt = aEnc.encode(encEc);
         }
     }
 
-    // 9. 写文件尾
+    if(videoStreamOk){
+        int guard = 0;
+        while (guard++ < 100000) {
+            std::error_code encEc;
+            av::Packet encPkt = vEnc.encode(encEc);
+            if (encEc) break;
+            if (!encPkt) break;
+            if (writePkt(encPkt, outVStream, vEnc.raw()->time_base, 0)) {
+                ++writtenVPkts;
+            }
+        }
+    }
+    if(audioStreamOk){
+        int guard = 0;
+        while (guard++ < 100000) {
+            std::error_code encEc;
+            av::Packet encPkt = aEnc.encode(encEc);
+            if (encEc) break;
+            if (!encPkt) break;
+            if (writePkt(encPkt, outAStream, aEnc.raw()->time_base, aEnc.raw()->frame_size)) {
+                ++writtenAPkts;
+            }
+        }
+    }
+
     outCtx.writeTrailer(ec);
+    // =========兜底修正音频流duration=========
+    if(outAStream.isValid() && aEnc.isOpened()){
+        outAStream.raw()->duration = av_rescale_q(aEncNextPts, {1,adec_.sampleRate()}, outAStream.raw()->time_base);
+    }
+    if (ec) {
+        cout << String("写文件尾失败: ", "Fail to write trailer: ") << ec.message() << endl;
+        LOGD("写文件尾失败: %s", ec.message().c_str());
+    }
+    cout << String("编码完成！写出视频包: ", "Encoding finished! Video packets written: ")
+         << writtenVPkts
+         << String(", 音频包: ", ", audio packets written: ") << writtenAPkts << endl;
+    LOGD("编码完成: %s (输入包=%d, 视频包=%d, 音频包=%d)",
+         outputPath, processedPkts, writtenVPkts, writtenAPkts);
 
-    cout << String("编码完成！", "Encoding finished!") << endl;
-
-    // 10. 释放 C API 资源（avcpp 对象 RAII 自动释放）
     if (swsCtx) sws_freeContext(swsCtx);
     if (swrCtx) swr_free(&swrCtx);
-
+    if (afifo) av_audio_fifo_free(afifo);
     return 0;
 }
 
+// 读取 nativeOpenFile 的探测结果（与全局 ffmpeg 实例状态无关，
+// 即使 cppMain 正在编码也能正确返回当前选中文件的流信息）
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_kgmdecoder_app_Selecting_hasVideo(JNIEnv *env, jobject thiz) {
-    return (ffmpeg && ffmpeg->hasVideo()) ? JNI_TRUE : JNI_FALSE;
+    return g_fileHasVideo.load() ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_kgmdecoder_app_Selecting_hasAudio(JNIEnv *env, jobject thiz) {
-    return (ffmpeg && ffmpeg->hasAudio()) ? JNI_TRUE : JNI_FALSE;
+    return g_fileHasAudio.load() ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT void JNICALL

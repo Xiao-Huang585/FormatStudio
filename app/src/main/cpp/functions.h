@@ -19,6 +19,8 @@
 #include <sstream>
 #include <iostream>
 #include <streambuf>
+// ====== 其他头文件 ======
+#include "strings.h"
 // ====== 配置宏 ======
 #define ECHO true
 #define LOG_TAG "NativeCallJava"
@@ -113,6 +115,12 @@ extern std::string g_pendingFunction; // Selecting Activity 返回的功能名
 extern std::string g_encoderOutputPath;
 extern std::string g_encoderVideoCodec;   // 视频编码器名，如 "libx264"
 extern std::string g_encoderAudioCodec;   // 音频编码器名，如 "pcm_s16le"
+
+// 当前选中文件的流信息（由 nativeOpenFile 独立探测，供 Selecting 查询）
+// 独立于全局 ffmpeg 实例：nativeOpenFile 在主线程调用，
+// 若 cppMain 线程正在编码，操作同一实例会引发数据竞争
+extern std::atomic<bool> g_fileHasVideo;
+extern std::atomic<bool> g_fileHasAudio;
 // ====== 日志相关 ======
 extern std::fstream g_log;
 // ====== Surface 相关（YsPlayer 渲染用）======
@@ -165,7 +173,7 @@ void callJavaClear();
 void callJavaShowVideoView(bool show);
 bool callJavaIsSurfaceClicked();
 void callJavaControlPlayArrowVisibility(bool visibility);
-void callJavaSetETHintText(const char *text);
+void callJavaSetETHintText(const String text);
 int callJavaGetLanguage();
 
 // ============================

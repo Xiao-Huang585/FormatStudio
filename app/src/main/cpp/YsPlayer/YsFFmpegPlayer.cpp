@@ -246,6 +246,10 @@ void YsFFmpegPlayer::createHwDecode() {
     }
 }
 
+double YsFFmpegPlayer::now() {
+    return ysAudioPlayer->clock;
+}
+
 void YsFFmpegPlayer::pause() {
     ysPlayerConst->pause = true;
     ysAudioPlayer->pause();

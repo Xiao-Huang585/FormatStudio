@@ -1,4 +1,5 @@
 #include "strings.h"
+#include "functions.h"
 
 int g_languageCode = String::EN;
 
@@ -19,6 +20,11 @@ androidOutStream& operator<<(androidOutStream& os, const String& str) {
     return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const String& str) {
+    os << str[g_languageCode];
+    return os;
+}
+
 void String::operator=(std::initializer_list<std::string> init) {
     str_ch = *(init.begin() + 0);
     str_en = *(init.begin() + 1);
@@ -32,3 +38,5 @@ String::String(std::initializer_list<std::string> init) {
 }
 
 String::String(const char* ch, const char* en) : str_ch(ch), str_en(en) {}
+
+// String::String(const std::string& str) : str_ch(str), str_en(str) {}

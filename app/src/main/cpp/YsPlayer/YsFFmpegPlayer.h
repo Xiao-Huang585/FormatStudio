@@ -40,6 +40,7 @@ public:
     void ffmpegStart();
     void release();
     void createHwDecode();
+    double now();
 
     void seek(int i);
 
