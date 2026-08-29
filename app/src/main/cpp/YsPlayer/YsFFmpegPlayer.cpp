@@ -2,14 +2,14 @@
 // Created by Ding on 2025/6/6.
 //
 
-#include "YsFFmpegPlayer.h"
+// 被我用豆包改过了😄
 
+#include "YsFFmpegPlayer.h"
 YsFFmpegPlayer::YsFFmpegPlayer(YsCallJava *pJava) {
     ysPlayerConst  = new YsPlayerConst();
     this->callJava = pJava;
     pthread_mutex_init(&seek_mutex, nullptr);
 }
-
 YsFFmpegPlayer::~YsFFmpegPlayer() {
     LOGD("析构函数")
     pthread_mutex_destroy(&seek_mutex);
@@ -19,14 +19,12 @@ YsFFmpegPlayer::~YsFFmpegPlayer() {
         url = nullptr;
     }
 }
-
 void* initDecode(void * ctx){
     YsFFmpegPlayer * ysFFmpegPlayer = static_cast<YsFFmpegPlayer *>(ctx);
     ysFFmpegPlayer->ffmpegDecode();
 //    pthread_exit(nullptr)
     return nullptr;
 }
-
 void YsFFmpegPlayer::prepare(const char *url) {
     //TODO
     this->url = strdup(url);
@@ -44,29 +42,35 @@ void YsFFmpegPlayer::ffmpegDecode() {
     av_log_set_callback(logCallBack);
     avformat_network_init();
     avFormatContext = avformat_alloc_context();
-    /* AVDictionary * option;
-     av_dict_set(&option,"key","value",0);*/
-//    AVDictionary * options;
-//    av_dict_set(&options, "fflags", "discardcorrupt", 0);
-//    av_dict_set(&options, "rtsp_transport", "tcp", 0);
-    LOGD("decode url %s",url)
+    LOGD("decode url %s",url);
     int openRel = avformat_open_input(&avFormatContext, url, NULL,NULL);
     if(openRel!=0){
-        //TODO open fail
         int i = AVERROR(openRel);
-        LOGD("avformat_open_input fail %d ",i)
+        LOGD("avformat_open_input fail %d ",i);
         LOGD("avformat_open_input fail %d (%s)", i, av_err2str(openRel));
+        // 没有callError接口，只打印日志，注释掉回调
+        // if(callJava != nullptr)
+        // {
+        //     callJava->callError(openRel,"avformat_open_input failed");
+        // }
         return;
     }
     int openStreamRel = avformat_find_stream_info(avFormatContext, NULL);
     if(openStreamRel<0){
-        //TODO find stream info  fail
-        LOGD("avformat_find_stream_info fail")
+        LOGD("avformat_find_stream_info fail");
+        // if(callJava != nullptr)
+        // {
+        //     callJava->callError(openStreamRel,"find stream info failed");
+        // }
         return;
     }
     int audioStreamIndex = av_find_best_stream(avFormatContext, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
     if(audioStreamIndex<0){
-        LOGD("av_find_best_stream audio fail")
+        LOGD("av_find_best_stream audio fail");
+        // if(callJava != nullptr)
+        // {
+        //     callJava->callError(-1,"no audio stream");
+        // }
         return;
     }
     if(ysAudioPlayer == nullptr){
@@ -78,64 +82,68 @@ void YsFFmpegPlayer::ffmpegDecode() {
     const AVCodec *pCodec = avcodec_find_decoder(audioCodecId);
     AVCodecContext *audioCodecContext = avcodec_alloc_context3(pCodec);
     if(avcodec_parameters_to_context(audioCodecContext,audioCodecParameters)<0){
-        LOGD("avcodec_parameters_to_context audio fail")
+        LOGD("avcodec_parameters_to_context audio fail");
+        // callJava->callError(-2,"audio parameters to context fail");
         return;
     }
     if(avcodec_open2(audioCodecContext,pCodec,NULL)!=0){
-        LOGD("avcodec_open2 audio fail")
+        LOGD("avcodec_open2 audio fail");
+        // callJava->callError(-3,"avcodec_open2 audio fail");
         return;
     }
     ysAudioPlayer->avCodecContext = audioCodecContext;
     ysAudioPlayer->streamIndex  = audioStreamIndex;
     ysAudioPlayer->codecParameters = audioCodecParameters;
-    //TODO new
     ysAudioPlayer->sample_rate = audioCodecParameters->sample_rate;
     ysAudioPlayer->time_base = pAStream->time_base;
-    ysAudioPlayer->duration = avFormatContext->duration / AV_TIME_BASE; //得到几 秒
-    //============================================ 华丽的分割线=======================================
+    ysAudioPlayer->duration = avFormatContext->duration / AV_TIME_BASE;
+    //===== 视频部分：只有找到视频流才执行初始化，找不到直接跳过，不return！=====
     int videoStreamIndex = av_find_best_stream(avFormatContext, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
-    if(videoStreamIndex<0){
-        LOGD("av_find_best_stream video fail ")
-        return;
-    }
-    if(ysVideoPlayer == nullptr){
-        ysVideoPlayer = new YsVideoPlayer(ysPlayerConst, callJava,ysAudioPlayer);
-    }
-    AVStream *pVStream = avFormatContext->streams[videoStreamIndex];
-    AVCodecParameters *videoParameters = pVStream->codecpar;
-    AVCodecID videoCodecId = videoParameters->codec_id;
-    int num = pVStream->avg_frame_rate.num;
-    int den = pVStream->avg_frame_rate.den;
-    int fps = num/den; // 计算出帧率  1秒播放多少帧   1 / fps
-    ysVideoPlayer->defauleDelayTime = 1.0 / fps;
-    ysVideoPlayer->streamIndex  = videoStreamIndex; //
-    ysVideoPlayer->codecParameters = videoParameters;
-    ysVideoPlayer->time_base = pVStream->time_base;
-    if(enalbeMediaCodec){
-        createHwDecode();
-    }
-    // 如果硬解码未成功（avCodecContext 为空或未绑定 codec），回退到软解码
-    if(ysVideoPlayer->avCodecContext == nullptr ||
-       ysVideoPlayer->avCodecContext->codec == nullptr){
+    if(videoStreamIndex >= 0)
+    {
+        if(ysVideoPlayer == nullptr){
+            ysVideoPlayer = new YsVideoPlayer(ysPlayerConst, callJava,ysAudioPlayer);
+        }
+        AVStream *pVStream = avFormatContext->streams[videoStreamIndex];
+        AVCodecParameters *videoParameters = pVStream->codecpar;
+        AVCodecID videoCodecId = videoParameters->codec_id;
+        int num = pVStream->avg_frame_rate.num;
+        int den = pVStream->avg_frame_rate.den;
+        int fps = num/den;
+        ysVideoPlayer->defauleDelayTime = 1.0 / fps;
+        ysVideoPlayer->streamIndex  = videoStreamIndex;
+        ysVideoPlayer->codecParameters = videoParameters;
+        ysVideoPlayer->time_base = pVStream->time_base;
         if(enalbeMediaCodec){
-            LOGD("硬件解码初始化失败，回退到软解码")
+            createHwDecode();
         }
-        const AVCodec *pVCodec = avcodec_find_decoder(videoCodecId);
-        AVCodecContext *videoCodecContext = avcodec_alloc_context3(pVCodec);
-        if(avcodec_parameters_to_context(videoCodecContext,videoParameters)<0){
-            LOGD("avcodec_parameters_to_context video fail")
-            return;
+        if(ysVideoPlayer->avCodecContext == nullptr || ysVideoPlayer->avCodecContext->codec == nullptr){
+            if(enalbeMediaCodec){
+                LOGD("硬件解码初始化失败，回退到软解码");
+            }
+            const AVCodec *pVCodec = avcodec_find_decoder(videoCodecId);
+            AVCodecContext *videoCodecContext = avcodec_alloc_context3(pVCodec);
+            if(avcodec_parameters_to_context(videoCodecContext,videoParameters)>=0)
+            {
+                videoCodecContext->thread_count = 4;
+                videoCodecContext->thread_type = FF_THREAD_FRAME;
+                if(avcodec_open2(videoCodecContext,pVCodec,0)==0){
+                    ysVideoPlayer->avCodecContext = videoCodecContext;
+                }else{
+                    LOGD("avcodec_open2 video fail");
+                }
+            }else{
+                LOGD("avcodec_parameters_to_context video fail");
+            }
         }
-        // 软解码开启多线程（关键性能优化！单线程解码1080p会非常卡）
-        videoCodecContext->thread_count = 4;
-        videoCodecContext->thread_type = FF_THREAD_FRAME;
-        if(avcodec_open2(videoCodecContext,pVCodec,0)!=0){
-            LOGD("avcodec_open2 video fail")
-            return;
-        }
-        ysVideoPlayer->avCodecContext = videoCodecContext;
     }
-    LOGD("prepare Success")
+    else
+    {
+        //纯音频文件，无视频流
+        LOGD("av_find_best_stream video fail , this is audio‑only file");
+    }
+    //无论有没有视频，都走到prepare成功回调
+    LOGD("prepare Success");
     callJava->callPrepare();
 }
 
@@ -145,40 +153,44 @@ void *startThread(void *ctx){
     ysFFmpegPlayer->ffmpegStart();
     return nullptr;
 }
-
 void YsFFmpegPlayer::start() {
     pthread_create(&startDecodeThread,nullptr, startThread, this);
 }
-
 void YsFFmpegPlayer::ffmpegStart() {
-    ysVideoPlayer->start();
-    ysAudioPlayer->start();
-    while(!ysPlayerConst->exit){
-        //优化 硬解码 花屏问题
-        //如果队列解码帧过少 ysVideoPlayer 的queue size 限制
-        // 音频数据不完整出现了 音频卡顿问题。所以现在无法解决 硬解码花屏问题
-        // 如果>5 的范围可以实现硬解 不花屏。但是新闻视频 音频出现卡顿。。
-        //如果直接用ysAudioPlayer 的queue size 可以解决音频卡顿。但是硬解花屏还是存在
-        //********1080p 这个size 上限 需要扩大 不然近远景切换 画面卡顿
+    if (ysVideoPlayer != nullptr)
+    {
+        ysVideoPlayer->start();
+    }
+    if(ysAudioPlayer != nullptr)
+    {
+        ysAudioPlayer->start();
+    }
+    while(!ysPlayerConst->exit)
+    {
+        // ⚠️关键修复：判断ysAudioPlayer和内部queue指针不为空
+        if (ysAudioPlayer == nullptr || ysAudioPlayer->queue == nullptr)
+        {
+            av_usleep(1000*5);
+            continue;
+        }
+
         if (ysAudioPlayer->queue->getQueueSize() > 120) {
             av_usleep(1000*10);
             continue;
         }
         AVPacket *pPacket = av_packet_alloc();
-        if(av_read_frame(avFormatContext,pPacket) == 0){ //
-            if(pPacket->stream_index == ysVideoPlayer->streamIndex){
+        if(av_read_frame(avFormatContext,pPacket) == 0){
+            if(ysVideoPlayer != nullptr && pPacket->stream_index == ysVideoPlayer->streamIndex){
                 ysVideoPlayer->queue->putAvPacket(pPacket);
             }else if(pPacket->stream_index == ysAudioPlayer->streamIndex){
-                //放到 audio 对列中
                 ysAudioPlayer->queue->putAvPacket(pPacket);
             }else{
-                av_packet_free(&pPacket);
-                av_free(pPacket);
+                av_packet_unref(pPacket);
             }
         }else{
-            //
             break;
         }
+        av_packet_free(&pPacket);
     }
 }
 AVPixelFormat hw_pix_fmt;
@@ -192,7 +204,6 @@ static enum AVPixelFormat get_hw_format(AVCodecContext *ctx,
     }
     return AV_PIX_FMT_NONE;
 }
-
 void YsFFmpegPlayer::createHwDecode() {
     if(ysVideoPlayer->codecParameters->codec_type==AVMEDIA_TYPE_VIDEO){
         const AVCodec *avCodec = NULL;
@@ -209,6 +220,7 @@ void YsFFmpegPlayer::createHwDecode() {
                         const AVCodecHWConfig *config = avcodec_get_hw_config(avCodec, i);
                         if (nullptr == config) {
                             LOGS("获取硬解码是配置失败");
+                            break;
                         }
                         if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX &&
                             config->device_type == AV_HWDEVICE_TYPE_MEDIACODEC) {
@@ -219,12 +231,13 @@ void YsFFmpegPlayer::createHwDecode() {
                     }
                     break;
                 }
+            default:
+                break;
         }
         ysVideoPlayer->avCodecContext = avcodec_alloc_context3(avCodec);
         //设置编码器上下文avctx的get_format为get_hw_format
         if(avCodec){
             ysVideoPlayer->avCodecContext->get_format = get_hw_format;
-            // 硬件解码器初始化
             AVBufferRef *hw_device_ctx = nullptr;
             avcodec_parameters_to_context(ysVideoPlayer->avCodecContext,ysVideoPlayer->codecParameters);
             int ret = av_hwdevice_ctx_create(&hw_device_ctx, AV_HWDEVICE_TYPE_MEDIACODEC,
@@ -241,26 +254,34 @@ void YsFFmpegPlayer::createHwDecode() {
                     LOGD("media codec success ");
                 }
             }
-
         }
     }
 }
-
 double YsFFmpegPlayer::now() {
-    return ysAudioPlayer->clock;
+    if(ysAudioPlayer != nullptr)
+    {
+        return ysAudioPlayer->clock;
+    }
+    return 0.0;
 }
-
 void YsFFmpegPlayer::pause() {
     ysPlayerConst->pause = true;
-    ysAudioPlayer->pause();
+    if(ysAudioPlayer != nullptr)
+    {
+        ysAudioPlayer->pause();
+    }
 }
-
 void YsFFmpegPlayer::resume() {
     ysPlayerConst->pause = false;
-    ysAudioPlayer->resume();
-    ysVideoPlayer->resume();
+    if(ysAudioPlayer != nullptr)
+    {
+        ysAudioPlayer->resume();
+    }
+    if(ysVideoPlayer != nullptr)
+    {
+        ysVideoPlayer->resume();
+    }
 }
-
 void YsFFmpegPlayer::release() {
     if(ysPlayerConst){
         ysPlayerConst->exit = true;
@@ -296,8 +317,11 @@ void YsFFmpegPlayer::release() {
     }
     LOGD("释放 YsFFmpegPlayer 资源完成")
 }
-
 void YsFFmpegPlayer::seek(int seconds) {
+    if(ysAudioPlayer == nullptr)
+    {
+        return;
+    }
     int duration  = ysAudioPlayer->duration;
     if(ysAudioPlayer->duration<=0){
         return;
@@ -326,12 +350,7 @@ void YsFFmpegPlayer::seek(int seconds) {
         pthread_mutex_unlock(&seek_mutex);
         ysPlayerConst->seek = false;
     }
-
-
 }
-
 void YsFFmpegPlayer::enableMediaCodec(bool b) {
     enalbeMediaCodec = b;
 }
-
-

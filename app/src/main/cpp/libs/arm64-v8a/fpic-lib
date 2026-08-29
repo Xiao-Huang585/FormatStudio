@@ -39,5 +39,3 @@ else
     echo "$BAD_RELOC"
     exit 3
 fi
-
-pause

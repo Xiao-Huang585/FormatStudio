@@ -1,33 +1,30 @@
-//
-// Created by Ding on 2025/6/8.
-//
+#ifndef YSSTREAMQUEUE_H
+#define YSSTREAMQUEUE_H
 
-#ifndef YSPLAYER_YSSTREAMQUEUE_H
-#define YSPLAYER_YSSTREAMQUEUE_H
+#include <queue>
+#include <pthread.h>
 
-#include "queue"
-#include "pthread.h"
-extern  "C"{
+extern "C" {
 #include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
-};
+}
 
 class YsStreamQueue {
-public:
-    std::queue<AVPacket*> streamQueue;
-    pthread_mutex_t  mutexQueue;
-    pthread_cond_t   condQueue;
-
 public:
     YsStreamQueue();
     ~YsStreamQueue();
 
-    void getAvPacket(AVPacket* avPacket);
-    void putAvPacket(AVPacket* avPacket);
+    void putAvPacket(AVPacket *packet);
+    void getAvPacket(AVPacket *avPacket);       // 解码线程：阻塞版本
+    bool tryGetAvPacketNoWait(AVPacket *outPacket); // OpenSL回调：非阻塞，绝不wait
+
     int getQueueSize();
     void clearQueue();
     void notifyQueue();
+
+    pthread_mutex_t mutexQueue;
+    pthread_cond_t condQueue;
+private:
+    std::queue<AVPacket*> streamQueue;
 };
 
-
-#endif //YSPLAYER_YSSTREAMQUEUE_H
+#endif //YSSTREAMQUEUE_H

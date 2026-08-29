@@ -73,12 +73,10 @@ add_library(mp3lame STATIC IMPORTED)
 set_target_properties(mp3lame PROPERTIES
         IMPORTED_LOCATION "${FFMPEG_LIB_DIR}/libmp3lame.a"
 )
-
 add_library(x264 STATIC IMPORTED)
 set_target_properties(x264 PROPERTIES
         IMPORTED_LOCATION "${FFMPEG_LIB_DIR}/libx264.a"
 )
-
 add_library(x265 STATIC IMPORTED)
 set_target_properties(x265 PROPERTIES
         IMPORTED_LOCATION "${FFMPEG_LIB_DIR}/libx265.a"
@@ -138,29 +136,34 @@ set_target_properties(lzma PROPERTIES
         IMPORTED_LOCATION "${JNI_LIBS_DIR}/liblzma.so.5"
         IMPORTED_NO_SONAME TRUE
 )
+
 # ============================
-# 链接
+# 【重点修正】target_link_libraries 顺序
+# 规则：
+# 1. 先放静态库（FFmpeg全家桶，使用者在前，被依赖在后）
+# 2. 再放外部动态库
+# 3. 最后放系统NDK库
 # ============================
 target_link_libraries(native
-        # 第三方动态库
-        kgm_decoder
-        drm
-        lzma
-        z
-        c++_shared
-        # FFmpeg 高层库（依赖下层）
+        # ========== FFmpeg静态库 全部放最前面 ==========
         avformat
         avfilter
         avcodec
         swscale
         swresample
-        # 第三方编码库（被avcodec依赖）
         x264
         x265
         mp3lame
-        # FFmpeg 基础库
         avutil
-        # 系统库
+
+        # ========== 外部动态库 .so 放在静态库之后 ==========
+        kgm_decoder
+        drm
+        lzma
+        z
+        c++_shared
+
+        # ========= NDK系统库放最后 =========
         android
         log
         OpenSLES
