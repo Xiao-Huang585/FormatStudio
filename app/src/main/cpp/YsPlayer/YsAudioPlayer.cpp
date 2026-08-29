@@ -151,7 +151,7 @@ int YsAudioPlayer::getPcmSampleRate(int sample_rate) {
 
 
 int YsAudioPlayer::resampleAudio() {
-    data_size = 0;//每次拿到数据重采样 清空size  在解析音频时这个方法可能每秒回调很多次
+    data_size = 0;
     while (!playCost->exit) {
         if(playCost->pause){
             pthread_mutex_lock(&pauseMutex);
@@ -162,12 +162,16 @@ int YsAudioPlayer::resampleAudio() {
             av_usleep(1000 * 100);
             continue;
         }
-        if(queue->getQueueSize()==0){
-            av_usleep(1000 * 100);
-            continue;
-        }
+
         AVPacket *avPacket = av_packet_alloc();
-        queue->getAvPacket(avPacket);
+        // OpenSL回调线程：只允许非阻塞！！
+        bool ok = queue->tryGetAvPacketNoWait(avPacket);
+        if (!ok)
+        {
+            av_packet_free(&avPacket);
+            return 0;
+        }
+
         pthread_mutex_lock(&codecMutex);
         int ret = avcodec_send_packet(avCodecContext, avPacket);
         if (ret != 0) {
@@ -178,7 +182,6 @@ int YsAudioPlayer::resampleAudio() {
         AVFrame *avFrame = av_frame_alloc();
         ret = avcodec_receive_frame(avCodecContext, avFrame);
         if (ret == 0) {
-            // 确定输入声道数
             int inChannels;
             if (avFrame->ch_layout.nb_channels > 0) {
                 inChannels = avFrame->ch_layout.nb_channels;
@@ -187,27 +190,20 @@ int YsAudioPlayer::resampleAudio() {
             } else {
                 inChannels = 2;
             }
-
-            AVSampleFormat inFmt = (AVSampleFormat) avFrame->format;
+            AVSampleFormat inFmt = static_cast<AVSampleFormat>(avFrame->format);
             int inRate = avFrame->sample_rate;
 
-            // ============================================================
-            // 缓存 SwrContext：仅当音频格式变化时才重建
-            // 修复：原代码每帧都 swr_alloc_set_opts2 + swr_free
-            // ============================================================
             if (swrCtx == nullptr ||
                 cachedInFmt != inFmt ||
                 cachedInRate != inRate ||
-                cachedInChannels != inChannels) {
-
+                cachedInChannels != inChannels)
+            {
                 if (swrCtx) {
                     swr_free(&swrCtx);
                     swrCtx = nullptr;
                 }
-
                 AVChannelLayout out_ch_layout = AV_CHANNEL_LAYOUT_STEREO;
                 AVChannelLayout in_ch_layout;
-
                 if (avFrame->ch_layout.nb_channels > 0) {
                     av_channel_layout_copy(&in_ch_layout, &avFrame->ch_layout);
                 } else if (avCodecContext->ch_layout.nb_channels > 0) {
@@ -215,7 +211,6 @@ int YsAudioPlayer::resampleAudio() {
                 } else {
                     av_channel_layout_default(&in_ch_layout, 2);
                 }
-
                 int swr_ret = swr_alloc_set_opts2(
                         &swrCtx,
                         &out_ch_layout,
@@ -226,7 +221,6 @@ int YsAudioPlayer::resampleAudio() {
                         inRate,
                         0, nullptr
                 );
-
                 av_channel_layout_uninit(&in_ch_layout);
 
                 if (swr_ret < 0 || !swrCtx || swr_init(swrCtx) < 0) {
@@ -238,7 +232,6 @@ int YsAudioPlayer::resampleAudio() {
                     pthread_mutex_unlock(&codecMutex);
                     continue;
                 }
-
                 cachedInFmt = inFmt;
                 cachedInRate = inRate;
                 cachedInChannels = inChannels;
@@ -250,10 +243,8 @@ int YsAudioPlayer::resampleAudio() {
                     avFrame->nb_samples,
                     (const uint8_t **) avFrame->data,
                     avFrame->nb_samples);
-
-            int out_channels = 2; // AV_CH_LAYOUT_STEREO = 2 声道
+            int out_channels = 2;
             data_size = nb * out_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
-
             currentTime = av_q2d(time_base) * avFrame->pts;
             clock = currentTime;
 

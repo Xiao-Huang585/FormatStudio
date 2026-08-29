@@ -2,7 +2,7 @@
 
 This project uses the following open-source third-party libraries. Because this project statically links FFmpeg with GPL components enabled, the combined work is distributed under **GPL-3.0-or-later**. Each third-party library's own license must also be complied with separately.
 
-[ÖÐÎÄ](THIRD_PARTY_NOTICES-CN.md)
+[ä¸­æ–‡](THIRD_PARTY_NOTICES-CN.md)
 
 ***
 
@@ -18,7 +18,7 @@ This project uses the following open-source third-party libraries. Because this 
 
   * Uses **static linking** (`.a`)
 
-  * Compiled with `--enable-gpl`, `--enable-libx264`, `--enable-libx265`
+  * Compiled with `--enable-gpl`, `--enable-libx264`, `--enable-libx265`, `--enable-libmp3lame`
 
   * This project is also open-sourced under GPL-3.0-or-later as required
 
@@ -33,6 +33,75 @@ the Free Software Foundation; either version 3 of the License, or
 FFmpeg is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+```
+
+***
+
+## x264 (libx264)
+
+* **License**: GPL-2.0-or-later
+
+* **Purpose**: H.264 video encoder
+
+* **Repository**: <https://code.videolan.org/videolan/x264>
+
+* **Compliance**:
+
+  * Static linked into FFmpeg
+
+  * GPL license terms apply to combined work
+
+```
+x264 is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+```
+
+***
+
+## x265 (libx265)
+
+* **License**: GPL-2.0-or-later
+
+* **Purpose**: H.265/HEVC video encoder
+
+* **Repository**: <https://bitbucket.org/multicoreware/x265_git>
+
+* **Compliance**:
+
+  * Static linked into FFmpeg
+
+  * GPL license terms apply to combined work
+
+```
+x265 is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+```
+
+***
+
+## LAME (libmp3lame)
+
+* **License**: LGPL-2.1-or-later
+
+* **Purpose**: MP3 audio encoder
+
+* **Repository**: <https://lame.sourceforge.io/>
+
+* **Compliance**:
+
+  * Static linked into FFmpeg
+
+  * If you distribute binary APK, you need to provide object files to allow user relink modified LAME (LGPL static-link requirement)
+
+```
+LAME is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or
+(at your option) any later version.
 ```
 
 ***

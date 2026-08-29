@@ -1,5 +1,13 @@
 #include "YsStreamQueue.h"
 
+extern "C" {
+#include "libavcodec/avcodec.h"
+#include "libavutil/mem.h"
+}
+
+#include <queue>
+#include <pthread.h>
+
 YsStreamQueue::YsStreamQueue() {
     pthread_mutex_init(&mutexQueue, nullptr);
     pthread_cond_init(&condQueue, nullptr);
@@ -13,12 +21,15 @@ YsStreamQueue::~YsStreamQueue() {
 
 void YsStreamQueue::putAvPacket(AVPacket *packet) {
     pthread_mutex_lock(&mutexQueue);
-    streamQueue.push(packet);
+    // 队列内部保存一份拷贝，外部的packet调用方可以安全free
+    AVPacket *dupPkt = av_packet_alloc();
+    av_packet_ref(dupPkt, packet);
+    streamQueue.push(dupPkt);
     pthread_cond_signal(&condQueue);
     pthread_mutex_unlock(&mutexQueue);
 }
 
-// 阻塞版本，给解码线程 ffmpegStart 使用，允许wait
+// 【解码线程用】阻塞版本，允许pthread_cond_wait
 void YsStreamQueue::getAvPacket(AVPacket *avPacket) {
     pthread_mutex_lock(&mutexQueue);
     while(streamQueue.empty()){
@@ -35,7 +46,7 @@ void YsStreamQueue::getAvPacket(AVPacket *avPacket) {
     pthread_mutex_unlock(&mutexQueue);
 }
 
-// 非阻塞，OpenSL‑ES回调线程调用，禁止wait
+// 【OpenSL ES 回调线程专用】非阻塞，绝不wait！！！
 bool YsStreamQueue::tryGetAvPacketNoWait(AVPacket *outPacket)
 {
     pthread_mutex_lock(&mutexQueue);

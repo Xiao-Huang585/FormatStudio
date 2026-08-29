@@ -53,15 +53,15 @@ app/src/main/
 
 ## 技术栈
 
-| 组件 | 技术 |
-|------|------|
-| 语言 | Java + C++ (JNI) |
-| 媒体处理 | FFmpeg 5.x / 6.x / 7.x (GPL) |
-| C++ 封装 | avcpp (BSD-3) |
-| 视频播放 | YsPlayer (Apache-2.0) |
-| 渲染 | ANativeWindow + OpenGL ES |
-| 构建 | Gradle + CMake |
-| UI | 原生 Android View + ConstraintLayout |
+| 组件     | 技术                                               |
+| -------- | ---------------------------------------------------|
+| C++ 封装 | avcpp (BSD-3)                                      |
+| UI       | 原生 Android View + ConstraintLayout               |
+| 媒体处理 | FFmpeg 5.x / 6.x / 7.x (GPL), 包括lame, x264, x265 |
+| 构建     | Gradle + CMake                                     |
+| 渲染     | ANativeWindow + OpenGL ES                          |
+| 视频播放 | YsPlayer (Apache-2.0)                              |
+| 语言     | Java + C++ (JNI)                                   |
 
 ## 签名
 
@@ -72,13 +72,13 @@ app/src/main/
 
 本项目使用了以下第三方库，请查阅 [THIRD_PARTY_NOTICES-CN.md](THIRD_PARTY_NOTICES-CN.md) 了解完整的许可证信息。
 
-| 库 | 许可证 | 说明 |
-|----|--------|------|
-| FFmpeg | GPL-2.0+ / GPL-3.0+（整体作品） | 静态链接，启用了 GPL 组件 |
-| avcpp | BSD-3-Clause | FFmpeg C++ 封装 |
-| YsPlayer | Apache-2.0 | 视频播放器 |
-| OpenSSL | Apache-2.0 | 加密支持 |
-| kugou-kgm-decoder | 反 996 License v1.0 | 生成 `libkgm_decoder.so` 用于解密 `.kgm` |
+| 库                | 许可证                          | 说明                                      |
+| ----------------- | ------------------------------- | ----------------------------------------- |
+| avcpp             | BSD-3-Clause                    | FFmpeg C++ 封装                           |
+| FFmpeg            | GPL-2.0+ / GPL-3.0+（整体作品） | 静态链接，启用了 GPL 组件                 |
+| kugou-kgm-decoder | 反 996 License v1.0             | 生成 `libkgm_decoder.so` 用于解密 `.kgm`  |
+| OpenSSL           | Apache-2.0                      | 加密支持                                  |
+| YsPlayer          | Apache-2.0                      | 视频播放器                                |
 
 ## 许可证
 

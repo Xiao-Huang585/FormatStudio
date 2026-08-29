@@ -18,7 +18,7 @@
 
   * 使用 **静态链接**（`.a`）
 
-  * 编译时启用了 `--enable-gpl`、`--enable-libx264`、`--enable-libx265`
+  * 编译时启用了 `--enable-gpl`、`--enable-libx264`、`--enable-libx265`、`--enable-libmp3lame`
 
   * 本项目作为整体按 GPL-3.0-or-later 分发
 
@@ -33,6 +33,75 @@ the Free Software Foundation; either version 3 of the License, or
 FFmpeg is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+```
+
+***
+
+## x264 (libx264)
+
+* **许可证**: GPL-2.0-or-later
+
+* **用途**: H.264 视频编码器
+
+* **仓库**: <https://code.videolan.org/videolan/x264>
+
+* **合规要求**:
+
+  * 静态链接进 FFmpeg
+
+  * GPL 许可证条款适用于组合后的整体程序
+
+```
+x264 is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+```
+
+***
+
+## x265 (libx265)
+
+* **许可证**: GPL-2.0-or-later
+
+* **用途**: H.265/HEVC 视频编码器
+
+* **仓库**: <https://bitbucket.org/multicoreware/x265_git>
+
+* **合规要求**:
+
+  * 静态链接进 FFmpeg
+
+  * GPL 许可证条款适用于组合后的整体程序
+
+```
+x265 is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+```
+
+***
+
+## LAME (libmp3lame)
+
+* **许可证**: LGPL-2.1-or-later
+
+* **用途**: MP3 音频编码器
+
+* **仓库**: <https://lame.sourceforge.io/>
+
+* **合规要求**:
+
+  * 静态链接进 FFmpeg
+
+  * 二进制APK分发场景：需要提供对应的目标文件（`.o`），允许用户重新链接替换修改后的LAME库（LGPL静态链接强制要求）
+
+```
+LAME is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or
+(at your option) any later version.
 ```
 
 ***

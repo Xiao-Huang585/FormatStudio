@@ -48,29 +48,16 @@ void YsFFmpegPlayer::ffmpegDecode() {
         int i = AVERROR(openRel);
         LOGD("avformat_open_input fail %d ",i);
         LOGD("avformat_open_input fail %d (%s)", i, av_err2str(openRel));
-        // 没有callError接口，只打印日志，注释掉回调
-        // if(callJava != nullptr)
-        // {
-        //     callJava->callError(openRel,"avformat_open_input failed");
-        // }
         return;
     }
     int openStreamRel = avformat_find_stream_info(avFormatContext, NULL);
     if(openStreamRel<0){
         LOGD("avformat_find_stream_info fail");
-        // if(callJava != nullptr)
-        // {
-        //     callJava->callError(openStreamRel,"find stream info failed");
-        // }
         return;
     }
     int audioStreamIndex = av_find_best_stream(avFormatContext, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
     if(audioStreamIndex<0){
         LOGD("av_find_best_stream audio fail");
-        // if(callJava != nullptr)
-        // {
-        //     callJava->callError(-1,"no audio stream");
-        // }
         return;
     }
     if(ysAudioPlayer == nullptr){
@@ -83,12 +70,10 @@ void YsFFmpegPlayer::ffmpegDecode() {
     AVCodecContext *audioCodecContext = avcodec_alloc_context3(pCodec);
     if(avcodec_parameters_to_context(audioCodecContext,audioCodecParameters)<0){
         LOGD("avcodec_parameters_to_context audio fail");
-        // callJava->callError(-2,"audio parameters to context fail");
         return;
     }
     if(avcodec_open2(audioCodecContext,pCodec,NULL)!=0){
         LOGD("avcodec_open2 audio fail");
-        // callJava->callError(-3,"avcodec_open2 audio fail");
         return;
     }
     ysAudioPlayer->avCodecContext = audioCodecContext;
@@ -97,7 +82,7 @@ void YsFFmpegPlayer::ffmpegDecode() {
     ysAudioPlayer->sample_rate = audioCodecParameters->sample_rate;
     ysAudioPlayer->time_base = pAStream->time_base;
     ysAudioPlayer->duration = avFormatContext->duration / AV_TIME_BASE;
-    //===== 视频部分：只有找到视频流才执行初始化，找不到直接跳过，不return！=====
+
     int videoStreamIndex = av_find_best_stream(avFormatContext, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
     if(videoStreamIndex >= 0)
     {
@@ -139,14 +124,11 @@ void YsFFmpegPlayer::ffmpegDecode() {
     }
     else
     {
-        //纯音频文件，无视频流
         LOGD("av_find_best_stream video fail , this is audio‑only file");
     }
-    //无论有没有视频，都走到prepare成功回调
     LOGD("prepare Success");
     callJava->callPrepare();
 }
-
 void *startThread(void *ctx){
     LOGD("startDecode")
     YsFFmpegPlayer * ysFFmpegPlayer = static_cast<YsFFmpegPlayer *>(ctx);
@@ -165,19 +147,19 @@ void YsFFmpegPlayer::ffmpegStart() {
     {
         ysAudioPlayer->start();
     }
+
     while(!ysPlayerConst->exit)
     {
-        // ⚠️关键修复：判断ysAudioPlayer和内部queue指针不为空
         if (ysAudioPlayer == nullptr || ysAudioPlayer->queue == nullptr)
         {
             av_usleep(1000*5);
             continue;
         }
-
         if (ysAudioPlayer->queue->getQueueSize() > 120) {
             av_usleep(1000*10);
             continue;
         }
+
         AVPacket *pPacket = av_packet_alloc();
         if(av_read_frame(avFormatContext,pPacket) == 0){
             if(ysVideoPlayer != nullptr && pPacket->stream_index == ysVideoPlayer->streamIndex){
@@ -187,10 +169,8 @@ void YsFFmpegPlayer::ffmpegStart() {
             }else{
                 av_packet_unref(pPacket);
             }
-        }else{
-            break;
         }
-        av_packet_free(&pPacket);
+        av_packet_free(&pPacket); // 现在安全！putAvPacket内部已经ref复制，本函数pPacket可以释放
     }
 }
 AVPixelFormat hw_pix_fmt;
@@ -257,13 +237,6 @@ void YsFFmpegPlayer::createHwDecode() {
         }
     }
 }
-double YsFFmpegPlayer::now() {
-    if(ysAudioPlayer != nullptr)
-    {
-        return ysAudioPlayer->clock;
-    }
-    return 0.0;
-}
 void YsFFmpegPlayer::pause() {
     ysPlayerConst->pause = true;
     if(ysAudioPlayer != nullptr)
@@ -282,40 +255,12 @@ void YsFFmpegPlayer::resume() {
         ysVideoPlayer->resume();
     }
 }
-void YsFFmpegPlayer::release() {
-    if(ysPlayerConst){
-        ysPlayerConst->exit = true;
+double YsFFmpegPlayer::now() {
+    if(ysAudioPlayer != nullptr)
+    {
+        return ysAudioPlayer->clock;
     }
-    pthread_join(initDecodeThread, nullptr);
-    pthread_join(startDecodeThread, nullptr);
-    if(ysVideoPlayer){
-        ysVideoPlayer->release();
-        delete ysVideoPlayer;
-        ysVideoPlayer = nullptr;
-    }
-    if(ysAudioPlayer){
-        ysAudioPlayer->release();
-        delete ysAudioPlayer;
-        ysAudioPlayer = nullptr;
-    }
-    if(avFormatContext){
-        avformat_close_input(&avFormatContext);
-        avformat_free_context(avFormatContext);
-        avFormatContext = nullptr;
-    }
-    if(ysPlayerConst){
-        delete ysPlayerConst;
-        ysPlayerConst = nullptr;
-    }
-    if(callJava){
-        delete callJava;
-        callJava = nullptr;
-    }
-    if(url){
-        free((void*)url);
-        url = nullptr;
-    }
-    LOGD("释放 YsFFmpegPlayer 资源完成")
+    return 0.0;
 }
 void YsFFmpegPlayer::seek(int seconds) {
     if(ysAudioPlayer == nullptr)
@@ -350,6 +295,42 @@ void YsFFmpegPlayer::seek(int seconds) {
         pthread_mutex_unlock(&seek_mutex);
         ysPlayerConst->seek = false;
     }
+}
+
+void YsFFmpegPlayer::release() {
+    if(ysPlayerConst){
+        ysPlayerConst->exit = true;
+    }
+    pthread_join(initDecodeThread, nullptr);
+    pthread_join(startDecodeThread, nullptr);
+    if(ysVideoPlayer){
+        ysVideoPlayer->release();
+        delete ysVideoPlayer;
+        ysVideoPlayer = nullptr;
+    }
+    if(ysAudioPlayer){
+        ysAudioPlayer->release();
+        delete ysAudioPlayer;
+        ysAudioPlayer = nullptr;
+    }
+    if(avFormatContext){
+        avformat_close_input(&avFormatContext);
+        avformat_free_context(avFormatContext);
+        avFormatContext = nullptr;
+    }
+    if(ysPlayerConst){
+        delete ysPlayerConst;
+        ysPlayerConst = nullptr;
+    }
+    if(callJava){
+        delete callJava;
+        callJava = nullptr;
+    }
+    if(url){
+        free((void*)url);
+        url = nullptr;
+    }
+    LOGD("释放 YsFFmpegPlayer 资源完成")
 }
 void YsFFmpegPlayer::enableMediaCodec(bool b) {
     enalbeMediaCodec = b;

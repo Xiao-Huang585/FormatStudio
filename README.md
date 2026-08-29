@@ -61,15 +61,15 @@ app/src/main/
 
 ## Tech Stack
 
-| Component        | Technology                             |
-| ---------------- | -------------------------------------- |
-| Language         | Java + C++ (JNI)                       |
-| Media Processing | FFmpeg 5.x / 6.x / 7.x (GPL)           |
-| C++ Wrapper      | avcpp (BSD-3)                          |
-| Video Player     | YsPlayer (Apache-2.0)                  |
-| Rendering        | ANativeWindow + OpenGL ES              |
-| Build            | Gradle + CMake                         |
-| UI               | Native Android View + ConstraintLayout |
+| Component        | Technology                                              |
+| ---------------- | --------------------------------------------------------|
+| Language         | Java + C++ (JNI)                                        |
+| Media Processing | FFmpeg 5.x / 6.x / 7.x (GPL), include lame, x264, x265  |
+| C++ Wrapper      | avcpp (BSD-3)                                           |
+| Video Player     | YsPlayer (Apache-2.0)                                   |
+| Rendering        | ANativeWindow + OpenGL ES                               |
+| Build            | Gradle + CMake                                          |
+| UI               | Native Android View + ConstraintLayout                  |
 
 ## Signing
 
