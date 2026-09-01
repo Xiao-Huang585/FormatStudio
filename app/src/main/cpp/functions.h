@@ -116,6 +116,10 @@ extern std::string g_encoderOutputPath;
 extern std::string g_encoderVideoCodec;   // 视频编码器名，如 "libx264"
 extern std::string g_encoderAudioCodec;   // 音频编码器名，如 "pcm_s16le"
 
+// 压缩参数（由 MainActivity 通过 passCompressConfig 传入）
+extern std::string g_compressOutputPath;  // 压缩输出路径
+extern int g_compressPreset;               // 压缩等级 1~10（1体积最小,10体积较大）
+
 // 当前选中文件的流信息（由 nativeOpenFile 独立探测，供 Selecting 查询）
 // 独立于全局 ffmpeg 实例：nativeOpenFile 在主线程调用，
 // 若 cppMain 线程正在编码，操作同一实例会引发数据竞争
@@ -195,6 +199,8 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passInputToCpp(JNIEnv *env, jclass clazz, jstring jInput);
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passEncoderConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jstring jVideoCodec, jstring jAudioCodec);
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passCompressConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jint jPreset);
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_kgmdecoder_app_MainActivity_nativeOpenFile(JNIEnv *env, jobject thiz, jstring jPath);
 extern "C" JNIEXPORT void JNICALL

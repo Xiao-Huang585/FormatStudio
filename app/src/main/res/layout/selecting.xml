@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ============================================================ -->
-<!-- selecting.xml                                                -->
-<!-- 美化版：保持所有组件 id 不变，三个按钮垂直等距排列               -->
-<!-- ============================================================ -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -11,7 +7,6 @@
     android:layout_height="match_parent"
     android:background="@color/bg_root"
     android:fitsSystemWindows="true">
-
     <!-- 顶部装饰背景 -->
     <View
         android:id="@+id/header_bg"
@@ -21,7 +16,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
-
     <!-- 标题 -->
     <TextView
         android:id="@+id/tv_title"
@@ -38,7 +32,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
-
     <TextView
         android:id="@+id/tv_subtitle"
         android:layout_width="0dp"
@@ -52,7 +45,6 @@
         app:layout_constraintTop_toBottomOf="@id/tv_title"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
-
     <!-- 功能按钮卡片区域 -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_buttons"
@@ -107,7 +99,6 @@
                 android:textAllCaps="false"
                 android:textColor="@color/btn_secondary_text"
                 android:textSize="18sp" />
-
             <Button
                 android:id="@+id/EncodeWithOtherEncoders"
                 android:layout_width="match_parent"
@@ -129,31 +120,29 @@
                 android:textSize="18sp" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
-
-
     <!-- 参数窗口（编码器选择） -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/parameters_window"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="16dp"
+        android:layout_marginTop="20dp"
         android:background="@drawable/bg_card_rounded"
         android:elevation="8dp"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/card_buttons"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
+        app:layout_constraintTop_toBottomOf="@id/card_buttons">
         <View
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@color/night_window_color"
-            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
+            app:layout_constraintTop_toTopOf="parent" />
+        <!-- ==========【固定顶部，不滚动】返回箭头、标题 ========== -->
         <ImageButton
             android:id="@+id/backArrow"
             android:layout_width="48dp"
@@ -162,128 +151,136 @@
             android:layout_marginEnd="12dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/baseline_arrow_back_24"
-            app:tint="@android:color/white"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@android:color/white" />
         <TextView
             android:id="@+id/tv_parameters_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
             android:layout_marginTop="24dp"
+            android:layout_marginEnd="24dp"
             android:text="@string/Selecting_parametersTitle"
             android:textColor="@android:color/white"
             android:textSize="32sp"
             android:textStyle="bold"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/backArrow"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/backArrow" />
-
-        <!-- 输出路径标签 -->
-        <TextView
-            android:id="@+id/tv_output_path_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="24dp"
-            android:layout_marginTop="24dp"
-            android:text="@string/Selecting_parameter1"
-            android:textColor="@android:color/white"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_parameters_title" />
-
-        <!-- 输出路径输入框 -->
-        <EditText
-            android:id="@+id/et_output_path"
+            app:layout_constraintTop_toTopOf="parent" />
+        <!-- ==========【中间可滚动区域】所有会溢出屏幕的内容全部放这里 ========== -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/scroll_content_area"
             android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/bg_input_bar"
-            android:hint="/storage/emulated/0/Download/output.mp4"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:text="/storage/emulated/0/Download/output.mp4"
-            android:textColor="@android:color/white"
-            android:textColorHint="@color/text_hint"
-            android:textSize="15sp"
-            app:layout_constraintStart_toStartOf="parent"
+            android:layout_height="0dp"
+            android:fillViewport="true"
+            android:scrollbars="vertical"
+            app:layout_constraintBottom_toTopOf="@id/btn_confirm_encode"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_output_path_label" />
-
-        <!-- 视频编码器分组（仅当文件含视频流时显示） -->
-        <LinearLayout
-            android:id="@+id/video_codec_group"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:orientation="vertical"
-            android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/et_output_path">
-
-            <TextView
-                android:id="@+id/tv_video_codec_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="24dp"
-                android:text="@string/Selecting_videoEncoderLabel"
-                android:textColor="@android:color/white"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <Spinner
-                android:id="@+id/spinner_video_codec"
+            app:layout_constraintTop_toBottomOf="@id/tv_parameters_title">
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginStart="24dp"
-                android:layout_marginEnd="24dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_input_bar"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp" />
-        </LinearLayout>
-
-        <!-- 音频编码器分组（仅当文件含音频流时显示） -->
-        <LinearLayout
-            android:id="@+id/audio_codec_group"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:orientation="vertical"
-            android:visibility="gone"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/video_codec_group">
-
-            <TextView
-                android:id="@+id/tv_audio_codec_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="24dp"
-                android:text="@string/Selecting_audioEncoderLabel"
-                android:textColor="@android:color/white"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <Spinner
-                android:id="@+id/spinner_audio_codec"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginStart="24dp"
-                android:layout_marginEnd="24dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_input_bar"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp" />
-        </LinearLayout>
-
-        <!-- 确认按钮 -->
+                android:layout_height="wrap_content">
+                <!-- 输出路径标签 -->
+                <TextView
+                    android:id="@+id/tv_output_path_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="24dp"
+                    android:layout_marginTop="24dp"
+                    android:text="@string/Selecting_parameter1"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+                <!-- 输出路径输入框 -->
+                <EditText
+                    android:id="@+id/et_output_path"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="24dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="24dp"
+                    android:background="@drawable/bg_input_bar"
+                    android:hint="/storage/emulated/0/Download/output.mp4"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="/storage/emulated/0/Download/output.mp4"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="@color/text_hint"
+                    android:textSize="15sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_output_path_label" />
+                <!-- 视频编码器分组 -->
+                <LinearLayout
+                    android:id="@+id/video_codec_group"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/et_output_path">
+                    <TextView
+                        android:id="@+id/tv_video_codec_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="24dp"
+                        android:text="@string/Selecting_videoEncoderLabel"
+                        android:textColor="@android:color/white"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                    <Spinner
+                        android:popupBackground="@android:color/black"
+                        android:id="@+id/spinner_video_codec"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="24dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="24dp"
+                        android:background="@drawable/bg_input_bar"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"/>
+                </LinearLayout>
+                <!-- 音频编码器分组 -->
+                <LinearLayout
+                    android:id="@+id/audio_codec_group"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/video_codec_group">
+                    <TextView
+                        android:id="@+id/tv_audio_codec_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="24dp"
+                        android:text="@string/Selecting_audioEncoderLabel"
+                        android:textColor="@android:color/white"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                    <Spinner
+                        android:popupBackground="@android:color/black"
+                        android:id="@+id/spinner_audio_codec"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="24dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="24dp"
+                        android:background="@drawable/bg_input_bar"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"/>
+                </LinearLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.core.widget.NestedScrollView>
+        <!-- ==========【固定底部，不滚动】确认按钮 ========== -->
         <Button
             android:id="@+id/btn_confirm_encode"
             android:layout_width="0dp"
@@ -296,10 +293,8 @@
             android:textAllCaps="false"
             android:textColor="@color/btn_primary_text"
             android:textSize="18sp"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
-
+            app:layout_constraintStart_toStartOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

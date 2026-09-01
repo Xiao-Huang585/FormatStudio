@@ -1,5 +1,4 @@
 package com.kgmdecoder.app;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
@@ -14,33 +13,26 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-
 public class Selecting extends Activity {
-
     private Button showMediaInfoBtn;
     private Button playVideoBtn;
     private Button encodeWithOtherEncoderBtn;
-
     // 参数窗口控件
     private View parametersWindow;
     private ImageButton backArrow;
     private EditText etOutputPath;
     private Button btnConfirmEncode;
-
     // 视频编码器
     private LinearLayout videoCodecGroup;
     private Spinner spinnerVideoCodec;
     private String selectedVideoCodec = "";
-
     // 音频编码器
     private LinearLayout audioCodecGroup;
     private Spinner spinnerAudioCodec;
     private String selectedAudioCodec = "";
-
     // 流信息（由 native hasVideo()/hasAudio() 提供）
     private boolean fileHasVideo = false;
     private boolean fileHasAudio = false;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,43 +40,35 @@ public class Selecting extends Activity {
         showMediaInfoBtn = findViewById(R.id.ShowMediaInfo);
         playVideoBtn = findViewById(R.id.PlayVideo);
         encodeWithOtherEncoderBtn = findViewById(R.id.EncodeWithOtherEncoders);
-
         parametersWindow = findViewById(R.id.parameters_window);
         backArrow = findViewById(R.id.backArrow);
         etOutputPath = findViewById(R.id.et_output_path);
         btnConfirmEncode = findViewById(R.id.btn_confirm_encode);
-
         // 视频编码器标签 + 下拉菜单放在同一容器，方便整体显示/隐藏
         videoCodecGroup = findViewById(R.id.video_codec_group);
         spinnerVideoCodec = findViewById(R.id.spinner_video_codec);
-
         // 音频编码器标签 + 下拉菜单放在同一容器
         audioCodecGroup = findViewById(R.id.audio_codec_group);
         spinnerAudioCodec = findViewById(R.id.spinner_audio_codec);
-
         // ====== 查询文件流信息：决定显示视频/音频编码器预设 ======
         fileHasVideo = hasVideo();
         fileHasAudio = hasAudio();
-
         showMediaInfoBtn.setOnClickListener(v -> {
             Intent res = new Intent();
             res.putExtra("Function", "GetMediaInfo");
             setResult(RESULT_OK, res);
             finish();
         });
-
         playVideoBtn.setOnClickListener(v -> {
             Intent res = new Intent();
             res.putExtra("Function", "PlayVideo");
             setResult(RESULT_OK, res);
             finish();
         });
-
         // 显示编码器参数窗口
         encodeWithOtherEncoderBtn.setOnClickListener(v -> {
             parametersWindow.setVisibility(View.VISIBLE);
         });
-
         // 返回按钮：参数窗口可见时先隐藏，否则结束 Activity
         backArrow.setOnClickListener(v -> {
             if (parametersWindow.getVisibility() == View.VISIBLE) {
@@ -94,7 +78,6 @@ public class Selecting extends Activity {
                 finish();
             }
         });
-
         // ====== 配置视频编码器下拉菜单（仅当文件含视频流） ======
         if (fileHasVideo) {
             videoCodecGroup.setVisibility(View.VISIBLE);
@@ -105,9 +88,10 @@ public class Selecting extends Activity {
                     "H.265 (libx265)",
                     "MPEG-4 (mpeg4)"
             };
+            // =========【改动】使用自己的布局，不再用 android.R.layout.xxx =========
             ArrayAdapter<String> vAdapter = new ArrayAdapter<>(
-                    this, android.R.layout.simple_spinner_item, videoLabels);
-            vAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    this, R.layout.spinner_item, videoLabels);
+            vAdapter.setDropDownViewResource(R.layout.spinner_drop_item);
             spinnerVideoCodec.setAdapter(vAdapter);
             spinnerVideoCodec.setSelection(0); // 默认 H.264
             spinnerVideoCodec.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -115,7 +99,6 @@ public class Selecting extends Activity {
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                     selectedVideoCodec = videoNames[position];
                 }
-
                 @Override
                 public void onNothingSelected(AdapterView<?> parent) {
                     selectedVideoCodec = videoNames[0];
@@ -126,7 +109,6 @@ public class Selecting extends Activity {
             videoCodecGroup.setVisibility(View.GONE);
             selectedVideoCodec = "";
         }
-
         // ====== 配置音频编码器下拉菜单（仅当文件含音频流） ======
         if (fileHasAudio) {
             audioCodecGroup.setVisibility(View.VISIBLE);
@@ -137,9 +119,10 @@ public class Selecting extends Activity {
                     "PCM 16bit (pcm_s16le)",
                     "FLAC 无损 (flac)"
             };
+            // =========【改动】使用自己的布局 =========
             ArrayAdapter<String> aAdapter = new ArrayAdapter<>(
-                    this, android.R.layout.simple_spinner_item, audioLabels);
-            aAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    this, R.layout.spinner_item, audioLabels);
+            aAdapter.setDropDownViewResource(R.layout.spinner_drop_item);
             spinnerAudioCodec.setAdapter(aAdapter);
             spinnerAudioCodec.setSelection(0); // 默认 AAC
             spinnerAudioCodec.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -147,7 +130,6 @@ public class Selecting extends Activity {
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                     selectedAudioCodec = audioNames[position];
                 }
-
                 @Override
                 public void onNothingSelected(AdapterView<?> parent) {
                     selectedAudioCodec = audioNames[0];
@@ -158,7 +140,6 @@ public class Selecting extends Activity {
             audioCodecGroup.setVisibility(View.GONE);
             selectedAudioCodec = "";
         }
-
         // ====== 确认编码：校验参数并回传给 MainActivity ======
         btnConfirmEncode.setOnClickListener(v -> {
             String outputPath = etOutputPath.getText().toString().trim();
@@ -170,7 +151,6 @@ public class Selecting extends Activity {
                 Toast.makeText(this, "文件不含可编码的音视频流", Toast.LENGTH_SHORT).show();
                 return;
             }
-
             Intent res = new Intent();
             res.putExtra("Function", "EncodeWithOtherEncoders");
             res.putExtra("OutputPath", outputPath);
@@ -180,7 +160,6 @@ public class Selecting extends Activity {
             finish();
         });
     }
-
     @Override
     public void onBackPressed() {
         if (parametersWindow.getVisibility() == View.VISIBLE) {
@@ -189,8 +168,6 @@ public class Selecting extends Activity {
             super.onBackPressed();
         }
     }
-
     public native boolean hasVideo();
-
     public native boolean hasAudio();
 }

@@ -22,7 +22,7 @@ An Android JNI project originally created for decrypting Kugou `.kgm` encrypted 
 
 * Android Studio Hedgehog / Iguana or later
 
-* Android SDK 24+ (minSdk 24)
+* Android SDK 26+ (minSdk 26)
 
 * C++23 standard (CMake build)
 

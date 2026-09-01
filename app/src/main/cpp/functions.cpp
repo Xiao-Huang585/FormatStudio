@@ -28,6 +28,8 @@ std::string g_pendingFunction;
 std::string g_encoderOutputPath;
 std::string g_encoderVideoCodec;   // 空串 = 不编码视频
 std::string g_encoderAudioCodec;   // 空串 = 不编码音频
+std::string g_compressOutputPath;  // 压缩输出路径
+int g_compressPreset = 5;           // 压缩等级 1~10，默认5
 // 当前选中文件的流信息（nativeOpenFile 探测结果）
 std::atomic<bool> g_fileHasVideo = false;
 std::atomic<bool> g_fileHasAudio = false;
@@ -447,6 +449,23 @@ Java_com_kgmdecoder_app_MainActivity_passEncoderConfig(JNIEnv *env, jobject thiz
          g_encoderOutputPath.c_str(),
          g_encoderVideoCodec.c_str(),
          g_encoderAudioCodec.c_str());
+}
+
+// ============================
+// JNI 传递压缩参数给C++
+// ============================
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passCompressConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jint jPreset) {
+    std::lock_guard<std::mutex> lock(g_inputMutex);
+    const char *outputPath = env->GetStringUTFChars(jOutputPath, nullptr);
+    g_compressOutputPath = outputPath ? outputPath : "";
+    g_compressPreset = (int)jPreset;
+    if (g_compressPreset < 1) g_compressPreset = 1;
+    if (g_compressPreset > 10) g_compressPreset = 10;
+    env->ReleaseStringUTFChars(jOutputPath, outputPath);
+    LOGD("压缩参数: output=%s preset=%d",
+         g_compressOutputPath.c_str(),
+         g_compressPreset);
 }
 
 // ============================

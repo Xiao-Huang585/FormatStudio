@@ -557,12 +557,42 @@ void cppMain(jobject thiz) {
                              ? String("无", "(none)") : String(g_encoderAudioCodec.c_str(), g_encoderAudioCodec.c_str())) << endl;
                     cout.flush();
 
-                    // 调用独立的编码输出函数（空串 = 不编码对应流）
-                    int encRet = ffmpeg->encodeToFile(
-                            g_encoderOutputPath.c_str(),
-                            g_encoderVideoCodec.empty() ? nullptr : g_encoderVideoCodec.c_str(),
-                            g_encoderAudioCodec.empty() ? nullptr : g_encoderAudioCodec.c_str()
-                    );
+                    // 第一步：根据编码器名称查找 codec_id
+                    AVCodecID videoID = AV_CODEC_ID_NONE;
+                    AVCodecID audioID = AV_CODEC_ID_NONE;
+                    if (!g_encoderVideoCodec.empty()) {
+                        const AVCodec* vCodec = avcodec_find_encoder_by_name(g_encoderVideoCodec.c_str());
+                        if (!vCodec) {
+                            cout << String("找不到视频编码器: ", "Can not find video encoder: ")
+                                 << g_encoderVideoCodec << endl;
+                            cout.flush();
+                            continue;
+                        }
+                        videoID = vCodec->id;
+                    }
+                    if (!g_encoderAudioCodec.empty()) {
+                        const AVCodec* aCodec = avcodec_find_encoder_by_name(g_encoderAudioCodec.c_str());
+                        if (!aCodec) {
+                            cout << String("找不到音频编码器: ", "Can not find audio encoder: ")
+                                 << g_encoderAudioCodec << endl;
+                            cout.flush();
+                            continue;
+                        }
+                        audioID = aCodec->id;
+                    }
+
+                    // 第二步：设置输出路径 + 初始化输出（打开输出、创建编码器/流、写文件头）
+                    ffmpeg->setOutputPath(g_encoderOutputPath);
+                    int initRet = ffmpeg->openOutPutWithEncoder(videoID, audioID);
+                    if (initRet != 0) {
+                        cout << String("输出初始化失败，错误码: ", "Output init failed, error code: ")
+                             << initRet << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    // 第三步：执行纯编码循环，写出文件
+                    int encRet = ffmpeg->encodeToFile();
 
                     if (encRet == 0) {
                         cout << String("编码完成！", "Encoding finished!") << endl;
@@ -574,6 +604,46 @@ void cppMain(jobject thiz) {
 
                     // 结果保留在控制台，下一条命令到达时主循环会自动清空
                     // （不再等待"任意键"，否则会吞掉下一次 Selecting 的编码命令）
+                    continue;
+                }
+
+                if (functionName == "CompressMedia") {
+                    cout << String("===== 开始压缩 =====", "===== Start compressing =====") << endl;
+                    cout << String("输出路径: ", "Output path: ") << g_compressOutputPath << endl;
+                    cout << String("压缩等级: ", "Compress level: ") << g_compressPreset
+                         << " (1=最小体积, 10=较大体积)" << endl;
+                    cout.flush();
+
+                    if (g_compressOutputPath.empty()) {
+                        cout << String("压缩输出路径为空，取消压缩", "Compress output path is empty, canceled") << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    // 第一步：用压缩参数初始化输出（复用源编码器，计算码率/preset，创建编码器/流，写文件头）
+                    int initRet = ffmpeg->openOutputWithCompressMedia(
+                            g_compressOutputPath.c_str(),
+                            g_compressPreset
+                    );
+                    if (initRet != 0) {
+                        cout << String("压缩输出初始化失败，错误码: ", "Compress output init failed, error code: ")
+                             << initRet << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    // 第二步：执行纯编码循环，写出压缩文件
+                    int encRet = ffmpeg->encodeToFile();
+
+                    if (encRet == 0) {
+                        cout << String("压缩完成！", "Compressing finished!") << endl;
+                    } else {
+                        cout << String("压缩失败，错误码: ", "Compressing failed, error code: ")
+                             << encRet << endl;
+                    }
+                    cout.flush();
+
+                    // 结果保留在控制台，下一条命令到达时主循环会自动清空
                     continue;
                 }
 

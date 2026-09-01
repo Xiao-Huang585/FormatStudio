@@ -16,7 +16,7 @@
 ## 系统要求
 
 - Android Studio Hedgehog / Iguana 或更高版本
-- Android SDK 24+（minSdk 24）
+- Android SDK 26+（minSdk 26）
 - C++23 标准（CMake 编译）
 - 仅支持 `arm64-v8a` 架构（暂不兼容 32 位）
 

@@ -11,7 +11,6 @@
 
 plugins {
     id("com.android.application")
-    // 不需要 Kotlin 插件！
     // 如果项目根 build.gradle.kts 中已声明 kotlin-android，可以忽略它
 }
 
@@ -21,7 +20,7 @@ android {
 
     defaultConfig {
         applicationId = "com.kgmdecoder.app"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "Test"

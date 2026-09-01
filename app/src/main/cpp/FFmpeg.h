@@ -73,35 +73,54 @@ public:
     bool getMediaInfo() const;
 
     /**
-     * @brief 压缩/转码当前已打开的媒体文件
+     * @brief 用压缩参数完成输出初始化（计算 preset/码率，创建编码器/流，写文件头）
      *
-     * @param outputPath 输出文件路径
-     * @param targetBitRateKbps 目标视频码率(kbps)，默认 800
-     * @param targetWidth 目标宽度，0 表示保持原始
-     * @param targetHeight 目标高度，0 表示保持原始
-     * @param crf x264 CRF 质量值（18-28），默认 23
-     * @param preset x264 编码速度预设
+     * 仅做输出侧初始化，不执行编码。调用后需再调用 encodeToFile() 写出压缩文件。
+     * 复用源文件音视频编码器，不更换编码器；不使用 CRF，采用 ABR 码率模式。
+     *
+     * @param outputPath 输出文件路径（扩展名决定封装格式）
+     * @param presetLevel 预设等级, 1体积最小, 10体积较大
      * @return 0 表示成功，负数表示错误码
      */
-    int compressMedia(const char* outputPath,
-                      int targetBitRateKbps = 800,
-                      int targetWidth = 0,
-                      int targetHeight = 0,
-                      int crf = 23,
-                      const char* preset = "medium");
+    int openOutputWithCompressMedia(const char* outputPath,
+                                     int presetLevel);
 
     /**
-     * @brief 用指定编码器打开输出
-     * @param id 打开输出文件使用的编码器id
-     * @warning 调用此函数之前必须调用 setOutputPath()
+     * @brief 纯编码循环（可复用），输出必须已由 openOutPutWithEncoder /
+     *        openOutputWithCompressMedia 初始化完成
+     *
+     * 读取输入包 → 解码 → 缩放/重采样 → 编码 → 写包 → 冲刷解码器/编码器 → writeTrailer。
+     * 使用成员变量 outFmtCtx_/venc_/aenc_/outVStream_/outAStream_/swsCtx_/swrCtx_。
+     *
+     * @return 0 表示成功，负数表示错误码
+     */
+    int encodeToFile();
+
+    /**
+     * @brief 用指定编码器ID完成输出初始化（打开输出、创建编码器/流、写文件头）
+     *
+     * 负责全部输出侧初始化工作，完成后可直接调用 encodeToFile() 进行编码。
+     *
+     * @param videoID 视频编码器ID，AV_CODEC_ID_NONE 表示不输出视频
+     * @param audioID 音频编码器ID，AV_CODEC_ID_NONE 表示不输出音频
+     * @param videoBitrate 视频目标码率(bps)，0=使用编码器默认
+     * @param presetStr 编码器preset字符串（如"medium"/"slow"），nullptr=不设置
+     * @param targetFps 输出视频帧率，0=沿用源帧率
+     * @param audioBitrate 音频目标码率(bps)，0=使用默认128kbps
+     * @warning 调用此函数之前必须调用 setOutputPath() 设置 outPath_
      * @return 0 表示成功, 负数表示错误码
      */
-    int openOutPutWithEncoder(AVCodecID videoId, AVCodecID audioID);
+    int openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID,
+                               int64_t videoBitrate = 0,
+                               const char* presetStr = nullptr,
+                               double targetFps = 0.0,
+                               int64_t audioBitrate = 0);
 
     /**
-     * @brief 用指定名称的视频/音频编码器将当前打开的媒体重新编码输出到新文件
+     * @brief 便捷重载：用指定名称的编码器初始化输出并编码写出文件
      *
-     * 封装格式由输出路径的扩展名决定（如 .mp4/.mkv/.wav/.mp3/.flac）
+     * 内部等价于：name→codec_id → openOutPutWithEncoder() → encodeToFile()。
+     * 封装格式由输出路径的扩展名决定（如 .mp4/.mkv/.wav/.mp3/.flac）。
      *
      * @param outputPath 输出文件路径（扩展名决定封装格式）
      * @param videoEncoderName 视频编码器名称（如 "libx264"/"libx265"/"mpeg4"），
@@ -125,6 +144,26 @@ public:
     inline int audioStreamIndex() const { return audioStreamIndex_; }
 
 private:
+
+    /**
+     * @brief 通用输出初始化（私有辅助函数，被 openOutPutWithEncoder /
+     *        openOutputWithCompressMedia 各自独立调用，二者互不调用）
+     *
+     * 完成：打开输出 → 创建编码器 → 创建输出流 → 初始化 sws/swr → 写文件头。
+     *
+     * @param videoID 视频编码器ID，AV_CODEC_ID_NONE 表示不输出视频
+     * @param audioID 音频编码器ID，AV_CODEC_ID_NONE 表示不输出音频
+     * @param videoBitrate 视频目标码率(bps)，0=使用编码器默认
+     * @param presetStr 编码器preset字符串，nullptr=不设置
+     * @param targetFps 输出视频帧率，0=沿用源帧率
+     * @param audioBitrate 音频目标码率(bps)，0=使用默认128kbps
+     * @return 0 表示成功, 负数表示错误码
+     */
+    int initOutputContext(AVCodecID videoID, AVCodecID audioID,
+                           int64_t videoBitrate,
+                           const char* presetStr,
+                           double targetFps,
+                           int64_t audioBitrate);
 
     bool inited = false;
 
