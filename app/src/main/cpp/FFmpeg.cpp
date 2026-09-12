@@ -11,15 +11,29 @@ extern "C" {
 #include <libavutil/imgutils.h>
 #include <libavformat/avio.h>
 #include <libavutil/cpu.h>
+#include <libavformat/avformat.h>
+#include <libavutil/log.h>
 }
 
 FFmpeg *ffmpeg = nullptr;
+
+// FFmpeg 内部日志转发到 logcat（用于调试编码器 EINVAL 根因）
+static void ffmpegLogToLogcat(void *ptr, int level, const char *fmt, va_list vl)
+{
+    if (level > AV_LOG_WARNING) return; // 只转发 WARNING 及更严重
+    char buf[1024] = {0};
+    vsnprintf(buf, sizeof(buf), fmt, vl);
+    LOGD("ffmpeg[%d]: %s", level, buf);
+}
 
 // ============================
 // 构造/析构
 // ============================
 FFmpeg::FFmpeg(androidOutStream &os, androidInStream &is)
-        : cout(os), cin(is), inited(true), outPath_("/sdcard/Download/default.mp4") {}
+        : cout(os), cin(is), inited(true), outPath_("/sdcard/Download/default.mp4") {
+    av_log_set_level(AV_LOG_DEBUG);
+    av_log_set_callback(ffmpegLogToLogcat);
+}
 
 FFmpeg::~FFmpeg() {
     close();
@@ -231,12 +245,19 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
 
     // ========== 视频初始化 ==========
     if (wantVideo) {
-        av::Codec vCodec = av::findEncodingCodec(videoID);
+        // 尝试启用Android硬件编码
+        const AVCodec* hwCodec = nullptr;
+        if (videoID == AV_CODEC_ID_H264) hwCodec = avcodec_find_encoder_by_name("h264_mediacodec");
+        else if (videoID == AV_CODEC_ID_H265) hwCodec = avcodec_find_encoder_by_name("hevc_mediacodec");
+
+        av::Codec vCodec = hwCodec ? av::Codec(hwCodec) : av::findEncodingCodec(videoID);
+        const bool isHardWare = (hwCodec != nullptr);
         if (vCodec.isNull()) {
             cout << String("找不到视频编码器: ", "Can not find video encoder: ") << videoID << endl;
             LOGD("找不到视频编码器: %s", avcodec_get_name(videoID));
             return -EINVAL;
         }
+
 
         venc_ = av::VideoEncoderContext(vCodec);
 
@@ -255,12 +276,34 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
             AVRational target = av_d2q(targetFps, 1000);
             inFrameRate = target;
         }
-        // 启用多线程编码
-        venc_.raw()->thread_count = av_cpu_count() <= 0 ? 2 : av_cpu_count() - 2;
-        if (venc_.raw()->thread_count > 6) venc_.raw()->thread_count = 6;
+        // 启用多线程编码(软解)
+        if (!isHardWare) {
+            LOGD("使用软件编码");
+            int threads = av_cpu_count() <= 0 ? 2 : av_cpu_count() - 2;
+            if (videoID == AV_CODEC_ID_MPEG4) {
+                // mpeg4 不支持 frame 级多线程，但支持 slice 级
+                venc_.raw()->thread_count = threads;
+                venc_.raw()->thread_type  = FF_THREAD_SLICE;
+            } else {
+                venc_.raw()->thread_count = threads;
+                venc_.raw()->thread_type  = FF_THREAD_FRAME;
+            }
+        } else {
+            cout << String("启用H264/H265硬编码", "Enabled H264/H265 hardware encoding");
+            LOGD("启用H264/H265硬编码");
+            venc_.raw()->thread_count = av_cpu_count() <= 0 ? 2 : av_cpu_count() - 2;
+            if (venc_.raw()->thread_count > 6) venc_.raw()->thread_count = 6;
+            if (venc_.raw()->priv_data) {
+                av_opt_set(venc_.raw()->priv_data, "bitrate-mode", "VBR", 0);
+            }
+        }
 
-        // timebase = 1/fps = den/num
-        venc_.raw()->time_base = av::Rational(inFrameRate.den, inFrameRate.num);
+        // 帧率四舍五入到整数，mpeg4 对非整数帧率支持不好
+        int fpsInt = (int)(av_q2d(inFrameRate) + 0.5);
+        if (fpsInt < 1) fpsInt = 25;
+        AVRational encFrameRate = {fpsInt, 1};
+        venc_.raw()->framerate = encFrameRate;
+        venc_.raw()->time_base = av_inv_q(encFrameRate);
         venc_.raw()->gop_size = 50;
 
         // 码率与 preset 设置
@@ -278,21 +321,23 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
             venc_.raw()->bit_rate = 2000000;
         }
 
-        if (needGlobalHeader) {
-            venc_.raw()->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-        }
+        // mpeg4 等编码器需要 GLOBAL_HEADER
+        venc_.raw()->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
-        venc_.open(ec);
-        LOGD("venc before open: %dx%d pix=%d tb=%d/%d fr=%d/%d br=%ld gop=%d flags=0x%x",
+//      venc_.open(ec);
+        int openRet = avcodec_open2(venc_.raw(), vCodec.raw(), nullptr);
+        LOGD("venc after open: %dx%d pix=%d tb=%d/%d fr=%d/%d br=%ld gop=%d flags=0x%x openRet=%d",
              venc_.width(), venc_.height(), static_cast<int>(venc_.pixelFormat().get()),
              venc_.raw()->time_base.num, venc_.raw()->time_base.den,
              venc_.raw()->framerate.num, venc_.raw()->framerate.den,
-             venc_.bitRate(), venc_.gopSize(), venc_.raw()->flags);
+             venc_.bitRate(), venc_.gopSize(), venc_.raw()->flags, openRet);
 
-        if (ec) {
-            cout << String("打开视频编码器失败: ", "Fail to open video encoder: ") << ec.message() << endl;
-            LOGD("打开视频编码器%s失败: %s", avcodec_get_name(videoID), ec.message().c_str());
-            return ec.value();
+        if (openRet < 0) {
+            char errbuf[256] = {0};
+            av_strerror(openRet, errbuf, sizeof(errbuf));
+            cout << String("打开视频编码器失败: ", "Fail to open video encoder: ") << errbuf << endl;
+            LOGD("打开视频编码器%s失败: ret=%d, %s", avcodec_get_name(videoID), openRet, errbuf);
+            return openRet;
         }
 
         outVStream_ = outFmtCtx_.addStream(venc_, ec);
@@ -384,6 +429,11 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
             }
         }
     }
+
+    // 自动避免负时间戳：MP3 编码器有编码延迟(约 1105 样本)，导致第一个音频包 dts 为负，
+    // AVI muxer 对负/重复 dts 会报 "non monotonically increasing dts" 而写包失败。
+    // av_interleaved_write_frame 会按此选项把所有流包时间戳整体偏移，使最小 dts >= 0。
+    outFmtCtx_.raw()->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_ZERO;
 
     // 写文件头
     outFmtCtx_.writeHeader(ec);
@@ -609,6 +659,7 @@ int FFmpeg::openOutputWithCompressMedia(const char* outputPath,
 int FFmpeg::encodeToFile() {
     if (!outFmtCtx_.isOpened()) {
         cout << String("输出未初始化...", "Output not initialized...") << endl;
+        LOGD("输出未初始化...");
         return -EINVAL;
     }
 
@@ -618,6 +669,7 @@ int FFmpeg::encodeToFile() {
     if (!videoStreamOk && !audioStreamOk) {
         cout << String("音视频输出流均未建立，编码取消...",
                        "No output stream created, encoding canceled...") << endl;
+        LOGD("没有视频和音频流, 编码结束");
         return -EINVAL;
     }
 
@@ -647,7 +699,14 @@ int FFmpeg::encodeToFile() {
         yuvFrame = av::VideoFrame(AV_PIX_FMT_YUV420P, outWidth, outHeight);
     }
     AVRational vInTimeBase = {0, 0};
+    AVRational aInTimeBase = {0, 0};
     if (videoStreamOk) vInTimeBase = fmtCtx_.raw()->streams[videoStreamIndex_]->time_base;
+    if (audioStreamOk) aInTimeBase = fmtCtx_.raw()->streams[audioStreamIndex_]->time_base;
+
+    // 时间进度：总时长（微秒），未知则回退到包数进度
+    int64_t totalDurationUs = fmtCtx_.raw()->duration;
+    int64_t currentTimeUs = 0;
+    const bool durationKnown = (totalDurationUs > 0 && totalDurationUs != AV_NOPTS_VALUE);
 
     cout << String("正在编码...", "Encoding...") << endl;
 
@@ -664,7 +723,27 @@ int FFmpeg::encodeToFile() {
                 rawPkt->duration = aenc_.raw()->frame_size;
             }
         }
-        av_packet_rescale_ts(rawPkt, encTb, st.raw()->time_base);
+        // 调试：打印音频包时间戳（rescale 前后）
+        bool isAudioPkt = (st.index() == outAStream_.index());
+        if (isAudioPkt && writtenAPkts < 3) {
+            LOGD("audio pkt pre:  pts=%lld dts=%lld dur=%lld encTb=%d/%d stTb=%d/%d",
+                 (long long)rawPkt->pts, (long long)rawPkt->dts, (long long)rawPkt->duration,
+                 encTb.num, encTb.den, st.raw()->time_base.num, st.raw()->time_base.den);
+        }
+        static int64_t audioTsOffset = AV_NOPTS_VALUE;
+        if (isAudioPkt  && rawPkt->dts != AV_NOPTS_VALUE) {
+            if (audioTsOffset == AV_NOPTS_VALUE && rawPkt->dts < 0) {
+                audioTsOffset = -rawPkt->dts;
+            }
+            if (audioTsOffset > 0) {
+                rawPkt->pts += audioTsOffset;
+                rawPkt->dts += audioTsOffset;
+            }
+        }
+        if (isAudioPkt && writtenAPkts < 3) {
+            LOGD("audio pkt post: pts=%lld dts=%lld dur=%lld",
+                 (long long)rawPkt->pts, (long long)rawPkt->dts, (long long)rawPkt->duration);
+        }
         std::error_code writeEc;
         outFmtCtx_.writePacket(pkt, writeEc);
         if (writeEc) {
@@ -677,17 +756,35 @@ int FFmpeg::encodeToFile() {
     // 视频帧编码 lambda
     auto feedVideoFrame = [&](av::VideoFrame &decFrame) {
         if (!swsCtx_ || !venc_.isOpened() || !decFrame) return;
+        // 更新时间进度（取max，B帧乱序时进度不回退）
+        if (durationKnown && decFrame.raw()->pts != AV_NOPTS_VALUE && vInTimeBase.num > 0) {
+            int64_t frameUs = av_rescale_q(decFrame.raw()->pts, vInTimeBase, AV_TIME_BASE_Q);
+            if (frameUs > currentTimeUs) currentTimeUs = frameUs;
+        }
         sws_scale(swsCtx_,
                   decFrame.raw()->data, decFrame.raw()->linesize,
                   0, decFrame.height(),
                   yuvFrame.raw()->data, yuvFrame.raw()->linesize);
-        if (decFrame.raw()->pts != AV_NOPTS_VALUE && vInTimeBase.num > 0) {
-            yuvFrame.raw()->pts = av_rescale_q(decFrame.raw()->pts, vInTimeBase,
-                                                venc_.raw()->time_base);
-        } else {
-            yuvFrame.raw()->pts = vEncNextPts;
+        // 直接使用自增帧号作为 pts：
+        // 输入 time_base 分母极大(如法老.mp4 的 1/14876000)时 av_rescale_q 换算到
+        // 编码器 time_base 会全部截断为 0，触发 "Invalid pts <= last" EINVAL。
+        // 自增帧号在编码器 time_base 下即正确时间戳（每帧 +1），且严格单调递增。
+        yuvFrame.raw()->pts = vEncNextPts;
+        vEncNextPts++;
+        // 调试：只打印第一次，确认帧和编码器参数匹配
+        static bool vencDebugPrinted = false;
+        if (!vencDebugPrinted) {
+            AVFrame *yf = yuvFrame.raw();
+            LOGD("encode debug: frame fmt=%d w=%d h=%d pts=%lld buf0=%p data0=%p data1=%p data2=%p ls0=%d ls1=%d | codec fmt=%d w=%d h=%d tb=%d/%d fr=%d/%d open=%d",
+                 yf->format, yf->width, yf->height, (long long)yf->pts,
+                 (void*)yf->buf[0], (void*)yf->data[0], (void*)yf->data[1], (void*)yf->data[2],
+                 yf->linesize[0], yf->linesize[1],
+                 venc_.raw()->pix_fmt, venc_.raw()->width, venc_.raw()->height,
+                 venc_.raw()->time_base.num, venc_.raw()->time_base.den,
+                 venc_.raw()->framerate.num, venc_.raw()->framerate.den,
+                 avcodec_is_open(venc_.raw()));
+            vencDebugPrinted = true;
         }
-        vEncNextPts = yuvFrame.raw()->pts + 1;
         std::error_code encEc;
         av::Packet encPkt = venc_.encode(yuvFrame, encEc);
         if (encEc) {
@@ -702,6 +799,11 @@ int FFmpeg::encodeToFile() {
     // 音频样本编码 lambda
     auto feedAudioSamples = [&](av::AudioSamples &decSamples) {
         if (!swrCtx_ || !aenc_.isOpened() || !decSamples) return;
+        // 更新时间进度（与视频取max，音视频不同步时进度取较大者）
+        if (durationKnown && decSamples.raw()->pts != AV_NOPTS_VALUE && aInTimeBase.num > 0) {
+            int64_t samplesUs = av_rescale_q(decSamples.raw()->pts, aInTimeBase, AV_TIME_BASE_Q);
+            if (samplesUs > currentTimeUs) currentTimeUs = samplesUs;
+        }
         int dstNbSamples = swr_get_out_samples(swrCtx_, decSamples.samplesCount());
         if (dstNbSamples <= 0) return;
         av::AudioSamples encSamples(outSampleFmt, dstNbSamples,
@@ -757,8 +859,16 @@ int FFmpeg::encodeToFile() {
         bool isAudio = (audioStreamOk && pkt.streamIndex() == audioStreamIndex_);
         if (!isVideo && !isAudio) continue;
         if ((++processedPkts % 200) == 0) {
-            cout << String("进度: 已处理 ", "Progress: processed ") << processedPkts
-                 << String(" 包", " packets") << endl;
+            if (durationKnown) {
+                int percent = (int)(currentTimeUs * 100 / totalDurationUs);
+                if (percent > 100) percent = 100;
+                cout << String("进度: ", "Progress: ") << percent << "%  ("
+                     << currentTimeUs / 1000000 << "s / " << totalDurationUs / 1000000 << "s)"
+                     << endl;
+            } else {
+                cout << String("进度: 已处理 ", "Progress: processed ") << processedPkts
+                     << String(" 包", " packets") << endl;
+            }
         }
         if (isVideo && venc_.isOpened()) {
             std::error_code decEc;
@@ -860,6 +970,11 @@ int FFmpeg::encodeToFile() {
                 ++writtenAPkts;
             }
         }
+    }
+
+    // 编码完成，进度打满
+    if (durationKnown) {
+        cout << String("进度: 100%", "Progress: 100%") << endl;
     }
 
     // ========== 写文件尾 ==========

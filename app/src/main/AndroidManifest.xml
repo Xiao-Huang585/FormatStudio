@@ -56,7 +56,8 @@
     </activity>
         
     <activity android:name="com.kgmdecoder.app.Help" android:exported="false" />
-    <activity android:name="com.kgmdecoder.app.Selecting" android:exported="false" />
+    <activity android:name="com.kgmdecoder.app.Selecting" android:exported="false"
+        android:windowSoftInputMode="adjustPan" />
 
 </application>
 

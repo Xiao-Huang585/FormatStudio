@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 应用名称，对应 AndroidManifest.xml 中的 @string/app_name -->
+    <string name="app_name">Format Studio</string>
+
+    <!-- 可选：如果你的界面有标题栏，可添加此属性 -->
+    <string name="title_activity_main">解码</string>
+
+    <string name="MainActivity_title">KGM解码</string>
+
+    <string name="MainActivity_defaultHint">请输入内容，按回车确认 >></string>
+
+    <string name="MainActivity_pickBtnHint">选择</string>
+
+    <string name="Help_title">帮助</string>
+
+    <string name="Selecting_title">选择功能:</string>
+
+    <string name="Selecting_showMediaInfo">显示文件信息</string>
+
+    <string name="Selecting_playVideo">播放视频(确保是视频)</string>
+
+    <string name="Selecting_encodeWithOtherEncoders">使用其他编码器编码</string>
+
+    <string name="Selecting_parametersTitle">设置参数</string>
+
+    <string name="Help_content">FormatStudio v26.09.12 \n完善了使用其他编码器编码文件时的问题</string>
+
+    <string name="Selecting_subtitle">请选择要执行的功能</string>
+
+    <string name="Selecting_parameter1">输出路径: </string>
+
+    <string name="Selecting_encoder">编码器</string>
+
+    <string name="Selecting_videoEncoderLabel">视频编码器</string>
+
+    <string name="Selecting_audioEncoderLabel">音频编码器</string>
+
+    <string name="Selecting_confirm">确认</string>
+</resources>
+
