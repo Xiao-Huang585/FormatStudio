@@ -10,28 +10,30 @@
     <!-- 顶部装饰背景 -->
     <View
         android:id="@+id/header_bg"
-        android:layout_width="0dp"
-        android:layout_height="180dp"
+        android:layout_width="405dp"
+        android:layout_height="132dp"
         android:background="@drawable/bg_title_bar"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
     <!-- 标题 -->
     <TextView
         android:id="@+id/tv_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
+        android:layout_marginTop="16dp"
         android:layout_marginEnd="24dp"
-        android:layout_marginTop="32dp"
+        android:gravity="start"
         android:text="@string/Selecting_title"
         android:textColor="@color/text_title"
         android:textSize="40sp"
         android:textStyle="bold"
-        android:gravity="start"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
+
     <TextView
         android:id="@+id/tv_subtitle"
         android:layout_width="0dp"
@@ -129,7 +131,7 @@
         android:layout_marginTop="20dp"
         android:background="@drawable/bg_card_rounded"
         android:elevation="8dp"
-        android:visibility="visible"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -212,7 +214,7 @@
                     android:selectAllOnFocus="true"
                     android:imeOptions="actionDone"
                     android:text="/storage/emulated/0/Download/output.mp4"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/text_console"
                     android:textColorHint="@color/text_hint"
                     android:textSize="15sp"
                     app:layout_constraintEnd_toEndOf="parent"

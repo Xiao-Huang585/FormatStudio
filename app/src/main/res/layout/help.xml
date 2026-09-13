@@ -15,12 +15,12 @@
     <!-- 顶部装饰背景 -->
     <View
         android:id="@+id/header_bg"
-        android:layout_width="0dp"
-        android:layout_height="200dp"
+        android:layout_width="426dp"
+        android:layout_height="107dp"
         android:background="@drawable/bg_title_bar"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- 返回按钮 -->
     <ImageButton

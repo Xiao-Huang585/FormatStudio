@@ -10,6 +10,7 @@
     <color name="text_hint">@color/night_text_hint</color>
     <color name="btn_pick_bg">@color/night_btn_pick_bg</color>
     <color name="btn_pick_text">@color/night_btn_pick_text</color>
+    <color name="bg_card">#FF1E1E2E</color>
     <color name="night_text_blue">#516880</color>
     <color name="night_window_color">#8891E2</color>
 </resources>

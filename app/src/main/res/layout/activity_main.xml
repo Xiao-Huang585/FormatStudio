@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ============================================================ -->
-<!-- activity_main.xml                                             -->
-<!-- 美化版：保持所有组件 id 不变，修正 CardView 遮挡 SurfaceView 问题 -->
+<!-- activity_main.xml                                            -->
+<!-- 美化版                                                        -->
 <!-- ============================================================ -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"

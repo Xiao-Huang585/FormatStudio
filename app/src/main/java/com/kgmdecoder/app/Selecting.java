@@ -82,11 +82,12 @@ public class Selecting extends Activity {
         if (fileHasVideo) {
             videoCodecGroup.setVisibility(View.VISIBLE);
             // 编码器显示名 → FFmpeg 编码器名
-            final String[] videoNames = {"libx264", "libx265", "mpeg4"};
+            final String[] videoNames = {"libx264", "libx265", "mpeg4", "mjpeg"};
             String[] videoLabels = {
-                    "H.264 (libx264)",
-                    "H.265 (libx265)",
-                    "MPEG-4 (mpeg4)"
+                    "H.264 (AVC)",
+                    "H.265 (HEVC)",
+                    "MPEG-4",
+                    "MJPEG"
             };
             // =========【改动】使用自己的布局，不再用 android.R.layout.xxx =========
             ArrayAdapter<String> vAdapter = new ArrayAdapter<>(
