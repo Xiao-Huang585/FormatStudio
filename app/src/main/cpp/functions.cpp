@@ -25,11 +25,12 @@ std::condition_variable g_inputCv;
 std::string g_inputData;
 std::atomic<bool> g_inputReady = false;
 std::string g_pendingFunction;
-std::string g_encoderOutputPath;
+namespace enc_par {
+std::string g_outputPath;
 std::string g_encoderVideoCodec;   // 空串 = 不编码视频
 std::string g_encoderAudioCodec;   // 空串 = 不编码音频
-std::string g_compressOutputPath;  // 压缩输出路径
-int g_compressPreset = 5;           // 压缩等级 1~10，默认5
+int g_compressLevel = 5;           // 压缩等级 1~10，默认5
+} // namespace enc_par
 // 当前选中文件的流信息（nativeOpenFile 探测结果）
 std::atomic<bool> g_fileHasVideo = false;
 std::atomic<bool> g_fileHasAudio = false;
@@ -89,6 +90,43 @@ bool checkAllPtrs(T *ptr, Args... args) {
     return checkAllPtrs(args...);
 }
 inline bool checkAllPtrs() { return true; }
+
+/**
+ @param lineIndex 从1开始
+ */
+bool writeAtLine(const std::string& path, size_t lineIndex, const std::string& newText) {
+    lineIndex--;
+    std::vector<std::string> lines;
+    std::ifstream in(path);
+    if (!in.is_open()) return false;
+
+    std::string buf;
+    while (std::getline(in, buf))
+    {
+        lines.push_back(buf);
+    }
+    in.close();
+
+    // 如果行号超过现有行数，追加新行
+    if (lineIndex >= lines.size())
+    {
+        lines.resize(lineIndex + 1);
+    }
+    lines[lineIndex] = newText;
+
+    // 全部覆写回去
+    std::ofstream out(path);
+    if (!out.is_open())
+        return false;
+    for (size_t i = 0; i < lines.size(); ++i)
+    {
+        out << lines[i];
+        if(i != lines.size()-1)
+            out << '\n';
+    }
+    out.close();
+    return true;
+}
 
 // ====== JNI 全局引用初始化 ======
 bool initGlobalRefs(JNIEnv *env) {
@@ -439,16 +477,16 @@ Java_com_kgmdecoder_app_MainActivity_passEncoderConfig(JNIEnv *env, jobject thiz
     const char *outputPath = env->GetStringUTFChars(jOutputPath, nullptr);
     const char *videoCodec = jVideoCodec ? env->GetStringUTFChars(jVideoCodec, nullptr) : nullptr;
     const char *audioCodec = jAudioCodec ? env->GetStringUTFChars(jAudioCodec, nullptr) : nullptr;
-    g_encoderOutputPath = outputPath ? outputPath : "";
-    g_encoderVideoCodec = videoCodec ? videoCodec : "";
-    g_encoderAudioCodec = audioCodec ? audioCodec : "";
+    enc_par::g_outputPath = outputPath ? outputPath : "";
+    enc_par::g_encoderVideoCodec = videoCodec ? videoCodec : "";
+    enc_par::g_encoderAudioCodec = audioCodec ? audioCodec : "";
     env->ReleaseStringUTFChars(jOutputPath, outputPath);
     if (videoCodec) env->ReleaseStringUTFChars(jVideoCodec, videoCodec);
     if (audioCodec) env->ReleaseStringUTFChars(jAudioCodec, audioCodec);
     LOGD("编码参数: output=%s vCodec=%s aCodec=%s",
-         g_encoderOutputPath.c_str(),
-         g_encoderVideoCodec.c_str(),
-         g_encoderAudioCodec.c_str());
+         enc_par::g_outputPath.c_str(),
+         enc_par::g_encoderVideoCodec.c_str(),
+         enc_par::g_encoderAudioCodec.c_str());
 }
 
 // ============================
@@ -458,14 +496,14 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passCompressConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jint jPreset) {
     std::lock_guard<std::mutex> lock(g_inputMutex);
     const char *outputPath = env->GetStringUTFChars(jOutputPath, nullptr);
-    g_compressOutputPath = outputPath ? outputPath : "";
-    g_compressPreset = (int)jPreset;
-    if (g_compressPreset < 1) g_compressPreset = 1;
-    if (g_compressPreset > 10) g_compressPreset = 10;
+    enc_par::g_outputPath = outputPath ? outputPath : "";
+    enc_par::g_compressLevel = (int)jPreset;
+    if (enc_par::g_compressLevel < 1) enc_par::g_compressLevel = 1;
+    if (enc_par::g_compressLevel > 10) enc_par::g_compressLevel = 10;
     env->ReleaseStringUTFChars(jOutputPath, outputPath);
     LOGD("压缩参数: output=%s preset=%d",
-         g_compressOutputPath.c_str(),
-         g_compressPreset);
+         enc_par::g_outputPath.c_str(),
+         enc_par::g_compressLevel);
 }
 
 // ============================
@@ -549,4 +587,23 @@ Java_com_kgmdecoder_app_MainActivity_nativeSetSurface(JNIEnv *env, jobject thiz,
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_nativeShowVideoView(JNIEnv *env, jobject thiz, jboolean show) {
     LOGI("nativeShowVideoView: %s", show ? "显示" : "隐藏");
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_kgmdecoder_app_Selecting_checkEnableExperimentalFunction(JNIEnv *env, jobject thiz) {
+    constexpr char* PATH = "/data/user/0/com.kgmdecoder.app/files/config.dat";
+    if (!std::filesystem::exists(PATH)) {
+        std::ofstream f(PATH);
+        f << "0" << std::endl;
+        return false;
+    }
+    std::fstream f(PATH);
+    std::string line;
+    std::getline(f, line);
+    if (line == "1") {
+        return true;
+    } else {
+        writeAtLine(PATH, 1, "0");
+        return false;
+    }
 }

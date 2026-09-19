@@ -9,7 +9,8 @@
     <color name="white">#FFFFFFFF</color>
 
     <!-- ====== 浅色模式（默认）====== -->
-    <color name="bg_title_bar">#212121</color>
+    <color name="bg_mainActivity_title_bar">#212121</color>
+    <color name="bg_title_bar">#383838</color>
     <color name="bg_console">#D0D0D0</color>
     <color name="bg_input_bar">#FFFFFF</color>
     <color name="bg_root">#F5F5F5</color>
@@ -32,7 +33,7 @@
     <color name="night_text_blue">#4D6783</color>
     <color name="night_window_color">#8891E2</color>
 
-    <color name="bg_card">#A6A6AF</color>            <!-- 卡片背景，按需调整 -->
+    <color name="bg_card">#A6A6AF</color>              <!-- 卡片背景，按需调整 -->
     <color name="bg_edit_text">#FF2A2A3C</color>       <!-- 输入框背景 -->
     <color name="btn_primary_bg">#FF4CAF50</color>     <!-- 主按钮背景 -->
     <color name="btn_primary_text">#FFFFFFFF</color>   <!-- 主按钮文字 -->
@@ -40,5 +41,7 @@
     <color name="btn_secondary_text">#FFFFFFFF</color> <!-- 次按钮文字 -->
     <color name="btn_third_bg">#7C5CBA</color>         <!-- 第三按钮背景 -->
     <color name="btn_third_text">#FFFFFF</color>       <!-- 第三按钮文字 -->
+    <color name="btn_fourth_bg">#E7B05D</color>        <!-- 第四按钮背景 -->
+    <color name="btn_fourth_text">#FFFFFF</color>      <!-- 第四按钮文字 -->
     <color name="ripple_color">#40FFFFFF</color>       <!-- 水波纹 -->
 </resources>

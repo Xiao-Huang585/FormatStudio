@@ -6,7 +6,7 @@
         <item name="android:windowBackground">@color/bg_root</item>
         <item name="android:colorBackground">@color/bg_root</item>
         <item name="android:textColorPrimary">@color/text_console</item>
-        <item name="android:statusBarColor">@color/bg_title_bar</item>
+        <item name="android:statusBarColor">@color/bg_mainActivity_title_bar</item>
     </style>
 
     <!-- ====== 深色主题（夜晚模式）====== -->

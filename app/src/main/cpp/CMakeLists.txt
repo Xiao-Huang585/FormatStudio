@@ -46,6 +46,7 @@ endif()
 # ============================
 add_library(native SHARED
         native-lib.cpp
+        help.cpp
         functions.cpp
         FFmpeg.cpp
         strings.cpp

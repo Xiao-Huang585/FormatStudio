@@ -53,6 +53,7 @@ public class MainActivity extends Activity {
     public native void triggerCppToCallJava();
     public native void passInputToCpp(String input);
     public native void passEncoderConfig(String outputPath, String videoCodec, String audioCodec);
+    public native void passCompressConfig(String outputPath, int level);
     // 同步打开媒体文件（跳转 Selecting 前调用，使 hasVideo/hasAudio 生效）
     public native boolean nativeOpenFile(String path);
     // Surface JNI 方法
@@ -114,6 +115,19 @@ public class MainActivity extends Activity {
                     passEncoderConfig(outputPath,
                             videoCodec != null ? videoCodec : "",
                             audioCodec != null ? audioCodec : "");
+                    passInputToCpp(selectedFilePath + "\n" + function);
+                } else if ("EncodeWithCompress".equals(function)) {
+                    String outputPath = data.getStringExtra("OutputPath");
+                    String compressLevel = data.getStringExtra("CompressLevel");
+                    Log.d(TAG, "压缩输出: 输出=" + outputPath + " 压缩等级=" + compressLevel);
+                    int level = 5;
+                    if (compressLevel.length() == 1) {
+                        level = compressLevel.charAt(0) - '0';
+                    }
+                    if (compressLevel.length() == 2) {
+                        level = 10;
+                    }
+                    passCompressConfig(outputPath, level);
                     passInputToCpp(selectedFilePath + "\n" + function);
                 } else {
                     // 传给 C++ 处理，格式: 路径\n功能名

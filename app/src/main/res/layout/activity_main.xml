@@ -19,7 +19,7 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:orientation="horizontal"
-        android:background="@drawable/bg_title_bar"
+        android:background="@drawable/bg_main_activity_title_bar"
         android:elevation="4dp"
         android:gravity="center_vertical"
         app:layout_constraintTop_toTopOf="parent"

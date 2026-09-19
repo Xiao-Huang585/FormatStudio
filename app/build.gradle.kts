@@ -23,7 +23,7 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "26.09.12"
+        versionName = "26.09.19"
 
         // CMake 配置（在 android.defaultConfig 中声明）
         externalNativeBuild {
@@ -125,6 +125,7 @@ android {
 // 依赖项 - 纯 Java，无 Kotlin 标准库
 // ============================================================
 dependencies {
+    implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.activity:activity:1.9.0");
     implementation("androidx.fragment:fragment:1.9.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")

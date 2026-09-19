@@ -268,8 +268,8 @@ static void playVideoSimple(androidOutStream &cout, androidInStream &cin,
 #if ENABLE_YSPLAYER
 static void playVideoWithYsPlayer(androidOutStream &cout, androidInStream &cin,
                                   const std::string &path, jobject activity, bool hasVideo, bool hasAudio) {
-    cout << "===== YsPlayer 播放 =====" << endl;
-    cout << "文件: " << path << endl;
+    cout << String("===== YsPlayer 播放 =====", "===== Play with YsPlayer =====") << endl;
+    cout << String("文件: ", "Path: ") << path << endl;
 
     // 1. 创建 YsCallJava（需要 JavaVM、JNIEnv、Activity jobject）
     //    YsCallJava 的回调方法名对应 Java Activity 中的：
@@ -284,7 +284,7 @@ static void playVideoWithYsPlayer(androidOutStream &cout, androidInStream &cin,
     // 2. 创建 YsFFmpegPlayer（构造函数需要 YsCallJava*）
     YsFFmpegPlayer *player = new YsFFmpegPlayer(callJava);
     if (!player) {
-        cout << "创建 YsFFmpegPlayer 失败" << endl;
+        cout << String("创建 YsFFmpegPlayer 失败", "Failed to create player...") << endl;
         delete callJava;
         return;
     }
@@ -467,9 +467,16 @@ void cppMain(jobject thiz) {
     g_log.open("/storage/emulated/0/Android/data/com.kgmdecoder.app/files/log.txt");
     g_log << "C++ I/O is ready..." << std::endl;
 
-    cout << String("FormatStudio Version Test测试版; 作者: Huang",
-                   "FormatStudio Version Test beta; Author: Huang");
+    cout << String("FormatStudio Version v26.09.19; 作者: Huang",
+                   "FormatStudio Version v26.09.19; Author: Huang");
     cout.flush();
+
+    const AVCodec* codec1 = (avcodec_find_encoder_by_name("opus"));
+    LOGD("libopus是否存在: %i", codec1 != nullptr);
+
+    const AVCodec* codec2 = (avcodec_find_encoder_by_name("mjpeg"));
+    LOGD("mjpeg是否存在: %i", codec2 != nullptr);
+    LOGD("mjpeg的id: %s", avcodec_get_name(AV_CODEC_ID_MJPEG));
 
     while (true) {
         callJavaShowText(env, "---------------------");
@@ -548,33 +555,33 @@ void cppMain(jobject thiz) {
 
                 if (functionName == "EncodeWithOtherEncoders") {
                     cout << String("===== 开始编码 =====", "===== Start encoding =====") << endl;
-                    cout << String("输出路径: ", "Output path: ") << g_encoderOutputPath << endl;
+                    cout << String("输出路径: ", "Output path: ") << enc_par::g_outputPath << endl;
                     cout << String("视频编码器: ", "Video encoder: ")
-                         << (g_encoderVideoCodec.empty()
-                             ? String("无", "(none)") : String(g_encoderVideoCodec.c_str(), g_encoderVideoCodec.c_str())) << endl;
+                         << (enc_par::g_encoderVideoCodec.empty()
+                             ? String("无", "(none)") : String(enc_par::g_encoderVideoCodec.c_str(), enc_par::g_encoderVideoCodec.c_str())) << endl;
                     cout << String("音频编码器: ", "Audio encoder: ")
-                         << (g_encoderAudioCodec.empty()
-                             ? String("无", "(none)") : String(g_encoderAudioCodec.c_str(), g_encoderAudioCodec.c_str())) << endl;
+                         << (enc_par::g_encoderAudioCodec.empty()
+                             ? String("无", "(none)") : String(enc_par::g_encoderAudioCodec.c_str(), enc_par::g_encoderAudioCodec.c_str())) << endl;
                     cout.flush();
 
                     // 第一步：根据编码器名称查找 codec_id
                     AVCodecID videoID = AV_CODEC_ID_NONE;
                     AVCodecID audioID = AV_CODEC_ID_NONE;
-                    if (!g_encoderVideoCodec.empty()) {
-                        const AVCodec* vCodec = avcodec_find_encoder_by_name(g_encoderVideoCodec.c_str());
+                    if (!enc_par::g_encoderVideoCodec.empty()) {
+                        const AVCodec* vCodec = avcodec_find_encoder_by_name(enc_par::g_encoderVideoCodec.c_str());
                         if (!vCodec) {
                             cout << String("找不到视频编码器: ", "Can not find video encoder: ")
-                                 << g_encoderVideoCodec << endl;
+                                 << enc_par::g_encoderVideoCodec << endl;
                             cout.flush();
                             continue;
                         }
                         videoID = vCodec->id;
                     }
-                    if (!g_encoderAudioCodec.empty()) {
-                        const AVCodec* aCodec = avcodec_find_encoder_by_name(g_encoderAudioCodec.c_str());
+                    if (!enc_par::g_encoderAudioCodec.empty()) {
+                        const AVCodec* aCodec = avcodec_find_encoder_by_name(enc_par::g_encoderAudioCodec.c_str());
                         if (!aCodec) {
                             cout << String("找不到音频编码器: ", "Can not find audio encoder: ")
-                                 << g_encoderAudioCodec << endl;
+                                 << enc_par::g_encoderAudioCodec << endl;
                             cout.flush();
                             continue;
                         }
@@ -582,7 +589,7 @@ void cppMain(jobject thiz) {
                     }
 
                     // 第二步：设置输出路径 + 初始化输出（打开输出、创建编码器/流、写文件头）
-                    ffmpeg->setOutputPath(g_encoderOutputPath);
+                    ffmpeg->setOutputPath(enc_par::g_outputPath);
                     int initRet = ffmpeg->openOutPutWithEncoder(videoID, audioID);
                     if (initRet != 0) {
                         cout << String("输出初始化失败，错误码: ", "Output init failed, error code: ")
@@ -607,14 +614,14 @@ void cppMain(jobject thiz) {
                     continue;
                 }
 
-                if (functionName == "CompressMedia") {
+                if (functionName == "EncodeWithCompress") {
                     cout << String("===== 开始压缩 =====", "===== Start compressing =====") << endl;
-                    cout << String("输出路径: ", "Output path: ") << g_compressOutputPath << endl;
-                    cout << String("压缩等级: ", "Compress level: ") << g_compressPreset
+                    cout << String("输出路径: ", "Output path: ") << enc_par::g_outputPath << endl;
+                    cout << String("压缩等级: ", "Compress level: ") << enc_par::g_compressLevel
                          << " (1=最小体积, 10=较大体积)" << endl;
                     cout.flush();
 
-                    if (g_compressOutputPath.empty()) {
+                    if (enc_par::g_outputPath.empty()) {
                         cout << String("压缩输出路径为空，取消压缩", "Compress output path is empty, canceled") << endl;
                         cout.flush();
                         continue;
@@ -622,8 +629,8 @@ void cppMain(jobject thiz) {
 
                     // 第一步：用压缩参数初始化输出（复用源编码器，计算码率/preset，创建编码器/流，写文件头）
                     int initRet = ffmpeg->openOutputWithCompressMedia(
-                            g_compressOutputPath.c_str(),
-                            g_compressPreset
+                            enc_par::g_outputPath.c_str(),
+                            enc_par::g_compressLevel
                     );
                     if (initRet != 0) {
                         cout << String("压缩输出初始化失败，错误码: ", "Compress output init failed, error code: ")

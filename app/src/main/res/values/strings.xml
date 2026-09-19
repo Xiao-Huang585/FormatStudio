@@ -3,6 +3,9 @@
     <!-- 应用名称，对应 AndroidManifest.xml 中的 @string/app_name -->
     <string name="app_name">Format Studio</string>
 
+    <!-- 帮助的更新内容 -->
+    <string name="Help_content">FormatStudio v26.09.12 \n1.New function encodeWithCompress\n(There are some problems, you can make it visible by turning on "experimental functions" switch).\n2.New opus encoder at function encoderWithOtherEncoders.</string>
+
     <!-- 可选：如果你的界面有标题栏，可添加此属性 -->
     <string name="title_activity_main">Decoding</string>
 
@@ -14,19 +17,21 @@
 
     <string name="Help_title">Help</string>
 
+    <string name="Help_experimental_functions">Experimental functions: </string>
+
     <string name="Selecting_title">Select functions:</string>
 
     <string name="Selecting_showMediaInfo">Show Media info</string>
 
-    <string name="Selecting_playVideo">Play video(video only)</string>
+    <string name="Selecting_playVideo">Play video</string>
 
     <string name="Selecting_encodeWithOtherEncoders">Use other encoder to encode</string>
 
+    <string name="Selecting_encodeWithCompress">Compress file</string>
+
     <string name="Selecting_parametersTitle">Set Parameters</string>
 
-    <string name="Help_content">FormatStudio v26.09.12 \nSolve the problem of encode file with other encoder function.</string>
-
-    <string name="Selecting_subtitle">Please select a function...</string>
+    <string name="Selecting_subtitle">Please select a function…</string>
 
     <string name="Selecting_parameter1">Output path: </string>
 
@@ -35,6 +40,8 @@
     <string name="Selecting_videoEncoderLabel">Video encoder</string>
 
     <string name="Selecting_audioEncoderLabel">Audio encoder</string>
+
+    <string name="Selecting_setCompressLevel">Set compress level</string>
 
     <string name="Selecting_confirm">confirm</string>
 </resources>

@@ -112,13 +112,14 @@ extern std::atomic<bool> g_inputReady;
 extern std::string g_pendingFunction; // Selecting Activity 返回的功能名
 // 编码器参数（由 MainActivity 通过 passEncoderConfig 传入）
 // 空串表示不编码对应流
-extern std::string g_encoderOutputPath;
+namespace enc_par {
+extern std::string g_outputPath;
 extern std::string g_encoderVideoCodec;   // 视频编码器名，如 "libx264"
 extern std::string g_encoderAudioCodec;   // 音频编码器名，如 "pcm_s16le"
 
 // 压缩参数（由 MainActivity 通过 passCompressConfig 传入）
-extern std::string g_compressOutputPath;  // 压缩输出路径
-extern int g_compressPreset;               // 压缩等级 1~10（1体积最小,10体积较大）
+extern int g_compressLevel;                // 压缩等级 1~10（1体积最小,10体积较大）
+} // namespace enc_par
 
 // 当前选中文件的流信息（由 nativeOpenFile 独立探测，供 Selecting 查询）
 // 独立于全局 ffmpeg 实例：nativeOpenFile 在主线程调用，
@@ -164,6 +165,9 @@ inline bool checkAllPtrs();
 template <typename T, typename... Args>
 bool checkAllPtrs(T *ptr, Args...);
 
+// 写入文件
+bool writeAtLine(const std::string& path, size_t lineIndex, const std::string& newText);
+
 // JNI 全局引用管理
 bool initGlobalRefs(JNIEnv *env);
 void releaseGlobalRefs(JNIEnv *env);
@@ -200,6 +204,8 @@ Java_com_kgmdecoder_app_MainActivity_passInputToCpp(JNIEnv *env, jclass clazz, j
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passEncoderConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jstring jVideoCodec, jstring jAudioCodec);
 extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passCompressConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jint jlevel);
+extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passCompressConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jint jPreset);
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_kgmdecoder_app_MainActivity_nativeOpenFile(JNIEnv *env, jobject thiz, jstring jPath);
@@ -207,6 +213,8 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_nativeSetSurface(JNIEnv *env, jobject thiz, jobject surface);
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_nativeShowVideoView(JNIEnv *env, jobject thiz, jboolean show);
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_kgmdecoder_app_MainActivity_checkEnableExperimentalFunction(JNIEnv *env, jobject thiz);
 
 // 标准换行兼容
 using std::endl;
