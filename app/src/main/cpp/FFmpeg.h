@@ -167,6 +167,9 @@ private:
 
     bool inited = false;
 
+    // 解码线程数(初始化输入式同步配置文件)
+    uint8_t encodeThreads;
+
     // avcpp 格式上下文（RAII 管理）
     av::FormatContext fmtCtx_;
     av::FormatContext outFmtCtx_;

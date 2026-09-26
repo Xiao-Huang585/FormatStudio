@@ -92,6 +92,7 @@ bool checkAllPtrs(T *ptr, Args... args) {
 inline bool checkAllPtrs() { return true; }
 
 /**
+ @brief 写入文件
  @param lineIndex 从1开始
  */
 bool writeAtLine(const std::string& path, size_t lineIndex, const std::string& newText) {

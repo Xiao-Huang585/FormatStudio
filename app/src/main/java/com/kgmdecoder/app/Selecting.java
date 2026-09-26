@@ -68,12 +68,9 @@ public class Selecting extends Activity {
         fileHasVideo = hasVideo();
         fileHasAudio = hasAudio();
 
-        // 实验功能开关
-        if (checkEnableExperimentalFunction()) {
-            encodeWithCompressBtn.setVisibility(View.VISIBLE);
-        } else {
-            encodeWithCompressBtn.setVisibility(View.GONE);
-        }
+        // 实验功能开关(此版本不存在)
+        // ......
+
 
         showMediaInfoBtn.setOnClickListener(v -> {
             Intent res = new Intent();
@@ -197,11 +194,12 @@ public class Selecting extends Activity {
         // 视频编码器
         if (fileHasVideo) {
             videoCodecGroup.setVisibility(View.VISIBLE);
-            final String[] videoNames = {"libx264", "libx265", "mpeg4"};
+            final String[] videoNames = {"libx264", "libx265", "mpeg4", "mpeg2video"};
             String[] videoLabels = {
                     "H.264 (AVC)",
                     "H.265 (HEVC)",
                     "MPEG-4",
+                    "MPEG-2"
             };
             ArrayAdapter<String> vAdapter = new ArrayAdapter<>(
                     this, R.layout.spinner_item, videoLabels);
@@ -228,13 +226,16 @@ public class Selecting extends Activity {
         // 音频编码器
         if (fileHasAudio) {
             audioCodecGroup.setVisibility(View.VISIBLE);
-            final String[] audioNames = {"aac", "libmp3lame", "pcm_s16le", "flac", "opus"};
+            final String[] audioNames = {"aac", "libmp3lame", "pcm_s16le", "flac", "opus",
+                    "pcm_s24le", "vorbis"};
             String[] audioLabels = {
                     "AAC (aac)",
                     "MP3 (libmp3lame)",
                     "PCM 16bit (pcm_s16le)",
-                    "FLAC 无损 (flac)",
-                    "OPUS"
+                    "FLAC (flac)",
+                    "OPUS",
+                    "PCM 24bit (pcm_s24le)",
+                    "VORBIS"
             };
             ArrayAdapter<String> aAdapter = new ArrayAdapter<>(
                     this, R.layout.spinner_item, audioLabels);

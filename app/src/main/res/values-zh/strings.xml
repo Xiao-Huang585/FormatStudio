@@ -4,7 +4,7 @@
     <string name="app_name">Format Studio</string>
 
     <!-- 帮助的更新内容 -->
-    <string name="Help_content">FormatStudio v26.09.12 \n1.新功能 encodeWithCompress\n(还有些问题, 可以在"experimental functions" 开关中打开).\n2.新增opus编码器在encoderWithOtherEncoders功能中.</string>
+    <string name="Help_content">FormatStudio v26.09.12  \n1. 可以在帮助界面设置编码线程数\n2. 在\"使用其他编码器编码\"功能中, 更新了一些编码器</string>
 
     <!-- 可选：如果你的界面有标题栏，可添加此属性 -->
     <string name="title_activity_main">解码</string>

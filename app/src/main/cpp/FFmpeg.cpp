@@ -30,7 +30,7 @@ static void ffmpegLogToLogcat(void *ptr, int level, const char *fmt, va_list vl)
 // 构造/析构
 // ============================
 FFmpeg::FFmpeg(androidOutStream &os, androidInStream &is)
-        : cout(os), cin(is), inited(true), outPath_("/sdcard/Download/default.mp4") {
+        : cout(os), cin(is), inited(true), outPath_("/sdcard/Download/default.mp4"), encodeThreads(2) {
     av_log_set_level(AV_LOG_DEBUG);
     av_log_set_callback(ffmpegLogToLogcat);
 }
@@ -43,6 +43,7 @@ FFmpeg::~FFmpeg() {
 // 关闭并释放资源（avcpp RAII 自动处理大部分）
 // ============================
 void FFmpeg::close() {
+    encodeThreads = 2;
     if (swsCtx_) {
         sws_freeContext(swsCtx_);
         swsCtx_ = nullptr;
@@ -79,11 +80,43 @@ void FFmpeg::close() {
 // 打开输入媒体文件
 // ============================
 int FFmpeg::openInput(const char* url) {
+
+    auto getEncodeThreads = []() -> uint8_t {
+        auto checkFile = []() -> bool {
+            if (!std::filesystem::exists("/data/user/0/com.kgmdecoder.app/files/config.dat")) {
+                std::ofstream f("/data/user/0/com.kgmdecoder.app/files/config.dat");
+                f << "0" << std::endl;
+                f << "2" << std::endl;
+                return false;
+            }
+            return true;
+        };
+        if (!checkFile()) {
+            return 2;
+        }
+        std::fstream f("/data/user/0/com.kgmdecoder.app/files/config.dat");
+        std::string line;
+        std::getline(f, line);
+        std::getline(f, line);
+        if (line.empty()) return 2;
+        std::string target = "";
+        for (size_t i = 0; i < line.size(); i++) {
+            if ('0' <= line[i] && line[i] <= '9') target.push_back(line[i]);
+            else return 2;
+        }
+        if (target.empty()) return 2;
+        int c = std::stoi(target);
+        if (c < 1) return 2;
+        return c <= av_cpu_count() ? (uint8_t)c : (uint8_t)av_cpu_count();
+    };
+
     if (!url || !url[0]) {
         return -EINVAL;
     }
 
     close();
+
+    encodeThreads = getEncodeThreads();
 
     std::error_code ec;
 
@@ -113,9 +146,8 @@ int FFmpeg::openInput(const char* url) {
             }
 
             vdec_ = av::VideoDecoderContext(st);
-            vdec_.raw()->thread_count = av_cpu_count() - 4 <= 0 ? 2 : av_cpu_count() - 4;
-            if (vdec_.raw()->thread_count > 6) vdec_.raw()->thread_count = 6;
-            vdec_.raw()->thread_type  = FF_THREAD_FRAME | FF_THREAD_SLICE;
+            vdec_.raw()->thread_count = encodeThreads > 0 ? encodeThreads : 2;
+            vdec_.raw()->thread_type  = FF_THREAD_FRAME;
             vdec_.open(ec);
             if (ec) {
                 LOGD("视频解码器打开失败: %s", ec.message().c_str());
@@ -279,7 +311,7 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
         // 启用多线程编码(软解)
         if (!isHardWare) {
             LOGD("使用软件编码");
-            int threads = av_cpu_count() <= 0 ? 2 : av_cpu_count() - 2;
+            int threads = encodeThreads > 0 ? encodeThreads : 2;
             if (videoID == AV_CODEC_ID_MPEG4) {
                 // mpeg4 不支持 frame 级多线程，但支持 slice 级
                 venc_.raw()->thread_count = threads;
@@ -291,8 +323,7 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
         } else {
             cout << String("启用H264/H265硬编码", "Enabled H264/H265 hardware encoding");
             LOGD("启用H264/H265硬编码");
-            venc_.raw()->thread_count = av_cpu_count() <= 0 ? 2 : av_cpu_count() - 2;
-            if (venc_.raw()->thread_count > 6) venc_.raw()->thread_count = 6;
+            venc_.raw()->thread_count = encodeThreads > 0 ? encodeThreads : 2;
             if (venc_.raw()->priv_data) {
                 av_opt_set(venc_.raw()->priv_data, "bitrate-mode", "VBR", 0);
             }
@@ -446,6 +477,9 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
         LOGD("写文件头失败: %s \n(提示: 输出扩展名对应的容器可能不支持所选编码器组合)", ec.message().c_str());
     }
 
+    if (hasVideo()) LOGI("视频码率: %li", venc_.bitRate());
+    if (hasAudio()) LOGI("音频码率: %li", aenc_.bitRate());
+
     return 0;
 }
 
@@ -565,8 +599,9 @@ int FFmpeg::openOutputWithCompressMedia(const char* outputPath,
     }
 
     const std::vector<std::string> presetStrTable = {
-            "placebo", "veryslow", "slower", "slow", "medium",
-            "fast", "veryfast", "superfast", "ultrafast"
+            "slow", "slow", "medium", "medium",
+            "fast", "fast", "fast",
+            "veryfast", "superfast", "ultrafast"
     };
     const std::string preset = presetStrTable.at(presetLevel - 1);
 
@@ -657,6 +692,7 @@ int FFmpeg::openOutputWithCompressMedia(const char* outputPath,
 // openOutputWithCompressMedia 初始化完成
 // ============================
 int FFmpeg::encodeToFile() {
+    LOGI("解码线程: %hhu", encodeThreads);
     if (!outFmtCtx_.isOpened()) {
         cout << String("输出未初始化...", "Output not initialized...") << endl;
         LOGD("输出未初始化...");
@@ -708,6 +744,7 @@ int FFmpeg::encodeToFile() {
     int64_t currentTimeUs = 0;
     const bool durationKnown = (totalDurationUs > 0 && totalDurationUs != AV_NOPTS_VALUE);
 
+    cout << String("编码线程: ", "Encode threads: ") << static_cast<int>(encodeThreads) << endl;
     cout << String("正在编码...", "Encoding...") << endl;
 
     // 写包 lambda

@@ -467,6 +467,28 @@ void cppMain(jobject thiz) {
     g_log.open("/storage/emulated/0/Android/data/com.kgmdecoder.app/files/log.txt");
     g_log << "C++ I/O is ready..." << std::endl;
 
+    // 检查编码器
+    const AVCodec *codec = nullptr;
+    void *iter = nullptr;
+
+    LOGI("===== FFmpeg 可用编码器列表 =====\n");
+    while ((codec = av_codec_iterate(&iter)))
+    {
+        if (av_codec_is_encoder(codec))
+        {
+            const char *type_str;
+            if (codec->type == AVMEDIA_TYPE_VIDEO)
+                type_str = "VIDEO";
+            else if (codec->type == AVMEDIA_TYPE_AUDIO)
+                type_str = "AUDIO";
+            else
+                type_str = "OTHER";
+
+            LOGI("[%s] name: %-20s longname: %s\n",
+                   type_str, codec->name, codec->long_name);
+        }
+    }
+
     cout << String("FormatStudio Version v26.09.19; 作者: Huang",
                    "FormatStudio Version v26.09.19; Author: Huang");
     cout.flush();

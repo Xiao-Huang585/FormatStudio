@@ -4,7 +4,7 @@
     <string name="app_name">Format Studio</string>
 
     <!-- 帮助的更新内容 -->
-    <string name="Help_content">FormatStudio v26.09.12 \n1.New function encodeWithCompress\n(There are some problems, you can make it visible by turning on "experimental functions" switch).\n2.New opus encoder at function encoderWithOtherEncoders.</string>
+    <string name="Help_content">FormatStudio v26.09.12  \n1. Support set encode threads in help page\n2. New encoder in function \"encodeWithOtherEncoder\"</string>
 
     <!-- 可选：如果你的界面有标题栏，可添加此属性 -->
     <string name="title_activity_main">Decoding</string>
