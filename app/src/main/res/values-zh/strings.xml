@@ -4,12 +4,12 @@
     <string name="app_name">Format Studio</string>
 
     <!-- 帮助的更新内容 -->
-    <string name="Help_content">FormatStudio v26.09.12  \n1. 可以在帮助界面设置编码线程数\n2. 在\"使用其他编码器编码\"功能中, 更新了一些编码器</string>
+    <string name="Help_content">%1$s\n1. 新增了对\".ncm\"(网易云音乐)的解码支持(所用第三方库见README)</string>
 
     <!-- 可选：如果你的界面有标题栏，可添加此属性 -->
     <string name="title_activity_main">解码</string>
 
-    <string name="MainActivity_title">KGM解码</string>
+    <string name="MainActivity_title">KGM NCM解码</string>
 
     <string name="MainActivity_defaultHint">请输入内容，按回车确认 >></string>
 
@@ -17,7 +17,7 @@
 
     <string name="Help_title">帮助</string>
 
-    <string name="Help_experimental_functions">实验性功能: </string>
+    <string name="Help_experimental_functions">"实验性功能(暂未使用): "</string>
 
     <string name="Selecting_title">选择功能:</string>
 

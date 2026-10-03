@@ -73,13 +73,15 @@ app/src/main/
 
 本项目使用了以下第三方库，请查阅 [THIRD_PARTY_NOTICES-CN.md](THIRD_PARTY_NOTICES-CN.md) 了解完整的许可证信息。
 
-| 库                | 许可证                          | 说明                                      |
-| ----------------- | ------------------------------- | ----------------------------------------- |
-| avcpp             | BSD-3-Clause                    | FFmpeg C++ 封装                           |
-| FFmpeg            | GPL-2.0+ / GPL-3.0+（整体作品） | 静态链接，启用了 GPL 组件                 |
-| kugou-kgm-decoder | 反 996 License v1.0             | 生成 `libkgm_decoder.so` 用于解密 `.kgm`  |
-| OpenSSL           | Apache-2.0                      | 加密支持                                  |
-| YsPlayer          | Apache-2.0                      | 视频播放器                                |
+| 库                | 许可证                          | 说明                                          |
+| ----------------- | ------------------------------- | ----------------------------------------------|
+| avcpp             | BSD-3-Clause                    | FFmpeg C++ 封装                               |
+| FFmpeg            | GPL-2.0+ / GPL-3.0+（整体作品） | 静态链接，启用了 GPL 组件                     |
+| kugou-kgm-decoder | 反 996 License v1.0             | 生成 `libkgm_decoder.so` 用于解密 `.kgm`文件  |
+| OpenSSL           | Apache-2.0                      | 加密支持                                      |
+| YsPlayer          | Apache-2.0                      | 视频播放器                                    |
+| ncmdump           | MIT                             | 生成 `libncm_dump.so` 用于解密 `.ncm`文件     |
+| TagLib (libtag)   | LGPL-2.1-or-later               | 音频元数据读取，`libncm_dump.so` 的依赖       |
 
 ## 许可证
 

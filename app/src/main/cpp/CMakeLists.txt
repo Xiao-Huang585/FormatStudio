@@ -5,6 +5,13 @@ project(native)
 # ============================
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# 版本号（从 build.gradle 传入）
+if(NOT DEFINED APP_VERSION)
+    set(APP_VERSION "unknown")
+endif()
+add_definitions(-DAPP_VERSION="${APP_VERSION}")
+
 # ============================
 # 库目录变量
 # ============================
@@ -138,6 +145,19 @@ set_target_properties(lzma PROPERTIES
         IMPORTED_NO_SONAME TRUE
 )
 
+add_library(tag SHARED IMPORTED)
+set_target_properties(
+        tag PROPERTIES
+        IMPORTED_LOCATION "${JNI_LIBS_DIR}/libtag.so"
+        IMPORTED_NO_SONAME TRUE
+)
+
+add_library(ncm_dump SHARED IMPORTED)
+set_target_properties(ncm_dump PROPERTIES
+        IMPORTED_LOCATION "${JNI_LIBS_DIR}/libncm_dump.so"
+        IMPORTED_NO_SONAME TRUE
+)
+
 # ============================
 # 【重点修正】target_link_libraries 顺序
 # 规则：
@@ -159,6 +179,7 @@ target_link_libraries(native
 
         # ========== 外部动态库 .so 放在静态库之后 ==========
         kgm_decoder
+        ncm_dump
         drm
         lzma
         z

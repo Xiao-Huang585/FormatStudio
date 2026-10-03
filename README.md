@@ -89,6 +89,8 @@ This project uses the following third-party libraries. See [THIRD\_PARTY\_NOTICE
 | YsPlayer          | Apache-2.0                                          | Video player                                                            |
 | OpenSSL           | Apache-2.0                                          | Crypto support                                                          |
 | kugou-kgm-decoder | Anti 996 License v1.0                               | Generates `libkgm_decoder.so` for `.kgm` decryption                     |
+| ncmdump           | MIT                                                 | Generates `libncm_dump.so` for `.ncm` decryption                        |
+| TagLib (libtag)   | LGPL-2.1-or-later                                   | Audio metadata reading, dependency of `libncm_dump.so`                   |
 
 ## License
 

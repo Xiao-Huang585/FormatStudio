@@ -3,6 +3,7 @@
 #include "FFmpeg.h"
 #include "avcpp/av.h"
 #include "avcpp/avlog.h"
+#include <fstream>
 extern "C" {
 #include <libavutil/log.h>
 #include <libavformat/avformat.h>
@@ -41,28 +42,33 @@ ANativeWindow *g_nativeWindow = nullptr;
 std::mutex g_windowMutex;
 
 // ====== KuGou 枚举转字符串 ======
-namespace std {
-    string to_string(KuGou _k) {
-        switch (_k) {
-            case KuGou::Ok:
-                return "完成!";
-            case KuGou::InputFileOpenFailed:
-                return "打开输入失败";
-            case KuGou::OutputFileOpenFailed:
-                return "打开输出失败";
-            case KuGou::DecodeFailed:
-                return "解码失败";
-            case KuGou::InvalidPath:
-                return "无效的路径";
-            case KuGou::OutputExists:
-                return "输出已经存在";
-            case KuGou::Unknown:
-                return "未知";
-            default:
-                return "错误";
-        }
+String to_string(KuGou k_) {
+    switch (k_) {
+        case KuGou::Ok:
+            return String("完成!", "Completed!");
+        case KuGou::InputFileOpenFailed:
+            return String("打开输入失败", "Open input failed");
+        case KuGou::OutputFileOpenFailed:
+            return String("打开输出失败", "Open output failed");
+        case KuGou::DecodeFailed:
+            return String("解码失败", "Decode failed");
+        case KuGou::InvalidPath:
+            return String("无效的路径", "Invalid path");
+        case KuGou::OutputExists:
+            return String("输出已经存在", "Output has already existed");
     }
 }
+String to_string(NetEase n_) {
+    switch (n_) {
+        case NetEase::Ok:
+            return String("完成!", "Completed!");
+        case NetEase::OutputFileOpenFailed:
+            return String("打开输出失败", "Open input failed");
+        case NetEase::Others:
+            return String("其他", "Others");
+    }
+}
+
 
 // ====== 时分秒毫秒转换 ======
 std::array<int, 4> secondsToMicroseconds(int64_t microsecond) {

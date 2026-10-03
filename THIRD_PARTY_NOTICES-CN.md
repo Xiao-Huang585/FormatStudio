@@ -226,6 +226,78 @@ You may obtain a copy of the License at
 
 ***
 
+## ncmdump
+
+* **许可证**: MIT
+
+* **用途**: 生成 `libncm_dump.so`，用于解密网易云音乐 `.ncm` 加密格式
+
+* **仓库**: <https://github.com/anonymous5l/ncmdump>
+
+* **合规要求**:
+
+  * 保留版权声明和许可证文本
+
+  * 不得使用贡献者名称进行背书
+
+```
+MIT License
+
+Copyright (c) <year> <copyright holders>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+***
+
+## TagLib (libtag)
+
+* **许可证**: LGPL-2.1-or-later（同时提供 MPL-1.1 双许可选项）
+
+* **用途**: 音频文件元数据读取库，`libncm_dump.so` 的依赖项
+
+* **仓库**: <https://github.com/taglib/taglib>
+
+* **官网**: <https://taglib.org/>
+
+* **合规要求**:
+
+  * 动态链接（`.so`）方式使用，LGPL 要求允许用户替换该库
+
+  * 保留版权声明和许可证文本
+
+  * 若修改了 TagLib 源码，需公开修改后的源码
+
+```
+TagLib is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or
+(at your option) any later version.
+
+TagLib is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+```
+
+***
+
 ## 合规建议
 
 1. **FFmpeg 源码分发**: 如果你以二进制形式（APK）分发应用，必须提供获取 FFmpeg 源码的方式（链接或直接提供）。推荐做法是在 README 或 About 页面中给出 FFmpeg 源码下载链接。

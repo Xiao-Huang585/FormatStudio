@@ -200,15 +200,20 @@ static AVSampleFormat pickEncoderSampleFormat(const AVCodec *codec) {
     return sampleFmts[0];
 }
 
-// ============================
-// 用指定编码器ID完成输出初始化（公开入口，独立调用 initOutputContext）
-// ============================
+// =================================
+// 用指定编码器ID完成输出初始化（公开入口）
+// =================================
 int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID,
                                    int64_t videoBitrate,
                                    const char* presetStr,
                                    double targetFps,
-                                   int64_t audioBitrate) {
-    return initOutputContext(videoID, audioID, videoBitrate, presetStr, targetFps, audioBitrate);
+                                   int64_t audioBitrate,
+                                   int outWidth,
+                                   int outHeight,
+                                   int targetSampleRate,
+                                   bool allowHardware) {
+    return initOutputContext(videoID, audioID, videoBitrate, presetStr, targetFps, audioBitrate,
+                             outWidth, outHeight, targetSampleRate, allowHardware);
 }
 
 // ============================
@@ -220,7 +225,11 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                                int64_t videoBitrate,
                                const char* presetStr,
                                double targetFps,
-                               int64_t audioBitrate) {
+                               int64_t audioBitrate,
+                               int outWidth,
+                               int outHeight,
+                               int targetSampleRate,
+                               bool allowHardware) {
     if (!fmtCtx_.isOpened()) {
         cout << String("未打开输入文件...", "Didn't open input file...") << endl;
         LOGD("未打开输出文件...");
@@ -277,10 +286,12 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
 
     // ========== 视频初始化 ==========
     if (wantVideo) {
-        // 尝试启用Android硬件编码
+        // 尝试启用Android硬件编码（allowHardware=false 时强制软件编码）
         const AVCodec* hwCodec = nullptr;
-        if (videoID == AV_CODEC_ID_H264) hwCodec = avcodec_find_encoder_by_name("h264_mediacodec");
-        else if (videoID == AV_CODEC_ID_H265) hwCodec = avcodec_find_encoder_by_name("hevc_mediacodec");
+        if (allowHardware) {
+            if (videoID == AV_CODEC_ID_H264) hwCodec = avcodec_find_encoder_by_name("h264_mediacodec");
+            else if (videoID == AV_CODEC_ID_H265) hwCodec = avcodec_find_encoder_by_name("hevc_mediacodec");
+        }
 
         av::Codec vCodec = hwCodec ? av::Codec(hwCodec) : av::findEncodingCodec(videoID);
         const bool isHardWare = (hwCodec != nullptr);
@@ -293,11 +304,18 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
 
         venc_ = av::VideoEncoderContext(vCodec);
 
-        int outWidth = vdec_.width() & ~1;
-        int outHeight = vdec_.height() & ~1;
+        int srcWidth = vdec_.width() & ~1;
+        int srcHeight = vdec_.height() & ~1;
+        if (outWidth <= 0) outWidth = srcWidth;
+        if (outHeight <= 0) outHeight = srcHeight;
+        outWidth &= ~1;
+        outHeight &= ~1;
         venc_.raw()->width = outWidth;
         venc_.raw()->height = outHeight;
-        venc_.raw()->pix_fmt = vdec_.pixelFormat();
+        // 编码器输入格式必须与 sws 输出/yuvFrame 一致（都是 YUV420P）。
+        // 不能用 vdec_.pixelFormat()：硬件解码输出 NV12、10bit 源输出 P010/YUV420P10
+        // 时，编码器按错误格式解释 UV 平面会导致颜色糊在一起花屏。
+        venc_.raw()->pix_fmt = AV_PIX_FMT_YUV420P;
 
         AVRational inFrameRate = fmtCtx_.raw()->streams[videoStreamIndex_]->avg_frame_rate;
         if (inFrameRate.den <= 0 || inFrameRate.num <= 0) {
@@ -335,7 +353,10 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
         AVRational encFrameRate = {fpsInt, 1};
         venc_.raw()->framerate = encFrameRate;
         venc_.raw()->time_base = av_inv_q(encFrameRate);
-        venc_.raw()->gop_size = 50;
+        venc_.raw()->gop_size = 25;
+        venc_.raw()->max_b_frames = 0;
+        venc_.raw()->qmax = 30;
+        venc_.raw()->qmin = 2;
 
         // 码率与 preset 设置
         if (videoBitrate > 0) {
@@ -347,7 +368,10 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
         } else if (videoID == AV_CODEC_ID_H264 || videoID == AV_CODEC_ID_H265) {
             // 未传 bitrate 时回退到默认 preset+crf
             venc_.setOption("preset", presetStr && presetStr[0] ? presetStr : "medium");
-            if (videoID == AV_CODEC_ID_H264 || videoID == AV_CODEC_ID_H265) venc_.setOption("crf", "27");
+            if (videoID == AV_CODEC_ID_H264 || videoID == AV_CODEC_ID_H265) {
+                venc_.setOption("tune", "zerolatency");
+                venc_.setOption("crf", "27");
+            }
         } else {
             venc_.raw()->bit_rate = 2000000;
         }
@@ -382,7 +406,7 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
         swsCtx_ = sws_getContext(
                 vdec_.width(), vdec_.height(), vdec_.pixelFormat(),
                 outWidth, outHeight, AV_PIX_FMT_YUV420P,
-                SWS_BILINEAR, nullptr, nullptr, nullptr
+                SWS_FAST_BILINEAR, nullptr, nullptr, nullptr
         );
         if (!swsCtx_) {
             cout << String("初始化像素格式转换失败...", "Fail to init sws...") << endl;
@@ -405,10 +429,11 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
             aenc_ = av::AudioEncoderContext(aCodec);
 
             AVSampleFormat outSampleFmt = pickEncoderSampleFormat(aCodec.raw());
-            aenc_.setSampleRate(adec_.sampleRate());
+            int outSampleRate = (targetSampleRate > 0) ? targetSampleRate : adec_.sampleRate();
+            aenc_.setSampleRate(outSampleRate);
             aenc_.setSampleFormat(outSampleFmt);
             aenc_.setBitRate(audioBitrate > 0 ? audioBitrate : 128 * 1000);
-            aenc_.setTimeBase(av::Rational(1, adec_.sampleRate()));
+            aenc_.setTimeBase(av::Rational(1, outSampleRate));
 
             AVChannelLayout stereoLayout = AV_CHANNEL_LAYOUT_STEREO;
             av_channel_layout_copy(&aenc_.raw()->ch_layout, &stereoLayout);
@@ -440,7 +465,7 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                     av_channel_layout_copy(&inLayout, &adec_.raw()->ch_layout);
 
                     int swrRet = swr_alloc_set_opts2(&swrCtx_,
-                                                     &outLayout, outSampleFmt, adec_.sampleRate(),
+                                                     &outLayout, outSampleFmt, outSampleRate,
                                                      &inLayout, adec_.sampleFormat(),
                                                      adec_.sampleRate(), 0, nullptr
                     );
@@ -598,45 +623,70 @@ int FFmpeg::openOutputWithCompressMedia(const char* outputPath,
         return -EINVAL;
     }
 
-    const std::vector<std::string> presetStrTable = {
-            "slow", "slow", "medium", "medium",
-            "fast", "fast", "fast",
-            "veryfast", "superfast", "ultrafast"
-    };
-    const std::string preset = presetStrTable.at(presetLevel - 1);
+    // preset 固定 veryfast（只控制编码速度，不参与压缩等级控制）
+    const std::string preset = "veryfast";
 
-    // 码率缩放系数: preset=1 → 0.3(最小体积), preset=10 → 1.8(较大体积)
-    const double scaleFactor = 0.3 + (presetLevel - 1) * (1.8 - 0.3) / 9.0;
+    // 压缩等级通过 码率/帧率/分辨率/采样率 控制：level=1 最小体积, level=10 原画质
+    // 码率缩放: 0.15 ~ 1.0
+    const double bitrateScale = 0.15 + (presetLevel - 1) * 0.85 / 9.0;
+    // 帧率缩放: 0.4 ~ 1.0（最低不低于 15fps）
+    const double fpsScale = 0.4 + (presetLevel - 1) * 0.6 / 9.0;
+    // 分辨率缩放: 0.6 ~ 1.0
+    const double scaleFactor = 0.6 + (presetLevel - 1) * 0.4 / 9.0;
+    // 采样率档位: 22050 ~ 48000
+    const int sampleRateTable[] = {22050, 24000, 32000, 44100, 48000};
+    const int srIdx = (presetLevel - 1) * 4 / 9;  // 0~4
+    const int targetSampleRate = sampleRateTable[srIdx];
 
-    // 读取输入流原始参数（复用源编码器，不更换）
+    // 读取输入流原始参数（压缩强制用 H.264 软件编码，画质优于硬件编码）
     AVCodecID videoID = AV_CODEC_ID_NONE;
     AVCodecID audioID = AV_CODEC_ID_NONE;
     int64_t srcVideoBitrate = 0;
     int64_t srcAudioBitrate = 0;
+    int srcWidth = 0, srcHeight = 0;
+    int srcSampleRate = 0;
     double srcVideoFps = 25.0;
 
     if (hasVideo()) {
         AVStream* st = fmtCtx_.raw()->streams[videoStreamIndex_];
-        videoID = st->codecpar->codec_id;
+        videoID = AV_CODEC_ID_H264;  // 强制 H.264，配合 allowHardware=false 走 libx264 软编
         srcVideoBitrate = st->codecpar->bit_rate;
         if (srcVideoBitrate <= 0) srcVideoBitrate = 2000000;
+        srcWidth = st->codecpar->width;
+        srcHeight = st->codecpar->height;
         AVRational fr = st->avg_frame_rate;
-        if (fr.num > 0 && fr.den > 0) {
-            srcVideoFps = av_q2d(fr);
-        }
+        if (fr.num > 0 && fr.den > 0) srcVideoFps = av_q2d(fr);
     }
     if (hasAudio()) {
         AVStream* st = fmtCtx_.raw()->streams[audioStreamIndex_];
         audioID = st->codecpar->codec_id;
         srcAudioBitrate = st->codecpar->bit_rate;
         if (srcAudioBitrate <= 0) srcAudioBitrate = 128000;
+        srcSampleRate = st->codecpar->sample_rate;
     }
 
-    // 计算输出码率（ABR 模式，不使用 CRF）
-    int64_t outVideoBitrate = static_cast<int64_t>(std::llround(srcVideoBitrate * scaleFactor));
-    int64_t outAudioBitrate = static_cast<int64_t>(std::llround(srcAudioBitrate * scaleFactor));
+    // 计算输出分辨率（保证偶数）
+    int outWidth = 0, outHeight = 0;
+    if (hasVideo()) {
+        outWidth = (int)(srcWidth * scaleFactor / 2) * 2;
+        outHeight = (int)(srcHeight * scaleFactor / 2) * 2;
+        if (outWidth < 16) outWidth = 16;
+        if (outHeight < 16) outHeight = 16;
+    }
 
-    // 判断编码器是否支持 preset 私有选项（x264/x265/vp9 支持）
+    // 计算目标帧率（最低 15fps，不超过源帧率）
+    double targetFps = srcVideoFps * fpsScale;
+    if (targetFps < 15.0) targetFps = 15.0;
+    if (targetFps > srcVideoFps) targetFps = srcVideoFps;
+
+    // 码率按等级缩放，音频再叠加采样率比例
+    int64_t outVideoBitrate = (int64_t)(srcVideoBitrate * bitrateScale);
+    int64_t outAudioBitrate = (int64_t)(srcAudioBitrate * bitrateScale);
+    if (hasAudio() && srcSampleRate > 0 && targetSampleRate < srcSampleRate) {
+        outAudioBitrate = (int64_t)(outAudioBitrate * (double)targetSampleRate / srcSampleRate);
+    }
+
+    // x264/x265/vp9 支持 preset 私有选项
     bool codecSupportPreset = false;
     if (hasVideo()) {
         if (videoID == AV_CODEC_ID_H264 || videoID == AV_CODEC_ID_H265 ||
@@ -645,39 +695,36 @@ int FFmpeg::openOutputWithCompressMedia(const char* outputPath,
         }
     }
 
-    // 不支持 preset 的编码器回退：适度降低帧率（最低 10fps，不高于源帧率）
-    double targetFps = 0.0;
-    if (hasVideo() && !codecSupportPreset) {
-        targetFps = srcVideoFps * (0.4 + scaleFactor * 0.4);
-        if (targetFps < 10.0) targetFps = 10.0;
-        if (targetFps > srcVideoFps) targetFps = srcVideoFps;
-    }
-
     // 设置输出路径
     outPath_ = outputPath;
 
     cout << "===== 开始压缩 =====" << endl;
     cout << String("输出: ", "Output: ") << outputPath << endl;
-    cout << String("预设等级: ", "Preset: ") << presetLevel << " (" << preset << ")" << endl;
-    cout << String("码率缩放系数: ", "Scale factor: ") << scaleFactor << endl;
+    cout << String("压缩等级: ", "Compress level: ") << presetLevel << endl;
+    cout << String("  码率缩放: ", "  Bitrate scale: ") << bitrateScale << endl;
+    cout << String("  帧率缩放: ", "  FPS scale: ") << fpsScale << " (" << targetFps << " fps)" << endl;
+    cout << String("  分辨率缩放: ", "  Resolution scale: ") << scaleFactor << endl;
     if (hasVideo()) {
+        cout << String("输出分辨率: ", "Output resolution: ") << outWidth << "x" << outHeight << endl;
         cout << String("视频码率: ", "Video bitrate: ") << (outVideoBitrate / 1000) << " kbps" << endl;
-        if (!codecSupportPreset) {
-            cout << String("目标帧率: ", "Target fps: ") << targetFps << endl;
-        }
     }
     if (hasAudio()) {
+        cout << String("输出采样率: ", "Output sample rate: ") << targetSampleRate << " Hz" << endl;
         cout << String("音频码率: ", "Audio bitrate: ") << (outAudioBitrate / 1000) << " kbps" << endl;
     }
     cout.flush();
 
     // 输出初始化（直接调用私有 initOutputContext，与 openOutPutWithEncoder 独立，互不调用）
+    // allowHardware=false：压缩强制 libx264 软件编码，避免硬件编码画质差
     int ret = initOutputContext(
             videoID, audioID,
             outVideoBitrate,
             codecSupportPreset ? preset.c_str() : nullptr,
             targetFps,
-            outAudioBitrate
+            outAudioBitrate,
+            outWidth, outHeight,
+            targetSampleRate,
+            false  // allowHardware=false
     );
     if (ret != 0) {
         return ret;
@@ -739,6 +786,18 @@ int FFmpeg::encodeToFile() {
     if (videoStreamOk) vInTimeBase = fmtCtx_.raw()->streams[videoStreamIndex_]->time_base;
     if (audioStreamOk) aInTimeBase = fmtCtx_.raw()->streams[audioStreamIndex_]->time_base;
 
+    // 帧率转换：目标帧率低于源帧率时丢帧，保持音视频同步
+    double srcFps = 25.0;
+    double targetFps = srcFps;
+    double frameAccum = 0.0;
+    if (videoStreamOk) {
+        AVRational sfr = fmtCtx_.raw()->streams[videoStreamIndex_]->avg_frame_rate;
+        if (sfr.num > 0 && sfr.den > 0) srcFps = av_q2d(sfr);
+        if (venc_.raw()->framerate.num > 0 && venc_.raw()->framerate.den > 0)
+            targetFps = av_q2d(venc_.raw()->framerate);
+        if (targetFps > srcFps) targetFps = srcFps;
+    }
+
     // 时间进度：总时长（微秒），未知则回退到包数进度
     int64_t totalDurationUs = fmtCtx_.raw()->duration;
     int64_t currentTimeUs = 0;
@@ -753,15 +812,20 @@ int FFmpeg::encodeToFile() {
         if (!st.isValid() || !pkt) return false;
         AVPacket *rawPkt = pkt.raw();
         rawPkt->stream_index = st.index();
-        if (aenc_.isOpened() && rawPkt->duration <= 0) {
-            if (frameNbSamples > 0) {
-                rawPkt->duration = frameNbSamples;
-            } else if (aenc_.raw()->frame_size > 0) {
-                rawPkt->duration = aenc_.raw()->frame_size;
+        bool isAudioPkt = (st.index() == outAStream_.index());
+        // 补 duration：音频用样本数，视频每帧占 1 个编码器 time_base 单位
+        if (rawPkt->duration <= 0) {
+            if (isAudioPkt) {
+                if (frameNbSamples > 0) {
+                    rawPkt->duration = frameNbSamples;
+                } else if (aenc_.isOpened() && aenc_.raw()->frame_size > 0) {
+                    rawPkt->duration = aenc_.raw()->frame_size;
+                }
+            } else {
+                rawPkt->duration = 1;
             }
         }
         // 调试：打印音频包时间戳（rescale 前后）
-        bool isAudioPkt = (st.index() == outAStream_.index());
         if (isAudioPkt && writtenAPkts < 3) {
             LOGD("audio pkt pre:  pts=%lld dts=%lld dur=%lld encTb=%d/%d stTb=%d/%d",
                  (long long)rawPkt->pts, (long long)rawPkt->dts, (long long)rawPkt->duration,
@@ -793,6 +857,12 @@ int FFmpeg::encodeToFile() {
     // 视频帧编码 lambda
     auto feedVideoFrame = [&](av::VideoFrame &decFrame) {
         if (!swsCtx_ || !venc_.isOpened() || !decFrame) return;
+        // 帧率转换：目标帧率低于源帧率时按比例丢帧
+        if (targetFps < srcFps - 0.01) {
+            frameAccum += targetFps;
+            if (frameAccum < srcFps) return;  // 丢帧
+            frameAccum -= srcFps;
+        }
         // 更新时间进度（取max，B帧乱序时进度不回退）
         if (durationKnown && decFrame.raw()->pts != AV_NOPTS_VALUE && vInTimeBase.num > 0) {
             int64_t frameUs = av_rescale_q(decFrame.raw()->pts, vInTimeBase, AV_TIME_BASE_Q);
@@ -802,10 +872,9 @@ int FFmpeg::encodeToFile() {
                   decFrame.raw()->data, decFrame.raw()->linesize,
                   0, decFrame.height(),
                   yuvFrame.raw()->data, yuvFrame.raw()->linesize);
-        // 直接使用自增帧号作为 pts：
-        // 输入 time_base 分母极大(如法老.mp4 的 1/14876000)时 av_rescale_q 换算到
-        // 编码器 time_base 会全部截断为 0，触发 "Invalid pts <= last" EINVAL。
-        // 自增帧号在编码器 time_base 下即正确时间戳（每帧 +1），且严格单调递增。
+        // 自增帧号作为 pts：VFR 源视频帧间隔不均匀，从源 pts 转换会出现重复/回退，
+        // 导致编码器丢帧（运动场景糊）。自增在整数帧率 time_base 下严格单调递增。
+        // 时长偏差由写文件尾时设置视频流 duration 兜底。
         yuvFrame.raw()->pts = vEncNextPts;
         vEncNextPts++;
         // 调试：只打印第一次，确认帧和编码器参数匹配
@@ -1016,9 +1085,13 @@ int FFmpeg::encodeToFile() {
 
     // ========== 写文件尾 ==========
     outFmtCtx_.writeTrailer(ec);
-    // 兜底修正音频流 duration
+    // 兜底修正音视频流 duration（vEncNextPts/aEncNextPts 基于各自编码器 time_base）
+    if (outVStream_.isValid() && venc_.isOpened()) {
+        outVStream_.raw()->duration = av_rescale_q(vEncNextPts, venc_.raw()->time_base,
+                                                     outVStream_.raw()->time_base);
+    }
     if (outAStream_.isValid() && aenc_.isOpened()) {
-        outAStream_.raw()->duration = av_rescale_q(aEncNextPts, {1, adec_.sampleRate()},
+        outAStream_.raw()->duration = av_rescale_q(aEncNextPts, {1, aenc_.sampleRate()},
                                                      outAStream_.raw()->time_base);
     }
     if (ec) {
@@ -1039,6 +1112,7 @@ int FFmpeg::encodeToFile() {
 // 便捷重载：用指定名称的编码器初始化输出并编码写出文件
 // 内部等价于：name→codec_id → openOutPutWithEncoder() → encodeToFile()
 // ============================
+[[maybe_unused]]
 int FFmpeg::encodeToFile(const char* outputPath,
                          const char* videoEncoderName,
                          const char* audioEncoderName) {

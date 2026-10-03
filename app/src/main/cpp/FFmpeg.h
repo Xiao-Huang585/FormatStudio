@@ -112,9 +112,13 @@ public:
      */
     int openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID,
                                int64_t videoBitrate = 0,
-                               const char* presetStr = nullptr,
+                               const char* presetStr = "veryfast",
                                double targetFps = 0.0,
-                               int64_t audioBitrate = 0);
+                               int64_t audioBitrate = 0,
+                               int outWidth = 0,
+                               int outHeight = 0,
+                               int targetSampleRate = 0,
+                               bool allowHardware = true);
 
     /**
      * @brief 便捷重载：用指定名称的编码器初始化输出并编码写出文件
@@ -163,7 +167,11 @@ private:
                            int64_t videoBitrate,
                            const char* presetStr,
                            double targetFps,
-                           int64_t audioBitrate);
+                           int64_t audioBitrate,
+                           int outWidth = 0,
+                           int outHeight = 0,
+                           int targetSampleRate = 0,
+                           bool allowHardware = true);
 
     bool inited = false;
 

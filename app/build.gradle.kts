@@ -18,12 +18,16 @@ android {
     namespace = "com.kgmdecoder.app"
     compileSdk = 34
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.kgmdecoder.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "26.09.26"
+        versionName = "26.10.03"
 
         // CMake 配置（在 android.defaultConfig 中声明）
         externalNativeBuild {
@@ -31,7 +35,8 @@ android {
                 // 传递给 CMake 的参数
                 arguments += listOf(
                     "-DANDROID_STL=c++_shared",
-                    "-DANDROID_PLATFORM=android-24"
+                    "-DANDROID_PLATFORM=android-24",
+                    "-DAPP_VERSION=${versionName}"
                 )
 
                 // 仅编译需要的 ABI（减少编译时间）

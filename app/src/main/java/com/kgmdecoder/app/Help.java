@@ -9,7 +9,9 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
+import com.kgmdecoder.app.BuildConfig;
 
 public class Help extends Activity {
     private ImageButton back;
@@ -27,6 +29,11 @@ public class Help extends Activity {
         back = findViewById(R.id.btnBack);
         et_encodeThreads = findViewById(R.id.et_encodeThreads);
         experimentalFunction = findViewById(R.id.switch_experimentalFunction);
+
+        // 动态填充版本号到帮助文本
+        String version = getString(R.string.version, BuildConfig.VERSION_NAME);
+        TextView tvHelp = findViewById(R.id.tv_help_content);
+        tvHelp.setText(getString(R.string.Help_content, version));
 
         // 读取native配置，初始化UI状态
         experimentalFunction.setChecked(checkEnableExperimentalFunction());

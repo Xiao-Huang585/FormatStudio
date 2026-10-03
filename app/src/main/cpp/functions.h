@@ -135,11 +135,12 @@ extern std::mutex g_windowMutex;
 // 向前声明主函数
 void cppMain(jobject thiz);
 
-// ====== Rust KGM 解密函数 ======
 extern "C" {
-int kgmDecodeFile(const char *inputPath, const char *outputPath);
-void kgmFree(void *ptr);
-void kgmInit();
+    // ====== Rust KGM 解密函数 ======
+    int kgmDecodeFile(const char* inputPath, const char* outputPath);
+    // ====== C++ NCM Dump 解密函数 ==
+    int wrapper_ncm_convert(const char* ncm_path, const char* out_dir);
+    [[maybe_unused]]const char* wrapper_get_version();
 }
 
 // KGM 解密状态码
@@ -150,12 +151,18 @@ enum class KuGou {
     DecodeFailed = -3,
     InvalidPath = -4,
     OutputExists = -5,
-    Unknown = -255
 };
 
-namespace std {
-    string to_string(KuGou _k);
-}
+enum class NetEase {
+    Ok = 0,
+    OutputFileOpenFailed = -2,
+    Others = -3,
+};
+
+
+String to_string(KuGou k_);
+String to_string(NetEase n_);
+
 
 // 时分秒毫秒转换
 std::array<int, 4> secondsToMicroseconds(int64_t microsecond);

@@ -23,6 +23,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.util.Log;
 import java.io.File;
 import java.util.Locale;
@@ -73,6 +74,8 @@ public class MainActivity extends Activity {
             System.loadLibrary("z");
             System.loadLibrary("lzma");
             System.loadLibrary("kgm_decoder");
+            System.loadLibrary("tag");
+            System.loadLibrary("ncm_dump");
             System.loadLibrary("native");
         } catch (UnsatisfiedLinkError e) {
             Log.e("Library", "Failed to load native library", e);
@@ -88,12 +91,18 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode != RESULT_OK || data == null) return;
         if (requestCode == 100) {
-            // 文件选择完成 → 保存路径 → 跳转 Selecting 选功能
+            // 文件选择完成
             Uri uri = data.getData();
             String path = getRealPath(uri);
             if (path != null) {
+                // KGM/NCM 加密文件：直接传给 C++ 解密，不弹 Selecting
+                String lowerPath = path.toLowerCase();
+                if (lowerPath.endsWith(".kgm") || lowerPath.endsWith(".kgm.flac") || lowerPath.endsWith(".ncm")) {
+                    passInputToCpp(path);
+                    return;
+                }
+                // 普通文件：nativeOpenFile + 弹 Selecting 选功能
                 selectedFilePath = path;
-                // 先在 C++ 同步打开文件，Selecting 中 hasVideo()/hasAudio() 才能识别流
                 boolean opened = nativeOpenFile(path);
                 Log.d(TAG, "预打开文件: " + path + " → " + (opened ? "成功" : "失败"));
                 Intent intent = new Intent(this, Selecting.class);

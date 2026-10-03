@@ -66,6 +66,7 @@ static void *surfaceClickPollThread(void *ctx) {
 // ============================================================
 // 简单视频播放器（不依赖 YsPlayer，使用原生 FFmpeg + ANativeWindow）
 // ============================================================
+#if !ENABLE_YSPLAYER
 static void playVideoSimple(androidOutStream &cout, androidInStream &cin,
                             const std::string &path) {
     cout << "===== 开始播放 =====" << endl;
@@ -250,6 +251,7 @@ static void playVideoSimple(androidOutStream &cout, androidInStream &cin,
     cout << "共渲染 " << frameCount << " 帧" << endl;
     cout.flush();
 }
+#endif
 
 // ============================================================
 // YsPlayer 播放器（匹配 YsFFmpegPlayer 实际 API）
@@ -445,10 +447,34 @@ static void decryptKGMFile(JNIEnv *env, const std::string &inputPath,
     cout << String("输出: ", "Output: ") << outPath << endl;
 
     KuGou code = (KuGou)kgmDecodeFile(inputPath.c_str(), outPath.c_str());
-    if ((int)code == 0) {
-        cout << String("解密成功！输出到: ", "Decode success! path: ") << outPath << endl;
+    if (code == KuGou::Ok) {
+        cout << String("解密成功! 输出到: ", "Decode success! path: ") << outPath << endl;
     } else {
-        cout << String("解密失败！因为: ", "Decode failed! Because: ") << std::to_string(code) << endl;
+        cout << String("解密失败! 因为: ", "Decode failed! Because: ") << to_string(code) << endl;
+    }
+    cout << "三秒后自动退出..." << endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+}
+
+// ============================================================
+// NCM 解密
+// ============================================================
+static void decryptNCMFile(JNIEnv *env, const std::string &inputPath,
+                           androidOutStream &cout, androidInStream &cin) {
+    cout << String("===== NCM解密模式 =====", "===== Decoding NCM =====") << endl;
+    size_t slash = std::string::npos;
+    std::string outDir;
+    slash = inputPath.find_last_of('/');
+    if (slash == std::string::npos) {
+        cout << String("解密失败! 因为: 不可使用的路径", "Decode failed! Because: invalid path") << endl;
+    } else {
+        outDir = inputPath.substr(0, slash + 1);
+        NetEase code = (NetEase)wrapper_ncm_convert(inputPath.c_str(), outDir.c_str());
+        if (code == NetEase::Ok) {
+            cout << String("解密成功! 输出到目录: ", "Decode success! directory: ") << outDir << endl;
+        } else {
+            cout << String("解密失败! 因为: ", "Decode failed! Because: ") << to_string(code) << endl;
+        }
     }
     cout << "三秒后自动退出..." << endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
@@ -489,16 +515,9 @@ void cppMain(jobject thiz) {
         }
     }
 
-    cout << String("FormatStudio Version v26.09.19; 作者: Huang",
-                   "FormatStudio Version v26.09.19; Author: Huang");
+    cout << "FormatStudio Version v" << APP_VERSION << ";" <<
+    String("作者: Huang", "Author: Huang");
     cout.flush();
-
-    const AVCodec* codec1 = (avcodec_find_encoder_by_name("opus"));
-    LOGD("libopus是否存在: %i", codec1 != nullptr);
-
-    const AVCodec* codec2 = (avcodec_find_encoder_by_name("mjpeg"));
-    LOGD("mjpeg是否存在: %i", codec2 != nullptr);
-    LOGD("mjpeg的id: %s", avcodec_get_name(AV_CODEC_ID_MJPEG));
 
     while (true) {
         callJavaShowText(env, "---------------------");
@@ -556,12 +575,23 @@ void cppMain(jobject thiz) {
         std::string ext = dot == std::string::npos ? "" : fullPath.substr(dot);
         std::string secondExt = secondDot == std::string::npos ? "" : fullPath.substr(secondDot);
 
+        // KGM/NCM 加密文件：C++ 侧直接解密，sleep 3 秒后进入下一次主循环
         if (ext == ".kgm") {
             decryptKGMFile(env, fullPath, cout, cin, dot);
+            callJavaClear();
+            continue;
         } else if (secondExt == ".kgm.flac") {
             decryptKGMFile(env, fullPath, cout, cin, secondDot);
             callJavaClear();
-        } else {
+            continue;
+        } else if (ext == ".ncm") {
+            decryptNCMFile(env, fullPath, cout, cin);
+            callJavaClear();
+            continue;
+        }
+
+        // 普通文件：走 openInput + 功能分发
+        {
             int openRet = ffmpeg->openInput(fullPath.c_str());
             LOGD("openInput 返回: %d", openRet);
             if (openRet == 0) {

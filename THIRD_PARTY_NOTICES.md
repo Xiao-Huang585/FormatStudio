@@ -240,6 +240,78 @@ LICENSED WORK.
 
 ***
 
+## ncmdump
+
+* **License**: MIT
+
+* **Purpose**: Generates `libncm_dump.so`, used for decrypting NetEase Cloud Music `.ncm` files
+
+* **Repository**: <https://github.com/anonymous5l/ncmdump>
+
+* **Compliance**:
+
+  * Retain copyright notice and license text
+
+  * Do not use contributor names for endorsement
+
+```
+MIT License
+
+Copyright (c) <year> <copyright holders>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+***
+
+## TagLib (libtag)
+
+* **License**: LGPL-2.1-or-later (dual-licensed with MPL-1.1)
+
+* **Purpose**: Audio metadata reading library, dependency of `libncm_dump.so`
+
+* **Repository**: <https://github.com/taglib/taglib>
+
+* **Website**: <https://taglib.org/>
+
+* **Compliance**:
+
+  * Used as a shared library (`.so`), LGPL requires allowing users to replace this library
+
+  * Retain copyright notice and license text
+
+  * If TagLib source is modified, the modified source must be made available
+
+```
+TagLib is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or
+(at your option) any later version.
+
+TagLib is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+```
+
+***
+
 ## Compliance Recommendations
 
 1. **FFmpeg Source Distribution**: If you distribute the app in binary form (APK), you must provide a way to obtain FFmpeg source code (link or direct download). The recommended approach is to include a FFmpeg source download link in the README or an About page.

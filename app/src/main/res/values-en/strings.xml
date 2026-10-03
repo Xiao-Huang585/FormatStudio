@@ -4,7 +4,7 @@
     <string name="app_name">Format Studio</string>
 
     <!-- 帮助的更新内容 -->
-    <string name="Help_content">FormatStudio v26.09.12  \n1. Support set encode threads in help page\n2. New encoder in function \"encodeWithOtherEncoder\"</string>
+    <string name="Help_content">%1$s\n1. Support encrypted format \".ncm\"(NetEase) files.</string>
 
     <!-- 可选：如果你的界面有标题栏，可添加此属性 -->
     <string name="title_activity_main">Decoding</string>
@@ -17,7 +17,7 @@
 
     <string name="Help_title">Help</string>
 
-    <string name="Help_experimental_functions">Experimental functions: </string>
+    <string name="Help_experimental_functions">"Experimental functions(unused): "</string>
 
     <string name="Selecting_title">Select functions:</string>
 
