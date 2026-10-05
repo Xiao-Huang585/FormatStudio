@@ -110,15 +110,18 @@ extern std::condition_variable g_inputCv;
 extern std::string g_inputData;
 extern std::atomic<bool> g_inputReady;
 extern std::string g_pendingFunction; // Selecting Activity 返回的功能名
-// 编码器参数（由 MainActivity 通过 passEncoderConfig 传入）
 // 空串表示不编码对应流
 namespace enc_par {
 extern std::string g_outputPath;
+// 编码器参数(由 MainActivity 通过 passEncoderConfig传入)
 extern std::string g_encoderVideoCodec;   // 视频编码器名，如 "libx264"
 extern std::string g_encoderAudioCodec;   // 音频编码器名，如 "pcm_s16le"
 
-// 压缩参数（由 MainActivity 通过 passCompressConfig 传入）
+// 压缩参数(由 MainActivity 通过 passCompressConfig 传入)
 extern int g_compressLevel;                // 压缩等级 1~10（1体积最小,10体积较大）
+
+// 截断参数(由 MainActivity 通过 passTrimConfig传入)
+extern int64_t g_startTimeUs, g_endTimeUs;
 } // namespace enc_par
 
 // 当前选中文件的流信息（由 nativeOpenFile 独立探测，供 Selecting 查询）
@@ -126,6 +129,7 @@ extern int g_compressLevel;                // 压缩等级 1~10（1体积最小,
 // 若 cppMain 线程正在编码，操作同一实例会引发数据竞争
 extern std::atomic<bool> g_fileHasVideo;
 extern std::atomic<bool> g_fileHasAudio;
+extern std::atomic<int64_t> g_fileDurationUs; // 可能为AV_NOPTS_VALUE
 // ====== 日志相关 ======
 extern std::fstream g_log;
 // ====== Surface 相关（YsPlayer 渲染用）======
@@ -214,6 +218,8 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passCompressConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jint jlevel);
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passCompressConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jint jPreset);
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passTrimConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jlong startTimeUs, jlong endTimeUs);
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_kgmdecoder_app_MainActivity_nativeOpenFile(JNIEnv *env, jobject thiz, jstring jPath);
 extern "C" JNIEXPORT void JNICALL

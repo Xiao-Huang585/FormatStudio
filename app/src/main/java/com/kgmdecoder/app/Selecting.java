@@ -17,7 +17,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 enum FunctionWindow {
-    COMPRESS, ENCODER, NONE
+    TRIM, COMPRESS, ENCODER, NONE
 }
 
 public class Selecting extends Activity {
@@ -25,6 +25,7 @@ public class Selecting extends Activity {
     private Button playVideoBtn;
     private Button encodeWithOtherEncoderBtn;
     private Button encodeWithCompressBtn;
+    private Button encodeWithTrimBtn;
 
     // 外壳控件（在主selecting.xml，可以onCreate直接find）
     private View parametersWindow;
@@ -56,6 +57,7 @@ public class Selecting extends Activity {
         playVideoBtn = findViewById(R.id.PlayVideo);
         encodeWithOtherEncoderBtn = findViewById(R.id.EncodeWithOtherEncoders);
         encodeWithCompressBtn = findViewById(R.id.EncodeWithCompress);
+        encodeWithTrimBtn = findViewById(R.id.EncodeWithTrim);
 
         // 外壳控件
         parametersWindow = findViewById(R.id.parameters_window);
@@ -94,9 +96,15 @@ public class Selecting extends Activity {
         );
 
         encodeWithCompressBtn.setOnClickListener(v -> {
-                    showParamWindow(R.layout.layout_compress_params, "压缩参数");
+                    showParamWindow(R.layout.layout_compress_params, getString(R.string.Selecting_parametersTitle));
                     window = FunctionWindow.COMPRESS;
                 }
+        );
+
+        encodeWithTrimBtn.setOnClickListener(v -> {
+                showParamWindow(R.layout.layout_trim_params, getString(R.string.Selecting_parametersTitle));
+                window = FunctionWindow.TRIM;
+            }
         );
 
         // 返回箭头
@@ -159,6 +167,43 @@ public class Selecting extends Activity {
                 res.putExtra("Function", "EncodeWithCompress");
                 res.putExtra("OutputPath", outputPath);
                 res.putExtra("CompressLevel", compressLevel);
+                setResult(RESULT_OK, res);
+                finish();
+            }
+            if (window == FunctionWindow.TRIM) {
+                if (currentSubView == null) return;
+                EditText etOutputPath = currentSubView.findViewById(R.id.et_output_path);
+                String outputPath = etOutputPath.getText().toString().trim();
+
+                if (outputPath.isEmpty()) {
+                    Toast.makeText(this, "请输入输出路径", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                int AV_TIME_BASE = 1000000; // C++ AV_TIME_BASE兼容
+
+                EditText etStartTime = currentSubView.findViewById(R.id.startTimeSecond);
+                double startTime = Double.parseDouble(etStartTime.getText().toString().trim());
+
+                // duration 未知（=0）时跳过上限检查，避免合法时间被误判为非法
+                double durationSec = (double)durationUs() / AV_TIME_BASE;
+                if (startTime < 0 || (durationSec > 0 && startTime > durationSec)) {
+                    Toast.makeText(this, "非法的开始时间", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                EditText etEndTime = currentSubView.findViewById(R.id.endTimeSecond);
+                double endTime = Double.parseDouble(etEndTime.getText().toString().trim());
+                if (endTime <= startTime) {
+                    Toast.makeText(this, "非法的结束时间", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Intent res = new Intent();
+                res.putExtra("Function", "EncodeWithTrim");
+                res.putExtra("OutputPath", outputPath);
+                res.putExtra("StartTime", startTime);
+                res.putExtra("EndTime", endTime);
                 setResult(RESULT_OK, res);
                 finish();
             }
@@ -271,5 +316,6 @@ public class Selecting extends Activity {
 
     public native boolean hasVideo();
     public native boolean hasAudio();
+    public native long durationUs();
     public native boolean checkEnableExperimentalFunction();
 }

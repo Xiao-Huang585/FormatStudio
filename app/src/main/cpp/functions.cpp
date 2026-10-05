@@ -31,10 +31,13 @@ std::string g_outputPath;
 std::string g_encoderVideoCodec;   // 空串 = 不编码视频
 std::string g_encoderAudioCodec;   // 空串 = 不编码音频
 int g_compressLevel = 5;           // 压缩等级 1~10，默认5
+int64_t g_startTimeUs = -1;        // -1 = 无
+int64_t g_endTimeUs = -1;          // -1 = 无
 } // namespace enc_par
 // 当前选中文件的流信息（nativeOpenFile 探测结果）
 std::atomic<bool> g_fileHasVideo = false;
 std::atomic<bool> g_fileHasAudio = false;
+std::atomic<int64_t> g_fileDurationUs = 0;
 std::fstream g_log;
 
 // ====== Surface 全局变量 ======
@@ -514,6 +517,32 @@ Java_com_kgmdecoder_app_MainActivity_passCompressConfig(JNIEnv *env, jobject thi
 }
 
 // ============================
+// JNI 传递截断参数给C++
+// ============================
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passTrimConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jlong startTimeUs, jlong endTimeUs) {
+    std::lock_guard<std::mutex> lock(g_inputMutex);
+    const char *outputPath = env->GetStringUTFChars(jOutputPath, nullptr);
+    enc_par::g_outputPath = outputPath ? outputPath : "";
+    enc_par::g_startTimeUs = (int64_t)startTimeUs;
+    enc_par::g_endTimeUs = (int64_t)endTimeUs;
+    // * 兜底
+    // getDuration() 返回 optional<uint64_t>，先取值再比较，避免 nullopt 直接比较的未定义行为
+    auto durOpt = ffmpeg->getDuration();
+    // duration 未知时用 int64_t 最大值作为哨兵（合法 duration 不可能达到）
+    int64_t durationUs = durOpt.has_value() ? (int64_t)*durOpt : (int64_t)0x7FFFFFFFFFFFFFFFLL;
+    if (enc_par::g_startTimeUs < 0 || enc_par::g_startTimeUs >= durationUs)
+        enc_par::g_startTimeUs = 0;
+    if (enc_par::g_endTimeUs < enc_par::g_startTimeUs)
+        // 必须用修正后的 g_startTimeUs，不能用原始参数 startTimeUs（可能已被修正为 0）
+        enc_par::g_endTimeUs = enc_par::g_startTimeUs + AV_TIME_BASE * 10; // +10s
+    env->ReleaseStringUTFChars(jOutputPath, outputPath);
+    LOGD("截断参数: output=%s startTimeSec=%lf endTimeSec=%lf",
+         enc_par::g_outputPath.c_str(), static_cast<double>(enc_par::g_startTimeUs / AV_TIME_BASE),
+         static_cast<double>(enc_par::g_endTimeUs / AV_TIME_BASE));
+}
+
+// ============================
 // JNI 同步探测媒体文件
 // 供 MainActivity 在跳转 Selecting 之前调用，
 // Selecting 里的 hasVideo()/hasAudio() 返回正确结果
@@ -544,6 +573,7 @@ Java_com_kgmdecoder_app_MainActivity_nativeOpenFile(JNIEnv *env, jobject thiz, j
     avformat_find_stream_info(probe, nullptr);
 
     bool hasV = false, hasA = false;
+    int64_t duration = probe->duration;
     for (unsigned i = 0; i < probe->nb_streams; i++) {
         const AVCodecParameters *par = probe->streams[i]->codecpar;
         if (par->codec_type == AVMEDIA_TYPE_VIDEO && par->width > 0 && par->height > 0) {
@@ -556,6 +586,7 @@ Java_com_kgmdecoder_app_MainActivity_nativeOpenFile(JNIEnv *env, jobject thiz, j
 
     g_fileHasVideo = hasV;
     g_fileHasAudio = hasA;
+    g_fileDurationUs = duration;
     LOGD("nativeOpenFile: %s → video=%d audio=%d", path, hasV ? 1 : 0, hasA ? 1 : 0);
 
     env->ReleaseStringUTFChars(jPath, path);

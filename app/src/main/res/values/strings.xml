@@ -32,6 +32,8 @@
 
     <string name="Selecting_encodeWithCompress">Compress file</string>
 
+    <string name="Selecting_encodeWithTrim">Trim file</string>
+
     <string name="Selecting_parametersTitle">Set Parameters</string>
 
     <string name="Selecting_subtitle">Please select a function…</string>
@@ -45,6 +47,10 @@
     <string name="Selecting_audioEncoderLabel">Audio encoder</string>
 
     <string name="Selecting_setCompressLevel">Set compress level</string>
+
+    <string name="Selecting_setTrimStartTime">Start time(sec)</string>
+
+    <string name="Selecting_setTrimEndTime">End time(sec)</string>
 
     <string name="Selecting_confirm">confirm</string>
 </resources>

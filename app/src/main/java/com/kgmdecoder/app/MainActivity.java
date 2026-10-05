@@ -55,6 +55,7 @@ public class MainActivity extends Activity {
     public native void passInputToCpp(String input);
     public native void passEncoderConfig(String outputPath, String videoCodec, String audioCodec);
     public native void passCompressConfig(String outputPath, int level);
+    public native void passTrimConfig(String outputPath, long startTimeUs, long endTimeUs);
     // 同步打开媒体文件（跳转 Selecting 前调用，使 hasVideo/hasAudio 生效）
     public native boolean nativeOpenFile(String path);
     // Surface JNI 方法
@@ -137,6 +138,14 @@ public class MainActivity extends Activity {
                         level = 10;
                     }
                     passCompressConfig(outputPath, level);
+                    passInputToCpp(selectedFilePath + "\n" + function);
+                } else if ("EncodeWithTrim".equals(function)) {
+                    String outputPath = data.getStringExtra("OutputPath");
+                    final int AV_TIME_BASE = 1000000;
+                    // Selecting 存入的是 double，必须用 getDoubleExtra 读取，否则 getStringExtra 返回 null 导致崩溃
+                    long startTimeUs = (long)(data.getDoubleExtra("StartTime", 0) * AV_TIME_BASE);
+                    long endTimeUs   = (long)(data.getDoubleExtra("EndTime", 0)   * AV_TIME_BASE);
+                    passTrimConfig(outputPath, startTimeUs, endTimeUs);
                     passInputToCpp(selectedFilePath + "\n" + function);
                 } else {
                     // 传给 C++ 处理，格式: 路径\n功能名

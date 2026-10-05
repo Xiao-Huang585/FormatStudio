@@ -147,6 +147,25 @@
                 android:textAllCaps="false"
                 android:textColor="@color/btn_fourth_text"
                 android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/EncodeWithTrim"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="6dp"
+                android:background="@drawable/bg_button_fifth"
+                android:drawableStart="@drawable/encode_with_trim"
+                android:drawablePadding="16dp"
+                android:drawableTint="@color/btn_fifth_text"
+                android:gravity="start|center_vertical"
+                android:paddingStart="20dp"
+                android:text="@string/Selecting_encodeWithTrim"
+                android:textAllCaps="false"
+                android:textColor="@color/btn_fourth_text"
+                android:textSize="18sp" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 

@@ -229,7 +229,8 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                                int outWidth,
                                int outHeight,
                                int targetSampleRate,
-                               bool allowHardware) {
+                               bool allowHardware,
+                               bool keepSourceChannelLayout) {
     if (!fmtCtx_.isOpened()) {
         cout << String("未打开输入文件...", "Didn't open input file...") << endl;
         LOGD("未打开输出文件...");
@@ -435,8 +436,13 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
             aenc_.setBitRate(audioBitrate > 0 ? audioBitrate : 128 * 1000);
             aenc_.setTimeBase(av::Rational(1, outSampleRate));
 
-            AVChannelLayout stereoLayout = AV_CHANNEL_LAYOUT_STEREO;
-            av_channel_layout_copy(&aenc_.raw()->ch_layout, &stereoLayout);
+            if (keepSourceChannelLayout) {
+                // 沿用源声道布局（单声道/立体声/5.1 等保持不变）
+                av_channel_layout_copy(&aenc_.raw()->ch_layout, &adec_.raw()->ch_layout);
+            } else {
+                AVChannelLayout stereoLayout = AV_CHANNEL_LAYOUT_STEREO;
+                av_channel_layout_copy(&aenc_.raw()->ch_layout, &stereoLayout);
+            }
 
             if (needGlobalHeader) {
                 aenc_.raw()->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -460,7 +466,12 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                     LOGD("创建输出音频流失败: %s", ec.message().c_str());
                     aenc_ = av::AudioEncoderContext();
                 } else {
-                    AVChannelLayout outLayout = AV_CHANNEL_LAYOUT_STEREO;
+                    AVChannelLayout outLayout;
+                    if (keepSourceChannelLayout) {
+                        av_channel_layout_copy(&outLayout, &adec_.raw()->ch_layout);
+                    } else {
+                        outLayout = AV_CHANNEL_LAYOUT_STEREO;
+                    }
                     AVChannelLayout inLayout = {};
                     av_channel_layout_copy(&inLayout, &adec_.raw()->ch_layout);
 
@@ -470,6 +481,7 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                                                      adec_.sampleRate(), 0, nullptr
                     );
                     av_channel_layout_uninit(&inLayout);
+                    if (keepSourceChannelLayout) av_channel_layout_uninit(&outLayout);
                     if (swrCtx_ && swrRet >= 0) {
                         swrRet = swr_init(swrCtx_);
                         if (swrRet < 0) {
@@ -735,10 +747,80 @@ int FFmpeg::openOutputWithCompressMedia(const char* outputPath,
 }
 
 // ============================
+// 直接复用源文件所有解码器参数初始化输出
+// 分辨率/帧率/码率/采样率/声道布局均不变，仅编码线程数由 config.dat 控制
+// ============================
+int FFmpeg::openOutputWithSourceParams(const char* outputPath) {
+    if (!fmtCtx_.isOpened()) {
+        cout << String("未打开输入文件...", "Didn't open input file...") << endl;
+        return -EINVAL;
+    }
+    if (!hasVideo() && !hasAudio()) {
+        cout << String("未找到音视频流...", "Can not find video/audio stream...") << endl;
+        return -EINVAL;
+    }
+
+    outPath_ = outputPath;
+
+    // 直接从源流 codecpar 提取原始编码器 ID 和码率，不做任何缩放/修改
+    AVCodecID videoID = AV_CODEC_ID_NONE;
+    AVCodecID audioID = AV_CODEC_ID_NONE;
+    int64_t srcVideoBitrate = 0;
+    int64_t srcAudioBitrate = 0;
+
+    if (hasVideo()) {
+        AVStream* st = fmtCtx_.raw()->streams[videoStreamIndex_];
+        videoID = st->codecpar->codec_id;
+        srcVideoBitrate = st->codecpar->bit_rate;
+    }
+    if (hasAudio()) {
+        AVStream* st = fmtCtx_.raw()->streams[audioStreamIndex_];
+        audioID = st->codecpar->codec_id;
+        srcAudioBitrate = st->codecpar->bit_rate;
+    }
+
+    cout << "===== 直接转码（沿用源参数） =====" << endl;
+    cout << String("输出: ", "Output: ") << outputPath << endl;
+    if (hasVideo()) {
+        cout << String("视频编码器: ", "Video encoder: ") << avcodec_get_name(videoID)
+             << "  " << vdec_.width() << "x" << vdec_.height() << endl;
+        if (srcVideoBitrate > 0)
+            cout << String("视频码率: ", "Video bitrate: ") << (srcVideoBitrate / 1000) << " kbps" << endl;
+    }
+    if (hasAudio()) {
+        cout << String("音频编码器: ", "Audio encoder: ") << avcodec_get_name(audioID)
+             << "  " << adec_.sampleRate() << " Hz" << endl;
+        if (srcAudioBitrate > 0)
+            cout << String("音频码率: ", "Audio bitrate: ") << (srcAudioBitrate / 1000) << " kbps" << endl;
+    }
+    cout.flush();
+
+    // 所有"变化类"参数传 0 / nullptr，initOutputContext 内部会自动沿用源值：
+    //   outWidth=0 / outHeight=0  → 沿用源分辨率
+    //   targetFps=0.0             → 沿用源帧率
+    //   targetSampleRate=0        → 沿用源采样率
+    //   presetStr=nullptr         → 不设置 preset
+    //   videoBitrate/audioBitrate → 直接传源码率（若源为 0 则由 initOutputContext 回退默认）
+    // keepSourceChannelLayout=true → 沿用源声道布局（不强制立体声）
+    // 编码线程数仍由成员变量 encodeThreads（config.dat 配置）控制，在此函数内无需额外设置
+    return initOutputContext(
+            videoID, audioID,
+            srcVideoBitrate,
+            nullptr,
+            0.0,
+            srcAudioBitrate,
+            0, 0,
+            0,
+            true,   // allowHardware=true：若源为 H264/H265 可自动启用 mediacodec 硬编
+            true    // keepSourceChannelLayout=true：沿用源声道布局
+    );
+}
+
+// ============================
 // 纯编码循环（可复用）：输出必须已由 openOutPutWithEncoder /
 // openOutputWithCompressMedia 初始化完成
 // ============================
-int FFmpeg::encodeToFile() {
+int FFmpeg::encodeToFile(uint64_t startTimeUs, uint64_t endTimeUs) {
     LOGI("解码线程: %hhu", encodeThreads);
     if (!outFmtCtx_.isOpened()) {
         cout << String("输出未初始化...", "Output not initialized...") << endl;
@@ -799,8 +881,16 @@ int FFmpeg::encodeToFile() {
     }
 
     // 时间进度：总时长（微秒），未知则回退到包数进度
+    // startTimeUs / endTimeUs 均为微秒单位（AV_TIME_BASE）
     int64_t totalDurationUs = fmtCtx_.raw()->duration;
     int64_t currentTimeUs = 0;
+    if (endTimeUs != static_cast<uint64_t>(-1)) {
+        if (endTimeUs > startTimeUs) totalDurationUs = (int64_t)(endTimeUs - startTimeUs);
+        else {
+            cout << String("设置时间失败...", "Failed to set duration...") << endl;
+            return -EINVAL;
+        }
+    }
     const bool durationKnown = (totalDurationUs > 0 && totalDurationUs != AV_NOPTS_VALUE);
 
     cout << String("编码线程: ", "Encode threads: ") << static_cast<int>(encodeThreads) << endl;
@@ -868,6 +958,9 @@ int FFmpeg::encodeToFile() {
             int64_t frameUs = av_rescale_q(decFrame.raw()->pts, vInTimeBase, AV_TIME_BASE_Q);
             if (frameUs > currentTimeUs) currentTimeUs = frameUs;
         }
+        // 时间范围过滤：起始时间之前 / 截止时间之后的帧不编码
+        if (currentTimeUs < (int64_t)startTimeUs) return;
+        if (endTimeUs != static_cast<uint64_t>(-1) && currentTimeUs > (int64_t)endTimeUs) return;
         sws_scale(swsCtx_,
                   decFrame.raw()->data, decFrame.raw()->linesize,
                   0, decFrame.height(),
@@ -910,6 +1003,9 @@ int FFmpeg::encodeToFile() {
             int64_t samplesUs = av_rescale_q(decSamples.raw()->pts, aInTimeBase, AV_TIME_BASE_Q);
             if (samplesUs > currentTimeUs) currentTimeUs = samplesUs;
         }
+        // 时间范围过滤：起始时间之前 / 截止时间之后的样本不编码
+        if (currentTimeUs < (int64_t)startTimeUs) return;
+        if (endTimeUs != static_cast<uint64_t>(-1) && currentTimeUs > (int64_t)endTimeUs) return;
         int dstNbSamples = swr_get_out_samples(swrCtx_, decSamples.samplesCount());
         if (dstNbSamples <= 0) return;
         av::AudioSamples encSamples(outSampleFmt, dstNbSamples,
@@ -954,6 +1050,29 @@ int FFmpeg::encodeToFile() {
         }
     };
 
+    // ========== 起始时间 seek：跳到 startTimeUs 前的最近关键帧，避免从 0 秒逐包解码 ==========
+    if (startTimeUs > 0) {
+        // 优先用视频流 seek（有关键帧），无视频则用音频流
+        int seekStreamIndex = hasVideo() ? videoStreamIndex_ :
+                              (hasAudio() ? audioStreamIndex_ : -1);
+        if (seekStreamIndex >= 0) {
+            AVRational seekTb = fmtCtx_.raw()->streams[seekStreamIndex]->time_base;
+            // 微秒 → 目标流 time_base 单位
+            int64_t seekTs = av_rescale_q((int64_t)startTimeUs, AV_TIME_BASE_Q, seekTb);
+            // AVSEEK_FLAG_BACKWARD：跳到不超过目标时间的最近关键帧
+            int seekRet = av_seek_frame(fmtCtx_.raw(), seekStreamIndex, seekTs, AVSEEK_FLAG_BACKWARD);
+            if (seekRet >= 0) {
+                // seek 后必须 flush 解码器缓冲，否则会输出旧位置的帧
+                if (videoStreamOk) avcodec_flush_buffers(vdec_.raw());
+                if (audioStreamOk) avcodec_flush_buffers(adec_.raw());
+                LOGD("seek 成功: stream=%d targetTs=%lld startTimeUs=%llu",
+                     seekStreamIndex, (long long)seekTs, (unsigned long long)startTimeUs);
+            } else {
+                LOGD("seek 失败，回退到从开头解码: ret=%d", seekRet);
+            }
+        }
+    }
+
     // ========== 主循环：读包 → 解码 → 编码 ==========
     int processedPkts = 0;
     while (true) {
@@ -966,10 +1085,12 @@ int FFmpeg::encodeToFile() {
         if (!isVideo && !isAudio) continue;
         if ((++processedPkts % 200) == 0) {
             if (durationKnown) {
-                int percent = (int)(currentTimeUs * 100 / totalDurationUs);
+                int64_t elapsedUs = (currentTimeUs > (int64_t)startTimeUs)
+                                        ? (currentTimeUs - (int64_t)startTimeUs) : 0;
+                int percent = (int)(elapsedUs * 100 / totalDurationUs);
                 if (percent > 100) percent = 100;
                 cout << String("进度: ", "Progress: ") << percent << "%  ("
-                     << currentTimeUs / 1000000 << "s / " << totalDurationUs / 1000000 << "s)"
+                     << elapsedUs / 1000000 << "s / " << totalDurationUs / 1000000 << "s)"
                      << endl;
             } else {
                 cout << String("进度: 已处理 ", "Progress: processed ") << processedPkts
@@ -988,6 +1109,8 @@ int FFmpeg::encodeToFile() {
             if (decEc) { LOGD("音频解码错误: %s", decEc.message().c_str()); continue; }
             if (decSamples) feedAudioSamples(decSamples);
         }
+        // 截止判断：feed 内部已过滤当前帧，这里用于及时退出主循环（避免解码剩余全部文件）
+        if (endTimeUs != static_cast<uint64_t>(-1) && currentTimeUs > (int64_t)endTimeUs) break;
     }
 
     // ========== 冲刷解码器 ==========
@@ -1182,6 +1305,11 @@ Java_com_kgmdecoder_app_Selecting_hasVideo(JNIEnv *env, jobject thiz) {
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_kgmdecoder_app_Selecting_hasAudio(JNIEnv *env, jobject thiz) {
     return g_fileHasAudio.load() ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_kgmdecoder_app_Selecting_durationUs(JNIEnv *env, jobject thiz) {
+    return g_fileDurationUs.load();
 }
 
 extern "C" JNIEXPORT void JNICALL

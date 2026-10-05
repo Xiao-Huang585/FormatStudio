@@ -43,5 +43,7 @@
     <color name="btn_third_text">#FFFFFF</color>       <!-- 第三按钮文字 -->
     <color name="btn_fourth_bg">#E7B05D</color>        <!-- 第四按钮背景 -->
     <color name="btn_fourth_text">#FFFFFF</color>      <!-- 第四按钮文字 -->
+    <color name="btn_fifth_bg">#6ED2DE</color>         <!-- 第五按钮背景 -->
+    <color name="btn_fifth_text">#FFFFFF</color>       <!-- 第五按钮文字 -->
     <color name="ripple_color">#40FFFFFF</color>       <!-- 水波纹 -->
 </resources>

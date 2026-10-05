@@ -706,6 +706,50 @@ void cppMain(jobject thiz) {
                     continue;
                 }
 
+                if (functionName == "EncodeWithTrim") {
+                    cout << String("===== 开始截取 =====", "===== Start trim =====") << endl;
+                    cout << String("输出路径: ", "Output path: ") << enc_par::g_outputPath << endl;
+                    cout << String("截取时间: ", "Time: ") <<
+                    static_cast<double>(enc_par::g_startTimeUs / AV_TIME_BASE) << "s~" <<
+                    static_cast<double>(enc_par::g_endTimeUs / AV_TIME_BASE) << "s" << endl;
+                    cout.flush();
+
+                    if (enc_par::g_outputPath.empty()) {
+                        cout << String("输出路径为空, 取消截取", "Trim output path is empty, canceled") << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    // getDuration() 返回 optional，先取值再比较；边界与 passTrimConfig 统一用 >=
+                    auto durOpt = ffmpeg->getDuration();
+                    int64_t durationUs = durOpt.has_value() ? (int64_t)*durOpt : (int64_t)0x7FFFFFFFFFFFFFFFLL;
+                    if (enc_par::g_startTimeUs < 0 || enc_par::g_startTimeUs >= durationUs ||
+                    enc_par::g_endTimeUs < enc_par::g_startTimeUs) {
+                        cout << String("非法的截取时间, 取消截取", "Illegal trim time, canceled") << endl;
+                        continue;
+                    }
+
+                    int initRet = ffmpeg->openOutputWithSourceParams(enc_par::g_outputPath.c_str());
+                    if (initRet != 0) {
+                        cout << String("截取输出初始化失败，错误码: ", "Trim output init failed, error code: ")
+                             << initRet << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    int encRet = ffmpeg->encodeToFile(enc_par::g_startTimeUs, enc_par::g_endTimeUs);
+                    if (encRet == 0) {
+                        cout << String("截取完成！", "Trim finished!") << endl;
+                    } else {
+                        cout << String("截取失败，错误码: ", "Trim failed, error code: ")
+                             << encRet << endl;
+                    }
+                    cout.flush();
+
+                    // 结果保留在控制台，下一条命令到达时主循环会自动清空
+                    continue;
+                }
+
                 if (functionName == "PlayVideo" && (ffmpeg->hasVideo() || ffmpeg->hasAudio())) {
                     callJavaClear();
                     bool hasAudio = ffmpeg->hasAudio(), hasVideo = ffmpeg->hasVideo();

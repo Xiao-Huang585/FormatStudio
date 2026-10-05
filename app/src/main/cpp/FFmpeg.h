@@ -66,6 +66,10 @@ public:
 
     bool hasVideo() const { return videoStreamIndex_ >= 0; }
     bool hasAudio() const { return audioStreamIndex_ >= 0; }
+    std::optional<uint64_t> getDuration() const {
+        if (!fmtCtx_.duration().isValid()) return std::nullopt;
+        else return fmtCtx_.duration().timestamp();
+    }
 
     /**
      * @brief 获取媒体信息并输出到控制台
@@ -89,12 +93,17 @@ public:
      * @brief 纯编码循环（可复用），输出必须已由 openOutPutWithEncoder /
      *        openOutputWithCompressMedia 初始化完成
      *
+     * @param startTimeBase 开始的时间戳(默认0.0秒)
+     * @param endTimeBase 结束的时间戳(默认UINT64_MAX)
+     *
      * 读取输入包 → 解码 → 缩放/重采样 → 编码 → 写包 → 冲刷解码器/编码器 → writeTrailer。
      * 使用成员变量 outFmtCtx_/venc_/aenc_/outVStream_/outAStream_/swsCtx_/swrCtx_。
      *
+     * @param startTimeUs 起始时间（微秒，AV_TIME_BASE 单位），默认 0
+     * @param endTimeUs   结束时间（微秒），默认 (uint64_t)-1 表示不截止
      * @return 0 表示成功，负数表示错误码
      */
-    int encodeToFile();
+    int encodeToFile(uint64_t startTimeUs = 0, uint64_t endTimeUs = (uint64_t)-1);
 
     /**
      * @brief 用指定编码器ID完成输出初始化（打开输出、创建编码器/流、写文件头）
@@ -119,6 +128,19 @@ public:
                                int outHeight = 0,
                                int targetSampleRate = 0,
                                bool allowHardware = true);
+
+    /**
+     * @brief 直接复用源文件所有解码器参数初始化输出（分辨率/帧率/码率/采样率/声道布局均不变）
+     *
+     * 适用于"不需要在初始化编码器期间做任何参数变化"的场景（如快速转码、格式封装转换）。
+     * 唯一会变化的是编码线程数，仍由 config.dat 配置的 encodeThreads 成员控制。
+     * 视频/音频编码器 ID 直接取源流 codecpar->codec_id；若源编码器无对应 FFmpeg 编码器则失败。
+     * 完成后可直接调用 encodeToFile() 进行编码。
+     *
+     * @param outputPath 输出文件路径（扩展名决定封装格式）
+     * @return 0 表示成功，负数表示错误码
+     */
+    int openOutputWithSourceParams(const char* outputPath);
 
     /**
      * @brief 便捷重载：用指定名称的编码器初始化输出并编码写出文件
@@ -171,7 +193,8 @@ private:
                            int outWidth = 0,
                            int outHeight = 0,
                            int targetSampleRate = 0,
-                           bool allowHardware = true);
+                           bool allowHardware = true,
+                           bool keepSourceChannelLayout = false);
 
     bool inited = false;
 
@@ -216,6 +239,9 @@ Java_com_kgmdecoder_app_Selecting_hasVideo(JNIEnv *env, jobject thiz);
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_kgmdecoder_app_Selecting_hasAudio(JNIEnv *env, jobject thiz);
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_kgmdecoder_app_Selecting_durationUs(JNIEnv *env, jobject thiz);
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_releaseFFmpeg(JNIEnv *env, jobject thiz);
