@@ -118,11 +118,20 @@ extern std::string g_encoderVideoCodec;   // 视频编码器名，如 "libx264"
 extern std::string g_encoderAudioCodec;   // 音频编码器名，如 "pcm_s16le"
 
 // 压缩参数(由 MainActivity 通过 passCompressConfig 传入)
-extern int g_compressLevel;                // 压缩等级 1~10（1体积最小,10体积较大）
+extern int g_compressLevel;               // 压缩等级 1~10（1体积最小,10体积较大）
 
 // 截断参数(由 MainActivity 通过 passTrimConfig传入)
 extern int64_t g_startTimeUs, g_endTimeUs;
+
+// 亮度参数(由 MainActivity 通过 passBrightnessConfig传入)
+extern int8_t g_brightness;
+extern float g_gamma;                   // Gamma值, 越暗的地方越亮
 } // namespace enc_par
+
+// ====== 应用路径（由 MainActivity 通过 passAppPaths 传入，替代硬编码） ======
+extern std::string g_externalStorageDir;  // /storage/emulated/0
+extern std::string g_downloadDir;         // /storage/emulated/0/Download
+extern std::string g_filesDir;            // /data/data/com.kgmdecoder.app/files
 
 // 当前选中文件的流信息（由 nativeOpenFile 独立探测，供 Selecting 查询）
 // 独立于全局 ffmpeg 实例：nativeOpenFile 在主线程调用，
@@ -220,6 +229,10 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passCompressConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jint jPreset);
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passTrimConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jlong startTimeUs, jlong endTimeUs);
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passBrightnessConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jshort brightness, jfloat gamma);
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passAppPaths(JNIEnv *env, jobject thiz, jstring jExternalStorageDir, jstring jDownloadDir, jstring jFilesDir);
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_kgmdecoder_app_MainActivity_nativeOpenFile(JNIEnv *env, jobject thiz, jstring jPath);
 extern "C" JNIEXPORT void JNICALL
@@ -228,6 +241,8 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_nativeShowVideoView(JNIEnv *env, jobject thiz, jboolean show);
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_kgmdecoder_app_MainActivity_checkEnableExperimentalFunction(JNIEnv *env, jobject thiz);
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_kgmdecoder_app_Selecting_getInputFileName(JNIEnv *env, jobject thiz);
 
 // 标准换行兼容
 using std::endl;

@@ -33,7 +33,15 @@ std::string g_encoderAudioCodec;   // 空串 = 不编码音频
 int g_compressLevel = 5;           // 压缩等级 1~10，默认5
 int64_t g_startTimeUs = -1;        // -1 = 无
 int64_t g_endTimeUs = -1;          // -1 = 无
+int8_t g_brightness = 0;           // 亮度偏移 -128~127, 0=不变
+float g_gamma = 1.0f;              // Gamma 0.5~3.0, 1.0=不变
 } // namespace enc_par
+
+// ====== 应用路径（由 MainActivity 通过 passAppPaths 传入，替代硬编码） ======
+std::string g_externalStorageDir = "/storage/emulated/0";  // 默认兜底
+std::string g_downloadDir = "/sdcard/Download";            // 默认兜底
+std::string g_filesDir = "/data/data/com.kgmdecoder.app/files"; // 默认兜底
+
 // 当前选中文件的流信息（nativeOpenFile 探测结果）
 std::atomic<bool> g_fileHasVideo = false;
 std::atomic<bool> g_fileHasAudio = false;
@@ -543,6 +551,51 @@ Java_com_kgmdecoder_app_MainActivity_passTrimConfig(JNIEnv *env, jobject thiz, j
 }
 
 // ============================
+// JNI 传递亮度参数给C++
+// ============================
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passBrightnessConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jshort brightness, jfloat gamma) {
+    std::lock_guard<std::mutex> lock(g_inputMutex);
+    const char* outputPath = env->GetStringUTFChars(jOutputPath, nullptr);
+    enc_par::g_outputPath = outputPath;
+    // brightness: jshort(16位) → int8_t(8位)，先 clamp 防止静默截断变号
+    int b = (int)brightness;
+    if (b < -128) b = -128;
+    if (b > 127) b = 127;
+    enc_par::g_brightness = (int8_t)b;
+    // gamma: 先校验范围再赋值，非法值回退 1.0(不变)
+    if (gamma < 0.5f || gamma > 3.0f) gamma = 1.0f;
+    enc_par::g_gamma = gamma;
+    env->ReleaseStringUTFChars(jOutputPath, outputPath);
+    LOGD("亮度参数: output=%s brightness=%hhd gamma=%f", enc_par::g_outputPath.c_str(),
+         enc_par::g_brightness, enc_par::g_gamma);
+}
+
+// ============================
+// JNI 传递应用常用路径给 C++（替代硬编码 /sdcard、/storage/emulated/0 等）
+// ============================
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passAppPaths(JNIEnv *env, jobject thiz,
+                                                   jstring jExternalStorageDir,
+                                                   jstring jDownloadDir,
+                                                   jstring jFilesDir) {
+    const char* extDir = env->GetStringUTFChars(jExternalStorageDir, nullptr);
+    const char* dlDir = env->GetStringUTFChars(jDownloadDir, nullptr);
+    const char* fDir = env->GetStringUTFChars(jFilesDir, nullptr);
+
+    g_externalStorageDir = extDir;
+    g_downloadDir = dlDir;
+    g_filesDir = fDir;
+
+    env->ReleaseStringUTFChars(jExternalStorageDir, extDir);
+    env->ReleaseStringUTFChars(jDownloadDir, dlDir);
+    env->ReleaseStringUTFChars(jFilesDir, fDir);
+
+    LOGD("应用路径: ext=%s download=%s files=%s",
+         g_externalStorageDir.c_str(), g_downloadDir.c_str(), g_filesDir.c_str());
+}
+
+// ============================
 // JNI 同步探测媒体文件
 // 供 MainActivity 在跳转 Selecting 之前调用，
 // Selecting 里的 hasVideo()/hasAudio() 返回正确结果
@@ -644,4 +697,16 @@ Java_com_kgmdecoder_app_Selecting_checkEnableExperimentalFunction(JNIEnv *env, j
         writeAtLine(PATH, 1, "0");
         return false;
     }
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_kgmdecoder_app_Selecting_getInputFileName(JNIEnv *env, jobject thiz) {
+    if (ffmpeg != nullptr) {
+        std::string path = ffmpeg->getInputPath();
+        size_t slash = path.find_last_of('/');
+        if (++slash != std::string::npos && slash < path.size()) {
+            std::string name = path.substr(slash);
+        } else return env->NewStringUTF("");
+    } else return env->NewStringUTF("");
+    return env->NewStringUTF(""); // 规避警告
 }

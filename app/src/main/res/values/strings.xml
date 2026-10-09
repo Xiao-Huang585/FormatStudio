@@ -7,7 +7,7 @@
     <string name="version" translatable="false">FormatStudio v%1$s</string>
 
     <!-- 帮助的更新内容 -->
-    <string name="Help_content">%1$s\n1. Support encrypted format \".ncm\"(NetEase) files.</string>
+    <string name="Help_content">%1$s\n1. New functions: \"EncodeWithBrightness\" and \"EncodeWithTrim\"\n2. Softcode paths like \"/sdcard\".\n3. AutoFill path when use functions with outputPath parameter.</string>
 
     <!-- 可选：如果你的界面有标题栏，可添加此属性 -->
     <string name="title_activity_main">Decoding</string>
@@ -34,6 +34,8 @@
 
     <string name="Selecting_encodeWithTrim">Trim file</string>
 
+    <string name="Selecting_encodeWithBrightness">Encode with specific brightness</string>
+
     <string name="Selecting_parametersTitle">Set Parameters</string>
 
     <string name="Selecting_subtitle">Please select a function…</string>
@@ -52,6 +54,31 @@
 
     <string name="Selecting_setTrimEndTime">End time(sec)</string>
 
+    <string name="Selecting_setBrightness">Brightness</string>
+
+    <string name="Selecting_brightness_desc">-128 ~ 127, 0 = no change</string>
+
+    <string name="Selecting_setGamma">Gamma</string>
+
+    <string name="Selecting_gamma_desc">0.5~3.0, 1.0=no change, &gt;1.0 brighter, &lt;1.0 darker</string>
+
     <string name="Selecting_confirm">confirm</string>
+
+    <!-- Toast 提示文本 -->
+    <string name="Selecting_toast_emptyOutputPath">Please enter output path</string>
+
+    <string name="Selecting_toast_noStream">File contains no encodable audio/video stream</string>
+
+    <string name="Selecting_toast_invalidCompressLevel">Please enter a number from 1 to 10 (inclusive)</string>
+
+    <string name="Selecting_toast_invalidStartTime">Invalid start time</string>
+
+    <string name="Selecting_toast_invalidEndTime">Invalid end time</string>
+
+    <string name="Selecting_toast_noVideoStream">No video stream (brightness only applies to video)</string>
+
+    <string name="Selecting_toast_invalidBrightness">Invalid brightness (-128~127)</string>
+
+    <string name="Selecting_toast_invalidGamma">Invalid gamma (0.5~3.0)</string>
 </resources>
 

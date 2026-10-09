@@ -70,6 +70,7 @@ public:
         if (!fmtCtx_.duration().isValid()) return std::nullopt;
         else return fmtCtx_.duration().timestamp();
     }
+    std::string getInputPath() const { return url_; }
 
     /**
      * @brief 获取媒体信息并输出到控制台
@@ -93,17 +94,36 @@ public:
      * @brief 纯编码循环（可复用），输出必须已由 openOutPutWithEncoder /
      *        openOutputWithCompressMedia 初始化完成
      *
-     * @param startTimeBase 开始的时间戳(默认0.0秒)
-     * @param endTimeBase 结束的时间戳(默认UINT64_MAX)
-     *
      * 读取输入包 → 解码 → 缩放/重采样 → 编码 → 写包 → 冲刷解码器/编码器 → writeTrailer。
      * 使用成员变量 outFmtCtx_/venc_/aenc_/outVStream_/outAStream_/swsCtx_/swrCtx_。
      *
-     * @param startTimeUs 起始时间（微秒，AV_TIME_BASE 单位），默认 0
-     * @param endTimeUs   结束时间（微秒），默认 (uint64_t)-1 表示不截止
      * @return 0 表示成功，负数表示错误码
      */
-    int encodeToFile(uint64_t startTimeUs = 0, uint64_t endTimeUs = (uint64_t)-1);
+    int encodeToFile();
+
+    /**
+     * @brief 带时间范围的编码循环（必须显式传入起止时间，无默认值）
+     *
+     * 与无参版本逻辑相同，但只编码 [startTimeUs, endTimeUs) 区间的内容。
+     * 适用于截取/截断功能。参数均为微秒单位（AV_TIME_BASE）。
+     *
+     * @param startTimeUs 起始时间（微秒），从 0 开始
+     * @param endTimeUs   结束时间（微秒），(uint64_t)-1 表示不截止
+     * @return 0 表示成功，负数表示错误码
+     */
+    int encodeToFile(uint64_t startTimeUs, uint64_t endTimeUs);
+
+    /**
+     * @brief 带亮度/伽马调整的编码循环（编码完整文件）
+     *
+     * 对每一帧的 Y（亮度）平面做 brightness 线性偏移 + gamma 非线性校正，
+     * U/V 色度平面不变。内部用 256 项查找表(LUT)加速，每帧只需查表无需浮点运算。
+     *
+     * @param brightness 亮度偏移，-100~+100（0=不变），正值变亮负值变暗
+     * @param gamma      伽马值，建议 0.5~3.0（1.0=不变），<1 变亮 >1 变暗
+     * @return 0 表示成功，负数表示错误码
+     */
+    int encodeToFile(int8_t brightness, float gamma = 1.0);
 
     /**
      * @brief 用指定编码器ID完成输出初始化（打开输出、创建编码器/流、写文件头）
@@ -170,6 +190,16 @@ public:
     inline int audioStreamIndex() const { return audioStreamIndex_; }
 
 private:
+
+    /**
+     * @brief 带可选 LUT 的核心编码循环（所有 encodeToFile 重载的唯一实现）
+     *
+     * @param startTimeUs 起始时间（微秒）
+     * @param endTimeUs   结束时间（微秒），(uint64_t)-1 表示不截止
+     * @param brightnessLut         256 项亮度查找表，nullptr 表示不做亮度调整
+     * @return 0 表示成功，负数表示错误码
+     */
+    int encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const uint8_t* brightnessLut);
 
     /**
      * @brief 通用输出初始化（私有辅助函数，被 openOutPutWithEncoder /

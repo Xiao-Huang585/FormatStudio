@@ -15,6 +15,10 @@ extern "C" {
 #include <libavutil/log.h>
 }
 
+#include <cmath>
+#include <algorithm>
+#include "functions.h"
+
 FFmpeg *ffmpeg = nullptr;
 
 // FFmpeg 内部日志转发到 logcat（用于调试编码器 EINVAL 根因）
@@ -30,7 +34,7 @@ static void ffmpegLogToLogcat(void *ptr, int level, const char *fmt, va_list vl)
 // 构造/析构
 // ============================
 FFmpeg::FFmpeg(androidOutStream &os, androidInStream &is)
-        : cout(os), cin(is), inited(true), outPath_("/sdcard/Download/default.mp4"), encodeThreads(2) {
+        : cout(os), cin(is), inited(true), outPath_(g_downloadDir + "/default.mp4"), encodeThreads(2) {
     av_log_set_level(AV_LOG_DEBUG);
     av_log_set_callback(ffmpegLogToLogcat);
 }
@@ -72,7 +76,7 @@ void FFmpeg::close() {
         outFmtCtx_.close();
     }
 
-    outPath_ = "/sdcard/Download/default.mp4";
+    outPath_ = g_downloadDir + "/default.mp4";
     url_.clear();
 }
 
@@ -360,25 +364,34 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
         venc_.raw()->qmin = 2;
 
         // 码率与 preset 设置
+        // 默认 preset 用 veryfast（重编码提速约 50%，画质损失可接受）
+        const char *effectivePreset = (presetStr && presetStr[0]) ? presetStr : "veryfast";
         if (videoBitrate > 0) {
             venc_.raw()->bit_rate = videoBitrate;
             // 外部传入 bitrate 时优先使用 ABR，不使用 CRF
-            if (presetStr && presetStr[0]) {
-                venc_.setOption("preset", presetStr);
-            }
+            venc_.setOption("preset", effectivePreset);
         } else if (videoID == AV_CODEC_ID_H264 || videoID == AV_CODEC_ID_H265) {
             // 未传 bitrate 时回退到默认 preset+crf
-            venc_.setOption("preset", presetStr && presetStr[0] ? presetStr : "medium");
-            if (videoID == AV_CODEC_ID_H264 || videoID == AV_CODEC_ID_H265) {
-                venc_.setOption("tune", "zerolatency");
-                venc_.setOption("crf", "27");
-            }
+            venc_.setOption("preset", effectivePreset);
+            venc_.setOption("tune", "zerolatency");
+            venc_.setOption("crf", "27");
         } else {
             venc_.raw()->bit_rate = 2000000;
         }
 
         // mpeg4 等编码器需要 GLOBAL_HEADER
         venc_.raw()->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+        // libx264 专用提速参数（重编码场景，画质优先让位于速度）
+        // 仅对 libx264 有效，硬编/其他编码器忽略
+        if (!isHardWare && vCodec.name() == "libx264") {
+            av_opt_set(venc_.raw()->priv_data, "subme", "2", 0);        // 默认7, 降到2提速明显
+            av_opt_set(venc_.raw()->priv_data, "refs", "1", 0);          // 默认3, 降到1
+            av_opt_set(venc_.raw()->priv_data, "rc-lookahead", "10", 0); // 默认40, 降到10
+            av_opt_set(venc_.raw()->priv_data, "aq-mode", "0", 0);        // 默认1, 关闭自适应量化
+            av_opt_set(venc_.raw()->priv_data, "scenecut", "0", 0);       // 关闭场景切换检测(减少I帧波动)
+            LOGD("libx264 提速参数: subme=2 refs=1 rc-lookahead=10 aq-mode=0 scenecut=0");
+        }
 
 //      venc_.open(ec);
         int openRet = avcodec_open2(venc_.raw(), vCodec.raw(), nullptr);
@@ -446,6 +459,12 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
 
             if (needGlobalHeader) {
                 aenc_.raw()->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+            }
+
+            // 音频编码提速：libmp3lame/FLAC 调低压缩级别（0=最快, 默认5）
+            if (aCodec.name() == "libmp3lame" || aCodec.name() == "flac") {
+                av_opt_set_int(aenc_.raw()->priv_data, "compression_level", 2, 0);
+                LOGD("音频编码器 %s 压缩级别设为 2(提速)", aCodec.name());
             }
 
             aenc_.open(ec);
@@ -779,6 +798,46 @@ int FFmpeg::openOutputWithSourceParams(const char* outputPath) {
         srcAudioBitrate = st->codecpar->bit_rate;
     }
 
+    // 容器兼容性检查 + 自动降级：输出容器不支持源编码器时，自动选择容器支持的默认编码器
+    const AVOutputFormat *ofmt = av_guess_format(nullptr, outputPath, nullptr);
+    if (ofmt) {
+        if (hasVideo() && avformat_query_codec(ofmt, videoID, FF_COMPLIANCE_NORMAL) == 0) {
+            cout << String("容器不支持视频编码器 ", "Container doesn't support video encoder ")
+                 << avcodec_get_name(videoID)
+                 << String("，自动降级为 libx264", ", auto fallback to libx264") << endl;
+            LOGD("容器不支持视频编码器 %s, 自动降级为 libx264", avcodec_get_name(videoID));
+            videoID = AV_CODEC_ID_H264;
+            srcVideoBitrate = 0;  // 降级后用编码器默认码率
+        }
+        if (hasAudio() && avformat_query_codec(ofmt, audioID, FF_COMPLIANCE_NORMAL) == 0) {
+            // 根据容器选择兼容的默认音频编码器
+            AVCodecID fallbackAudioID = AV_CODEC_ID_MP3;  // 默认 libmp3lame，兼容性最好
+            const char *ofmtName = ofmt->name;
+            if (strcmp(ofmtName, "wav") == 0) {
+                fallbackAudioID = AV_CODEC_ID_PCM_S16LE;
+            } else if (strcmp(ofmtName, "mp3") == 0) {
+                fallbackAudioID = AV_CODEC_ID_MP3;
+            } else if (strcmp(ofmtName, "mp4") == 0 || strcmp(ofmtName, "mov") == 0 ||
+                       strcmp(ofmtName, "m4a") == 0 || strcmp(ofmtName, "aac") == 0) {
+                fallbackAudioID = AV_CODEC_ID_AAC;
+            } else if (strcmp(ofmtName, "ogg") == 0 || strcmp(ofmtName, "oga") == 0) {
+                fallbackAudioID = AV_CODEC_ID_VORBIS;
+            }
+            // 确认降级后的编码器确实被容器支持
+            if (avformat_query_codec(ofmt, fallbackAudioID, FF_COMPLIANCE_NORMAL) == 0) {
+                fallbackAudioID = AV_CODEC_ID_MP3;  // 兜底再试 MP3
+            }
+            cout << String("容器不支持音频编码器 ", "Container doesn't support audio encoder ")
+                 << avcodec_get_name(audioID)
+                 << String("，自动降级为 ", ", auto fallback to ")
+                 << avcodec_get_name(fallbackAudioID) << endl;
+            LOGD("容器不支持音频编码器 %s, 自动降级为 %s",
+                 avcodec_get_name(audioID), avcodec_get_name(fallbackAudioID));
+            audioID = fallbackAudioID;
+            srcAudioBitrate = 0;  // 降级后用编码器默认码率
+        }
+    }
+
     cout << "===== 直接转码（沿用源参数） =====" << endl;
     cout << String("输出: ", "Output: ") << outputPath << endl;
     if (hasVideo()) {
@@ -817,10 +876,44 @@ int FFmpeg::openOutputWithSourceParams(const char* outputPath) {
 }
 
 // ============================
-// 纯编码循环（可复用）：输出必须已由 openOutPutWithEncoder /
-// openOutputWithCompressMedia 初始化完成
+// 无参编码循环：编码完整文件（从 0 到结束），内部委托给核心实现
+// ============================
+int FFmpeg::encodeToFile() {
+    return encodeToFileWithLut(0, (uint64_t)-1, nullptr);
+}
+
+// ============================
+// 带时间范围的编码循环：必须显式传入起止时间，无默认值
 // ============================
 int FFmpeg::encodeToFile(uint64_t startTimeUs, uint64_t endTimeUs) {
+    return encodeToFileWithLut(startTimeUs, endTimeUs, nullptr);
+}
+
+// ==================================================
+// 带亮度/伽马调整的编码循环：构建 256 项 LUT 后委托核心循环
+// ==================================================
+int FFmpeg::encodeToFile(int8_t brightness, float gamma) {
+    // 构建 256 项亮度查找表（只算一次，后续每帧直接查表）
+    uint8_t lut[256];
+    const float brightOffset = (brightness / 100.0f) * 255.0f;  // -255 ~ +255
+    const float invGamma = (gamma > 0.01f) ? (1.0f / gamma) : 1.0f;
+
+    for (int i = 0; i < 256; i++) {
+        float v = i + brightOffset;                       // 线性亮度偏移
+        v = 255.0f * powf(v / 255.0f, invGamma);        // gamma 非线性校正
+        lut[i] = (uint8_t)std::clamp(v, 0.0f, 255.0f);  // 钳位到 0-255
+    }
+
+    cout << String("亮度调整: ", "Brightness: ")
+         << "brightness=" << (int)brightness << " gamma=" << gamma << endl;
+
+    return encodeToFileWithLut(0, (uint64_t)-1, lut);
+}
+
+// ============================
+// 核心编码循环：所有 encodeToFile 重载的唯一实现，brightnessLut=nullptr 时不做亮度调整
+// ============================
+int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const uint8_t* brightnessLut) {
     LOGI("解码线程: %hhu", encodeThreads);
     if (!outFmtCtx_.isOpened()) {
         cout << String("输出未初始化...", "Output not initialized...") << endl;
@@ -961,6 +1054,31 @@ int FFmpeg::encodeToFile(uint64_t startTimeUs, uint64_t endTimeUs) {
         // 时间范围过滤：起始时间之前 / 截止时间之后的帧不编码
         if (currentTimeUs < (int64_t)startTimeUs) return;
         if (endTimeUs != static_cast<uint64_t>(-1) && currentTimeUs > (int64_t)endTimeUs) return;
+        // 亮度调整：对 Y（亮度）平面应用 256 项 LUT，U/V 色度平面不变
+        // 仅支持 8bit YUV 格式；10bit/16bit 视频跳过 LUT（256 项表不够用）
+        if (brightnessLut) {
+            const AVPixFmtDescriptor *pixDesc = av_pix_fmt_desc_get((AVPixelFormat)decFrame.raw()->format);
+            bool is8bitYuv = pixDesc && pixDesc->comp[0].depth == 8;
+            static bool lutFormatWarned = false;
+            if (is8bitYuv) {
+                uint8_t* yPlane = decFrame.raw()->data[0];
+                const int yStride = decFrame.raw()->linesize[0];
+                const int w = decFrame.width();
+                const int h = decFrame.height();
+                for (int row = 0; row < h; row++) {
+                    uint8_t* rowPtr = yPlane + row * yStride;
+                    for (int col = 0; col < w; col++) {
+                        rowPtr[col] = brightnessLut[rowPtr[col]];
+                    }
+                }
+            } else if (!lutFormatWarned) {
+                LOGD("亮度 LUT 跳过: 像素格式 %s 不是 8bit YUV (depth=%d), 亮度调整不生效",
+                     pixDesc ? pixDesc->name : "unknown",
+                     pixDesc ? pixDesc->comp[0].depth : 0);
+                cout << String("提示: 非 8bit 视频，亮度调整未生效", "Note: non-8bit video, brightness adjustment skipped") << endl;
+                lutFormatWarned = true;
+            }
+        }
         sws_scale(swsCtx_,
                   decFrame.raw()->data, decFrame.raw()->linesize,
                   0, decFrame.height(),

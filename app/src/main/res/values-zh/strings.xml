@@ -4,7 +4,7 @@
     <string name="app_name">Format Studio</string>
 
     <!-- 帮助的更新内容 -->
-    <string name="Help_content">%1$s\n1. 新增了对\".ncm\"(网易云音乐)的解码支持(所用第三方库见README)</string>
+    <string name="Help_content">%1$s\n1. 新的函数\"截断时长\"和\"设置视频亮度\"\n2. 软编码诸如\"/sdcard\"这样的路径\n3. 自动填充输出路径</string>
 
     <!-- 可选：如果你的界面有标题栏，可添加此属性 -->
     <string name="title_activity_main">解码</string>
@@ -49,6 +49,33 @@
 
     <string name="Selecting_setTrimEndTime">结束时间(秒)</string>
 
+    <string name="Selecting_encodeWithBrightness">设置视频亮度</string>
+
+    <string name="Selecting_setBrightness">亮度</string>
+
+    <string name="Selecting_brightness_desc">-128 ~ 127, 0 = 不变</string>
+
+    <string name="Selecting_setGamma">Gamma值</string>
+
+    <string name="Selecting_gamma_desc">0.5~3.0, 1.0=不变, &gt;gt1.0变亮, &lt;1.0变暗</string>
+
     <string name="Selecting_confirm">确认</string>
+
+    <!-- Toast 提示文本 -->
+    <string name="Selecting_toast_emptyOutputPath">请输入输出路径</string>
+
+    <string name="Selecting_toast_noStream">文件不含可编码的音视频流</string>
+
+    <string name="Selecting_toast_invalidCompressLevel">请指定1~10(包括1和10)的数字</string>
+
+    <string name="Selecting_toast_invalidStartTime">非法的开始时间</string>
+
+    <string name="Selecting_toast_invalidEndTime">非法的结束时间</string>
+
+    <string name="Selecting_toast_noVideoStream">没有视频流(亮度仅对视频有效)</string>
+
+    <string name="Selecting_toast_invalidBrightness">非法的亮度(-128~127)</string>
+
+    <string name="Selecting_toast_invalidGamma">非法的Gamma值(0.5~3.0)</string>
 </resources>
 

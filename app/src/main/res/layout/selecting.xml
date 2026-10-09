@@ -75,17 +75,17 @@
                 android:layout_marginTop="12dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:layout_marginBottom="6dp"
+                android:layout_marginBottom="10dp"
                 android:background="@drawable/bg_button_primary"
                 android:drawableStart="@drawable/baseline_info_24"
                 android:drawablePadding="16dp"
-                android:drawableTint="@color/btn_primary_text"
+                android:drawableTint="@color/selecting_btn_text"
                 android:gravity="start|center_vertical"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
                 android:text="@string/Selecting_showMediaInfo"
                 android:textAllCaps="false"
-                android:textColor="@color/btn_primary_text"
+                android:textColor="@color/selecting_btn_text"
                 android:textSize="18sp" />
 
             <Button
@@ -94,18 +94,17 @@
                 android:layout_height="56dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="6dp"
+                android:layout_marginBottom="10dp"
                 android:background="@drawable/bg_button_secondary"
                 android:drawableStart="@drawable/round_play_arrow_24"
                 android:drawablePadding="16dp"
-                android:drawableTint="@color/btn_secondary_text"
+                android:drawableTint="@color/selecting_btn_text"
                 android:gravity="start|center_vertical"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
                 android:text="@string/Selecting_playVideo"
                 android:textAllCaps="false"
-                android:textColor="@color/btn_secondary_text"
+                android:textColor="@color/selecting_btn_text"
                 android:textSize="18sp" />
 
             <Button
@@ -114,18 +113,17 @@
                 android:layout_height="56dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="10dp"
                 android:background="@drawable/bg_button_third"
                 android:drawableStart="@drawable/encode_with_other_encoder"
                 android:drawablePadding="16dp"
-                android:drawableTint="@color/btn_third_text"
+                android:drawableTint="@color/selecting_btn_text"
                 android:gravity="start|center_vertical"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
                 android:text="@string/Selecting_encodeWithOtherEncoders"
                 android:textAllCaps="false"
-                android:textColor="@color/btn_third_text"
+                android:textColor="@color/selecting_btn_text"
                 android:textSize="18sp" />
 
             <Button
@@ -134,18 +132,17 @@
                 android:layout_height="56dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="18dp"
+                android:layout_marginBottom="10dp"
                 android:background="@drawable/bg_button_fourth"
                 android:drawableStart="@drawable/encode_with_compress"
                 android:drawablePadding="16dp"
-                android:drawableTint="@color/btn_fourth_text"
+                android:drawableTint="@color/selecting_btn_text"
                 android:gravity="start|center_vertical"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
                 android:text="@string/Selecting_encodeWithCompress"
                 android:textAllCaps="false"
-                android:textColor="@color/btn_fourth_text"
+                android:textColor="@color/selecting_btn_text"
                 android:textSize="18sp" />
 
             <Button
@@ -153,30 +150,49 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginStart="16dp"
-                android:layout_marginTop="6dp"
                 android:layout_marginEnd="16dp"
-                android:layout_marginBottom="6dp"
+                android:layout_marginBottom="16dp"
                 android:background="@drawable/bg_button_fifth"
                 android:drawableStart="@drawable/encode_with_trim"
                 android:drawablePadding="16dp"
-                android:drawableTint="@color/btn_fifth_text"
+                android:drawableTint="@color/selecting_btn_text"
                 android:gravity="start|center_vertical"
                 android:paddingStart="20dp"
                 android:text="@string/Selecting_encodeWithTrim"
                 android:textAllCaps="false"
-                android:textColor="@color/btn_fourth_text"
+                android:textColor="@color/selecting_btn_text"
+                android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/EncodeWithBrightness"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_button_sixth"
+                android:drawableStart="@drawable/encode_with_brightness"
+                android:drawablePadding="16dp"
+                android:drawableTint="@color/selecting_btn_text"
+                android:gravity="start|center_vertical"
+                android:paddingStart="20dp"
+                android:text="@string/Selecting_encodeWithBrightness"
+                android:textAllCaps="false"
+                android:textColor="@color/selecting_btn_text"
                 android:textSize="18sp" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
 
     <!-- ========= 参数窗口【通用外壳】圆角 CardView ========= -->
+    <!-- 从副标题下方开始，覆盖功能按钮区域，但保留顶部标题，避免独占全屏 -->
     <androidx.cardview.widget.CardView
         android:id="@+id/parameters_window"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_margin="16dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="40dp"
+        android:layout_marginBottom="100dp"
         android:visibility="gone"
         app:cardBackgroundColor="@color/bg_card"
         app:cardCornerRadius="20dp"
@@ -184,7 +200,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/card_buttons">
+        app:layout_constraintTop_toBottomOf="@id/tv_subtitle">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -249,7 +265,7 @@
                 android:background="@drawable/bg_button_primary"
                 android:text="@string/Selecting_confirm"
                 android:textAllCaps="false"
-                android:textColor="@color/btn_primary_text"
+                android:textColor="@color/selecting_btn_text"
                 android:textSize="18sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"

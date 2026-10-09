@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -17,7 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 enum FunctionWindow {
-    TRIM, COMPRESS, ENCODER, NONE
+    BRIGHTNESS, TRIM, COMPRESS, ENCODER, NONE
 }
 
 public class Selecting extends Activity {
@@ -26,6 +28,7 @@ public class Selecting extends Activity {
     private Button encodeWithOtherEncoderBtn;
     private Button encodeWithCompressBtn;
     private Button encodeWithTrimBtn;
+    private Button encodeWithBrightnessBtn;
 
     // 外壳控件（在主selecting.xml，可以onCreate直接find）
     private View parametersWindow;
@@ -48,16 +51,28 @@ public class Selecting extends Activity {
     // 目前使用的函数窗口类型
     FunctionWindow window = FunctionWindow.NONE;
 
+    // 输入文件路径（由 MainActivity 通过 Intent 传入）
+    private String inputFilePath = "";
+
+    // 参数窗口动画状态，防止动画期间重复触发
+    private boolean isParamAnimating = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.selecting);
+
+        // 接收 MainActivity 传入的输入文件路径
+        inputFilePath = getIntent().getStringExtra("InputPath");
+        if (inputFilePath == null) inputFilePath = "";
 
         showMediaInfoBtn = findViewById(R.id.ShowMediaInfo);
         playVideoBtn = findViewById(R.id.PlayVideo);
         encodeWithOtherEncoderBtn = findViewById(R.id.EncodeWithOtherEncoders);
         encodeWithCompressBtn = findViewById(R.id.EncodeWithCompress);
         encodeWithTrimBtn = findViewById(R.id.EncodeWithTrim);
+        encodeWithBrightnessBtn = findViewById(R.id.EncodeWithBrightness);
+
 
         // 外壳控件
         parametersWindow = findViewById(R.id.parameters_window);
@@ -73,6 +88,9 @@ public class Selecting extends Activity {
         // 实验功能开关(此版本不存在)
         // ......
 
+        if (!hasVideo()) {
+            encodeWithBrightnessBtn.setVisibility(View.GONE);
+        }
 
         showMediaInfoBtn.setOnClickListener(v -> {
             Intent res = new Intent();
@@ -107,11 +125,28 @@ public class Selecting extends Activity {
             }
         );
 
+        encodeWithBrightnessBtn.setOnClickListener(v -> {
+                showParamWindow(R.layout.layout_brightness_params, getString(R.string.Selecting_parametersTitle));
+                window = FunctionWindow.BRIGHTNESS;
+                // brightness 输入框限制 -128~127
+                EditText etBrightness = currentSubView.findViewById(R.id.et_brightness);
+                etBrightness.setFilters(new android.text.InputFilter[]{ (source, start, end, dest, dstart, dend) -> {
+                    String newVal = dest.subSequence(0, dstart) + source.toString() + dest.subSequence(dend, dest.length());
+                    if (newVal.isEmpty() || newVal.equals("-")) return null; // 允许中间状态
+                    try {
+                        int val = Integer.parseInt(newVal);
+                        return (val >= -128 && val <= 127) ? null : "";
+                    } catch (NumberFormatException e) {
+                        return "";
+                    }
+                }});
+            }
+        );
+
         // 返回箭头
         backArrow.setOnClickListener(v -> {
             if (parametersWindow.getVisibility() == View.VISIBLE) {
-                parametersWindow.setVisibility(View.GONE);
-                window = FunctionWindow.NONE;
+                hideParamWindow();
             } else {
                 setResult(RESULT_CANCELED);
                 finish();
@@ -128,11 +163,11 @@ public class Selecting extends Activity {
                 String outputPath = etOutputPath.getText().toString().trim();
 
                 if (outputPath.isEmpty()) {
-                    Toast.makeText(this, "请输入输出路径", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.Selecting_toast_emptyOutputPath, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 if (selectedVideoCodec.isEmpty() && selectedAudioCodec.isEmpty()) {
-                    Toast.makeText(this, "文件不含可编码的音视频流", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.Selecting_toast_noStream, Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -152,7 +187,7 @@ public class Selecting extends Activity {
                 String outputPath = etOutputPath.getText().toString().trim();
 
                 if (outputPath.isEmpty()) {
-                    Toast.makeText(this, "请输入输出路径", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.Selecting_toast_emptyOutputPath, Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -160,7 +195,7 @@ public class Selecting extends Activity {
                 String compressLevel = et_compressLevel.getText().toString().trim();
                 if ((compressLevel.length() != 1 && (compressLevel.length() == 2 && !compressLevel.equals("10"))) || compressLevel.isEmpty() ||
                         !('0' <= compressLevel.charAt(0) || compressLevel.charAt(0) <= '9') ) {
-                    Toast.makeText(this, "请指定1~10(包括1和10)的数字", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.Selecting_toast_invalidCompressLevel, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 Intent res = new Intent();
@@ -176,7 +211,7 @@ public class Selecting extends Activity {
                 String outputPath = etOutputPath.getText().toString().trim();
 
                 if (outputPath.isEmpty()) {
-                    Toast.makeText(this, "请输入输出路径", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.Selecting_toast_emptyOutputPath, Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -188,14 +223,14 @@ public class Selecting extends Activity {
                 // duration 未知（=0）时跳过上限检查，避免合法时间被误判为非法
                 double durationSec = (double)durationUs() / AV_TIME_BASE;
                 if (startTime < 0 || (durationSec > 0 && startTime > durationSec)) {
-                    Toast.makeText(this, "非法的开始时间", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.Selecting_toast_invalidStartTime, Toast.LENGTH_SHORT).show();
                     return;
                 }
 
                 EditText etEndTime = currentSubView.findViewById(R.id.endTimeSecond);
                 double endTime = Double.parseDouble(etEndTime.getText().toString().trim());
                 if (endTime <= startTime) {
-                    Toast.makeText(this, "非法的结束时间", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.Selecting_toast_invalidEndTime, Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -207,6 +242,45 @@ public class Selecting extends Activity {
                 setResult(RESULT_OK, res);
                 finish();
             }
+            if (window == FunctionWindow.BRIGHTNESS) {
+                if (currentSubView == null) return;
+                EditText etOutputPath = currentSubView.findViewById(R.id.et_output_path);
+                String outputPath = etOutputPath.getText().toString().trim();
+
+                if (outputPath.isEmpty()) {
+                    Toast.makeText(this, R.string.Selecting_toast_emptyOutputPath, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (!hasVideo()) {
+                    Toast.makeText(this, R.string.Selecting_toast_noVideoStream, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                EditText etBrightness = currentSubView.findViewById(R.id.et_brightness);
+                int brightness = Integer.parseInt(etBrightness.getText().toString().trim());
+                if (-128 > brightness || 127 < brightness) {
+                    Toast.makeText(this, R.string.Selecting_toast_invalidBrightness, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                EditText etGamma = currentSubView.findViewById(R.id.et_gamma);
+                String gammaStr = etGamma.getText().toString().trim();
+                float gamma = gammaStr.isEmpty() ? 1.0f : Float.parseFloat(gammaStr);
+
+                if (gamma < 0.5f || 3.0f < gamma) {
+                    Toast.makeText(this, R.string.Selecting_toast_invalidGamma, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Intent res = new Intent();
+                res.putExtra("Function", "EncodeWithBrightness");
+                res.putExtra("OutputPath", outputPath);
+                res.putExtra("Brightness", brightness);
+                res.putExtra("Gamma", gamma);
+                setResult(RESULT_OK, res);
+                finish();
+            }
         });
     }
 
@@ -214,6 +288,7 @@ public class Selecting extends Activity {
      * 通用加载参数窗口
      */
     private void showParamWindow(int layoutId, String titleStr) {
+        if (isParamAnimating) return;
         contentPlaceholder.removeAllViews();
         currentSubView = LayoutInflater.from(this).inflate(layoutId, contentPlaceholder, false);
         contentPlaceholder.addView(currentSubView);
@@ -224,7 +299,61 @@ public class Selecting extends Activity {
             initEncoderSubView(currentSubView);
         }
 
+        // 自动填充输出路径：/Download/<输入文件名>
+        EditText etOutput = currentSubView.findViewById(R.id.et_output_path);
+        if (etOutput != null && !inputFilePath.isEmpty()) {
+            String fileName = inputFilePath.substring(inputFilePath.lastIndexOf('/') + 1);
+            String downloadDir = android.os.Environment.getExternalStoragePublicDirectory(
+                    android.os.Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
+            etOutput.setText(downloadDir + "/" + fileName);
+        }
+
+        // 入场动画：上滑 + 轻微缩放 + 淡入
+        isParamAnimating = true;
+        float dip = getResources().getDisplayMetrics().density;
+        parametersWindow.clearAnimation();
         parametersWindow.setVisibility(View.VISIBLE);
+        parametersWindow.setTranslationY(60f * dip);   // 从下方 60dp 开始
+        parametersWindow.setScaleX(0.92f);
+        parametersWindow.setScaleY(0.92f);
+        parametersWindow.setAlpha(0f);
+        parametersWindow.animate()
+                .translationY(0f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .alpha(1f)
+                .setDuration(280)
+                .setInterpolator(new DecelerateInterpolator(1.5f))
+                .withEndAction(() -> isParamAnimating = false)
+                .start();
+    }
+
+    /**
+     * 退场动画（下滑 + 轻微缩放 + 淡出），供返回箭头 / 返回键共用
+     */
+    private void hideParamWindow() {
+        if (isParamAnimating || parametersWindow.getVisibility() != View.VISIBLE) return;
+        isParamAnimating = true;
+        float dip = getResources().getDisplayMetrics().density;
+        parametersWindow.clearAnimation();
+        parametersWindow.animate()
+                .translationY(50f * dip)
+                .scaleX(0.96f)
+                .scaleY(0.96f)
+                .alpha(0f)
+                .setDuration(200)
+                .setInterpolator(new AccelerateInterpolator(1.5f))
+                .withEndAction(() -> {
+                    parametersWindow.setVisibility(View.GONE);
+                    // 复位变换，避免下次入场时继承残留状态
+                    parametersWindow.setTranslationY(0f);
+                    parametersWindow.setScaleX(1f);
+                    parametersWindow.setScaleY(1f);
+                    parametersWindow.setAlpha(1f);
+                    window = FunctionWindow.NONE;
+                    isParamAnimating = false;
+                })
+                .start();
     }
 
     /**
@@ -308,12 +437,13 @@ public class Selecting extends Activity {
     @Override
     public void onBackPressed() {
         if (parametersWindow.getVisibility() == View.VISIBLE) {
-            parametersWindow.setVisibility(View.GONE);
+            hideParamWindow();
         } else {
             super.onBackPressed();
         }
     }
 
+    public native String getInputFileName();
     public native boolean hasVideo();
     public native boolean hasAudio();
     public native long durationUs();

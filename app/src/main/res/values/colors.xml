@@ -36,14 +36,11 @@
     <color name="bg_card">#A6A6AF</color>              <!-- 卡片背景，按需调整 -->
     <color name="bg_edit_text">#FF2A2A3C</color>       <!-- 输入框背景 -->
     <color name="btn_primary_bg">#FF4CAF50</color>     <!-- 主按钮背景 -->
-    <color name="btn_primary_text">#FFFFFFFF</color>   <!-- 主按钮文字 -->
     <color name="btn_secondary_bg">#FF2196F3</color>   <!-- 次按钮背景 -->
-    <color name="btn_secondary_text">#FFFFFFFF</color> <!-- 次按钮文字 -->
     <color name="btn_third_bg">#7C5CBA</color>         <!-- 第三按钮背景 -->
-    <color name="btn_third_text">#FFFFFF</color>       <!-- 第三按钮文字 -->
     <color name="btn_fourth_bg">#E7B05D</color>        <!-- 第四按钮背景 -->
-    <color name="btn_fourth_text">#FFFFFF</color>      <!-- 第四按钮文字 -->
     <color name="btn_fifth_bg">#6ED2DE</color>         <!-- 第五按钮背景 -->
-    <color name="btn_fifth_text">#FFFFFF</color>       <!-- 第五按钮文字 -->
+    <color name="btn_sixth_bg">#B6E7CB</color>         <!-- 第六按钮背景 -->
+    <color name="selecting_btn_text">#FFFFFF</color>    <!-- Selecting 所有按钮统一文本色 -->
     <color name="ripple_color">#40FFFFFF</color>       <!-- 水波纹 -->
 </resources>

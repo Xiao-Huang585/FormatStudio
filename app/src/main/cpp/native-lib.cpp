@@ -490,14 +490,15 @@ void cppMain(jobject thiz) {
     if (!ffmpeg) ffmpeg = new FFmpeg(cout, cin);
     g_languageCode = callJavaGetLanguage();
 
-    g_log.open("/storage/emulated/0/Android/data/com.kgmdecoder.app/files/log.txt");
+    g_log.open(g_filesDir + "/log.txt");
     g_log << "C++ I/O is ready..." << std::endl;
 
-    // 检查编码器
+    // 检测可用的 FFmpeg 编/解码器
     const AVCodec *codec = nullptr;
     void *iter = nullptr;
 
-    LOGI("===== FFmpeg 可用编码器列表 =====\n");
+    LOGD("===== FFmpeg 可用编码器列表 =====");
+    iter = nullptr;
     while ((codec = av_codec_iterate(&iter)))
     {
         if (av_codec_is_encoder(codec))
@@ -507,10 +508,33 @@ void cppMain(jobject thiz) {
                 type_str = "VIDEO";
             else if (codec->type == AVMEDIA_TYPE_AUDIO)
                 type_str = "AUDIO";
+            else if (codec->type == AVMEDIA_TYPE_SUBTITLE)
+                type_str = "SUBTITLE";
             else
                 type_str = "OTHER";
 
-            LOGI("[%s] name: %-20s longname: %s\n",
+            LOGD("[ENC][%s] name: %-20s longname: %s",
+                   type_str, codec->name, codec->long_name);
+        }
+    }
+
+    LOGD("===== FFmpeg 可用解码器列表 =====");
+    iter = nullptr;
+    while ((codec = av_codec_iterate(&iter)))
+    {
+        if (av_codec_is_decoder(codec))
+        {
+            const char *type_str;
+            if (codec->type == AVMEDIA_TYPE_VIDEO)
+                type_str = "VIDEO";
+            else if (codec->type == AVMEDIA_TYPE_AUDIO)
+                type_str = "AUDIO";
+            else if (codec->type == AVMEDIA_TYPE_SUBTITLE)
+                type_str = "SUBTITLE";
+            else
+                type_str = "OTHER";
+
+            LOGD("[DEC][%s] name: %-20s longname: %s",
                    type_str, codec->name, codec->long_name);
         }
     }
@@ -553,7 +577,7 @@ void cppMain(jobject thiz) {
         }
 
         std::string fullPath =
-                (input[0] == '/') ? input : "/storage/emulated/0/" + input;
+                (input[0] == '/') ? input : g_externalStorageDir + "/" + input;
         cout << String("访问文件: ", "Access path: ") << fullPath << endl;
         if (!functionName.empty()) {
             cout << String("功能: ", "Function: ") << functionName << endl;
@@ -737,11 +761,53 @@ void cppMain(jobject thiz) {
                         continue;
                     }
 
-                    int encRet = ffmpeg->encodeToFile(enc_par::g_startTimeUs, enc_par::g_endTimeUs);
+                    int encRet = ffmpeg->encodeToFile(
+                            (uint64_t)enc_par::g_startTimeUs, (uint64_t)enc_par::g_endTimeUs);
                     if (encRet == 0) {
                         cout << String("截取完成！", "Trim finished!") << endl;
                     } else {
                         cout << String("截取失败，错误码: ", "Trim failed, error code: ")
+                             << encRet << endl;
+                    }
+                    cout.flush();
+
+                    // 结果保留在控制台，下一条命令到达时主循环会自动清空
+                    continue;
+                }
+
+                if (functionName == "EncodeWithBrightness") {
+                    cout << String("===== 开始亮度编码 =====", "===== Start brightness encoding =====") << endl;
+                    cout << String("输出路径: ", "Output path: ") << enc_par::g_outputPath << endl;
+                    cout << String("亮度参数: ", "Brightness: ") << (int)enc_par::g_brightness << endl;
+                    cout << String("Gamma参数: ", "Gamma: ") << enc_par::g_gamma << endl;
+                    cout.flush();
+
+                    if (enc_par::g_outputPath.empty()) {
+                        cout << String("输出路径为空, 取消编码", "Output path is empty, canceled") << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    if (!ffmpeg->hasVideo()) {
+                        cout << String("没有视频流, 亮度调整仅对视频有效, 取消编码",
+                                       "No video stream, brightness only applies to video, canceled") << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    int initRet = ffmpeg->openOutputWithSourceParams(enc_par::g_outputPath.c_str());
+                    if (initRet != 0) {
+                        cout << String("亮度输出初始化失败，错误码: ", "Brightness output init failed, error code: ")
+                             << initRet << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    int encRet = ffmpeg->encodeToFile(enc_par::g_brightness, enc_par::g_gamma);
+                    if (encRet == 0) {
+                        cout << String("亮度编码完成！", "Brightness encoding finished!") << endl;
+                    } else {
+                        cout << String("亮度编码失败，错误码: ", "Brightness encoding failed, error code: ")
                              << encRet << endl;
                     }
                     cout.flush();

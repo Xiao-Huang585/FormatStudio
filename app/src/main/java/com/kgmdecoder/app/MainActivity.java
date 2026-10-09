@@ -56,6 +56,9 @@ public class MainActivity extends Activity {
     public native void passEncoderConfig(String outputPath, String videoCodec, String audioCodec);
     public native void passCompressConfig(String outputPath, int level);
     public native void passTrimConfig(String outputPath, long startTimeUs, long endTimeUs);
+    public native void passBrightnessConfig(String outputPath, short brightness, float gamma);
+    // 传递应用常用路径（替代 C++ 侧硬编码 /sdcard、/storage/emulated/0 等）
+    public native void passAppPaths(String externalStorageDir, String downloadDir, String filesDir);
     // 同步打开媒体文件（跳转 Selecting 前调用，使 hasVideo/hasAudio 生效）
     public native boolean nativeOpenFile(String path);
     // Surface JNI 方法
@@ -107,6 +110,7 @@ public class MainActivity extends Activity {
                 boolean opened = nativeOpenFile(path);
                 Log.d(TAG, "预打开文件: " + path + " → " + (opened ? "成功" : "失败"));
                 Intent intent = new Intent(this, Selecting.class);
+                intent.putExtra("InputPath", path);
                 startActivityForResult(intent, 200);
             }
         } else if (requestCode == 200) {
@@ -142,10 +146,15 @@ public class MainActivity extends Activity {
                 } else if ("EncodeWithTrim".equals(function)) {
                     String outputPath = data.getStringExtra("OutputPath");
                     final int AV_TIME_BASE = 1000000;
-                    // Selecting 存入的是 double，必须用 getDoubleExtra 读取，否则 getStringExtra 返回 null 导致崩溃
                     long startTimeUs = (long)(data.getDoubleExtra("StartTime", 0) * AV_TIME_BASE);
                     long endTimeUs   = (long)(data.getDoubleExtra("EndTime", 0)   * AV_TIME_BASE);
                     passTrimConfig(outputPath, startTimeUs, endTimeUs);
+                    passInputToCpp(selectedFilePath + "\n" + function);
+                } else if ("EncodeWithBrightness".equals(function)) {
+                    String outputPath = data.getStringExtra("OutputPath");
+                    short brightness = (short)(data.getIntExtra("Brightness", 0));
+                    float gamma = data.getFloatExtra("Gamma", 1.0f);
+                    passBrightnessConfig(outputPath, brightness, gamma);
                     passInputToCpp(selectedFilePath + "\n" + function);
                 } else {
                     // 传给 C++ 处理，格式: 路径\n功能名
@@ -189,6 +198,14 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         sInstance = this;
         setContentView(R.layout.activity_main);
+
+        // 传递应用常用路径给 C++ 侧（替代硬编码 /sdcard、/storage/emulated/0 等）
+        String extStorage = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+        String downloadDir = android.os.Environment.getExternalStoragePublicDirectory(
+                android.os.Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
+        String filesDir = getFilesDir().getAbsolutePath();
+        passAppPaths(extStorage, downloadDir, filesDir);
+
         tvConsole = findViewById(R.id.tv_console);
         svConsole = findViewById(R.id.sv_console);
         etInput = findViewById(R.id.et_input);
@@ -246,8 +263,6 @@ public class MainActivity extends Activity {
         releaseFFmpeg();
     }
 
-
-    //【核心对外接口】
     /**
      * 获取App当前实际生效语言Tag
      * Android13+: 用户单独设置App语言则返回该语言；选择跟随系统，返回系统语言
