@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:background="#000000">
+    tools:background="@android:color/transparent">
 
     <!-- 输出路径标签 -->
     <TextView
@@ -14,7 +14,7 @@
         android:layout_marginStart="24dp"
         android:layout_marginTop="24dp"
         android:text="@string/Selecting_parameter1"
-        android:textColor="@android:color/white"
+        android:textColor="@color/m3_on_surface"
         android:textSize="18sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
@@ -51,7 +51,7 @@
         android:layout_marginStart="24dp"
         android:layout_marginTop="128dp"
         android:text="@string/Selecting_setCompressLevel"
-        android:textColor="@android:color/white"
+        android:textColor="@color/m3_on_surface"
         android:textSize="18sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
