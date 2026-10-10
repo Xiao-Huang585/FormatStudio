@@ -8,14 +8,14 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.Switch;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.kgmdecoder.app.BuildConfig;
 
 public class Help extends Activity {
     private ImageButton back;
-    private Switch experimentalFunction;
+    private SwitchMaterial experimentalFunction;
     private EditText et_encodeThreads;
 
     // 配置文件路径，统一常量，避免硬编码重复

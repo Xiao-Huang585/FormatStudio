@@ -82,7 +82,7 @@
                 style="@style/Widget.KgmDecoder.SelectingButton"
                 android:layout_marginTop="4dp"
                 app:backgroundTint="@color/btn_primary_bg"
-                android:drawableStart="@drawable/baseline_info_24"
+                app:icon="@drawable/baseline_info_24"
                 android:text="@string/Selecting_showMediaInfo" />
 
             <!-- 按钮2：播放视频（Tonal 风格） -->
@@ -90,7 +90,7 @@
                 android:id="@+id/PlayVideo"
                 style="@style/Widget.KgmDecoder.SelectingButton"
                 app:backgroundTint="@color/btn_secondary_bg"
-                android:drawableStart="@drawable/round_play_arrow_24"
+                app:icon="@drawable/round_play_arrow_24"
                 android:text="@string/Selecting_playVideo" />
 
             <!-- 按钮3：用其他编码器 -->
@@ -98,7 +98,7 @@
                 android:id="@+id/EncodeWithOtherEncoders"
                 style="@style/Widget.KgmDecoder.SelectingButton"
                 app:backgroundTint="@color/btn_third_bg"
-                android:drawableStart="@drawable/encode_with_other_encoder"
+                app:icon="@drawable/encode_with_other_encoder"
                 android:text="@string/Selecting_encodeWithOtherEncoders" />
 
             <!-- 按钮4：压缩 -->
@@ -106,7 +106,7 @@
                 android:id="@+id/EncodeWithCompress"
                 style="@style/Widget.KgmDecoder.SelectingButton"
                 app:backgroundTint="@color/btn_fourth_bg"
-                android:drawableStart="@drawable/encode_with_compress"
+                app:icon="@drawable/encode_with_compress"
                 android:text="@string/Selecting_encodeWithCompress" />
 
             <!-- 按钮5：裁剪 -->
@@ -114,7 +114,7 @@
                 android:id="@+id/EncodeWithTrim"
                 style="@style/Widget.KgmDecoder.SelectingButton"
                 app:backgroundTint="@color/btn_fifth_bg"
-                android:drawableStart="@drawable/encode_with_trim"
+                app:icon="@drawable/encode_with_trim"
                 android:text="@string/Selecting_encodeWithTrim" />
 
             <!-- 按钮6：亮度 -->
@@ -123,7 +123,7 @@
                 style="@style/Widget.KgmDecoder.SelectingButton"
                 android:layout_marginBottom="4dp"
                 app:backgroundTint="@color/btn_sixth_bg"
-                android:drawableStart="@drawable/encode_with_brightness"
+                app:icon="@drawable/encode_with_brightness"
                 android:text="@string/Selecting_encodeWithBrightness" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
