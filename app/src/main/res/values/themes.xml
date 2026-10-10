@@ -47,10 +47,7 @@
         <!-- 导航栏：透明，让内容延伸 -->
         <item name="android:navigationBarColor">@android:color/transparent</item>
 
-        <!-- 形状：通过 shapeAppearance 统一定义 Material 3 五档圆角 -->
-        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.KgmDecoder.Small</item>
-        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.KgmDecoder.Medium</item>
-        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.KgmDecoder.Large</item>
+        <!-- 形状：各组件 style 中已单独定义 cornerRadius，无需全局 shapeAppearance -->
 
         <!-- 按钮样式 -->
         <item name="materialButtonStyle">@style/Widget.KgmDecoder.Button</item>
@@ -114,17 +111,4 @@
 
     <!-- 旧主题别名，避免链接错误 -->
     <style name="Theme.MaterialComponents.DayNight.DarkActionBar" parent="Theme.Material3.DayNight" />
-
-    <!-- ============================================================ -->
-    <!-- 形状外观（Material 3 五档圆角）                               -->
-    <!-- ============================================================ -->
-    <style name="ShapeAppearance.KgmDecoder.Small" parent="ShapeAppearance.Material3.Small">
-        <item name="cornerSize">8dp</item>
-    </style>
-    <style name="ShapeAppearance.KgmDecoder.Medium" parent="ShapeAppearance.Material3.Medium">
-        <item name="cornerSize">16dp</item>
-    </style>
-    <style name="ShapeAppearance.KgmDecoder.Large" parent="ShapeAppearance.Material3.Large">
-        <item name="cornerSize">28dp</item>
-    </style>
 </resources>
