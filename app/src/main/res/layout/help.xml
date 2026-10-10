@@ -113,32 +113,25 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/switch_experimentalFunction" />
 
-                <!-- 编码线程输入框（Material 3 风格背景） -->
-                <com.google.android.material.textfield.TextInputLayout
+                <!-- 编码线程输入框（原生 EditText，避免 TextInputLayout 错位） -->
+                <EditText
+                    android:id="@+id/et_encodeThreads"
                     android:layout_width="140dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="48dp"
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="24dp"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
-                    app:boxCornerRadiusBottomEnd="12dp"
-                    app:boxStrokeWidth="1dp"
-                    app:boxStrokeWidthFocused="2dp"
+                    android:background="@drawable/bg_input_bar"
+                    android:gravity="center"
+                    android:imeOptions="actionDone"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:textColor="@color/m3_on_surface"
+                    android:textColorHint="@color/m3_on_surface_variant"
+                    android:textSize="15sp"
                     app:layout_constraintStart_toEndOf="@id/EncodeThreads"
-                    app:layout_constraintTop_toBottomOf="@id/switch_experimentalFunction">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/et_encodeThreads"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:gravity="center"
-                        android:imeOptions="actionDone"
-                        android:inputType="number"
-                        android:maxLines="1"
-                        android:textColor="@color/m3_on_surface"
-                        android:textSize="15sp" />
-                </com.google.android.material.textfield.TextInputLayout>
+                    app:layout_constraintTop_toBottomOf="@id/switch_experimentalFunction" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
