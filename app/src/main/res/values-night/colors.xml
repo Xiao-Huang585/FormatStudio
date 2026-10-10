@@ -1,17 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- ====== 深色模式（values-night 自动覆盖）====== -->
-    <color name="bg_mainActivity_title_bar">@color/night_bg_title_bar</color>
-    <color name="bg_console">@color/night_bg_console</color>
-    <color name="bg_input_bar">@color/night_bg_input_bar</color>
-    <color name="bg_root">@color/night_bg_root</color>
-    <color name="text_console">@color/night_text_console</color>
-    <color name="text_title">@color/night_text_title</color>
-    <color name="text_hint">@color/night_text_hint</color>
-    <color name="btn_pick_bg">@color/night_btn_pick_bg</color>
-    <color name="btn_pick_text">@color/night_btn_pick_text</color>
-    <color name="bg_title_bar">@color/night_bg_title_bar</color>
-    <color name="bg_card">#FF1E1E2E</color>
+    <!-- ============================================================ -->
+    <!-- Material 3 色彩令牌（深色模式）                              -->
+    <!-- Baseline Purple palette                                     -->
+    <!-- ============================================================ -->
+
+    <!-- Primary -->
+    <color name="m3_primary">#D0BCFF</color>
+    <color name="m3_on_primary">#381E72</color>
+    <color name="m3_primary_container">#4F378B</color>
+    <color name="m3_on_primary_container">#EADDFF</color>
+
+    <!-- Secondary -->
+    <color name="m3_secondary">#CCC2DC</color>
+    <color name="m3_on_secondary">#332D41</color>
+    <color name="m3_secondary_container">#4A4458</color>
+    <color name="m3_on_secondary_container">#E8DEF8</color>
+
+    <!-- Tertiary -->
+    <color name="m3_tertiary">#EFB8C8</color>
+    <color name="m3_on_tertiary">#492532</color>
+    <color name="m3_tertiary_container">#633B48</color>
+    <color name="m3_on_tertiary_container">#FFD8E4</color>
+
+    <!-- Error -->
+    <color name="m3_error">#F2B8B5</color>
+    <color name="m3_on_error">#601410</color>
+    <color name="m3_error_container">#8C1D18</color>
+    <color name="m3_on_error_container">#F9DEDC</color>
+
+    <!-- Background / Surface -->
+    <color name="m3_background">#141218</color>
+    <color name="m3_on_background">#E6E0E9</color>
+    <color name="m3_surface">#141218</color>
+    <color name="m3_on_surface">#E6E0E9</color>
+    <color name="m3_surface_variant">#49454F</color>
+    <color name="m3_on_surface_variant">#CAC4D0</color>
+    <color name="m3_surface_container_low">#1D1B20</color>
+    <color name="m3_surface_container">#211F26</color>
+    <color name="m3_surface_container_high">#2B2930</color>
+    <color name="m3_surface_container_highest">#36343B</color>
+
+    <!-- Outline -->
+    <color name="m3_outline">#938F99</color>
+    <color name="m3_outline_variant">#49454F</color>
+
+    <!-- 终端控制台（深色模式下用更深的纯黑） -->
+    <color name="terminal_bg">#0D0D1A</color>
+    <color name="terminal_text">#E0E0E0</color>
+    <color name="terminal_hint">#666677</color>
+    <color name="terminal_accent">#B388FF</color>
+
+    <!-- ============================================================ -->
+    <!-- 旧颜色名称 → 映射到新配色（深色模式）                        -->
+    <!-- ============================================================ -->
+    <color name="bg_root">@color/m3_background</color>
+    <color name="bg_mainActivity_title_bar">@color/m3_surface</color>
+    <color name="bg_title_bar">@color/m3_surface_container</color>
+    <color name="bg_console">@color/terminal_bg</color>
+    <color name="bg_input_bar">@color/m3_surface_container</color>
+    <color name="text_console">@color/terminal_text</color>
+    <color name="text_title">@color/m3_on_surface</color>
+    <color name="text_hint">@color/terminal_hint</color>
+    <color name="btn_pick_bg">@color/m3_primary</color>
+    <color name="btn_pick_text">@color/m3_on_primary</color>
+    <color name="bg_card">@color/m3_surface_container</color>
+    <color name="bg_edit_text">@color/m3_surface_container_high</color>
+
+    <!-- 保留的 night_ 颜色（其他页面可能引用） -->
+    <color name="night_bg_title_bar">@color/m3_surface_container</color>
+    <color name="night_bg_console">@color/terminal_bg</color>
+    <color name="night_bg_input_bar">@color/m3_surface_container</color>
+    <color name="night_bg_root">@color/m3_background</color>
+    <color name="night_text_console">@color/terminal_text</color>
+    <color name="night_text_title">@color/m3_on_surface</color>
+    <color name="night_text_hint">@color/terminal_hint</color>
+    <color name="night_btn_pick_bg">@color/m3_primary</color>
+    <color name="night_btn_pick_text">@color/m3_on_primary</color>
     <color name="night_text_blue">#516880</color>
     <color name="night_window_color">#8891E2</color>
 </resources>

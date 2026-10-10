@@ -1,33 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- ====== 浅色主题 ====== -->
-    <!-- 使用 android: 原生主题，不依赖 Material Components -->
-    <style name="Theme.KgmDecoder" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@color/bg_root</item>
-        <item name="android:colorBackground">@color/bg_root</item>
-        <item name="android:textColorPrimary">@color/text_console</item>
-        <item name="android:statusBarColor">@color/bg_mainActivity_title_bar</item>
+    <!-- ============================================================ -->
+    <!-- Material 3 DayNight 主题                                     -->
+    <!-- 自动切换浅色/深色模式，minSdk 兼容到 API 17+                -->
+    <!-- ============================================================ -->
+    <style name="Theme.KgmDecoder" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- 色彩令牌 -->
+        <item name="colorPrimary">@color/m3_primary</item>
+        <item name="colorOnPrimary">@color/m3_on_primary</item>
+        <item name="colorPrimaryContainer">@color/m3_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/m3_on_primary_container</item>
+        <item name="colorSecondary">@color/m3_secondary</item>
+        <item name="colorOnSecondary">@color/m3_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/m3_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/m3_on_secondary_container</item>
+        <item name="colorTertiary">@color/m3_tertiary</item>
+        <item name="colorOnTertiary">@color/m3_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/m3_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/m3_on_tertiary_container</item>
+        <item name="colorError">@color/m3_error</item>
+        <item name="colorOnError">@color/m3_on_error</item>
+        <item name="colorErrorContainer">@color/m3_error_container</item>
+        <item name="colorOnErrorContainer">@color/m3_on_error_container</item>
+        <item name="android:colorBackground">@color/m3_background</item>
+        <item name="colorOnBackground">@color/m3_on_background</item>
+        <item name="colorSurface">@color/m3_surface</item>
+        <item name="colorOnSurface">@color/m3_on_surface</item>
+        <item name="colorSurfaceVariant">@color/m3_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/m3_on_surface_variant</item>
+        <item name="colorOutline">@color/m3_outline</item>
+        <item name="colorOutlineVariant">@color/m3_outline_variant</item>
+
+        <!-- Surface 容器色（Material 3 新增） -->
+        <item name="colorSurfaceContainerLow">@color/m3_surface_container_low</item>
+        <item name="colorSurfaceContainer">@color/m3_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/m3_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/m3_surface_container_highest</item>
+
+        <!-- 窗口背景 -->
+        <item name="android:windowBackground">@color/m3_background</item>
+
+        <!-- 状态栏：用 surface 色，图标深色（浅色模式下） -->
+        <item name="android:statusBarColor">@color/m3_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <!-- 导航栏：透明，让内容延伸 -->
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!-- 形状：Material 3 大圆角风格 -->
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeExtraSmall">4dp</item>
+        <item name="cornerSizeSmall">8dp</item>
+        <item name="cornerSizeMedium">12dp</item>
+        <item name="cornerSizeLarge">16dp</item>
+        <item name="cornerSizeExtraLarge">28dp</item>
+
+        <!-- 按钮样式 -->
+        <item name="materialButtonStyle">@style/Widget.KgmDecoder.Button</item>
+        <item name="materialCardViewStyle">@style/Widget.KgmDecoder.CardView</item>
+
+        <!-- 允许 Activity 切换动画 -->
+        <item name="android:windowActivityTransitions">true</item>
     </style>
 
-    <!-- ====== 深色主题（夜晚模式）====== -->
-    <style name="Theme.KgmDecoder.Dark" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/night_bg_root</item>
-        <item name="android:colorBackground">@color/night_bg_root</item>
-        <item name="android:textColorPrimary">@color/night_text_console</item>
-        <item name="android:statusBarColor">@color/night_bg_title_bar</item>
+    <!-- ============================================================ -->
+    <!-- 组件样式                                                      -->
+    <!-- ============================================================ -->
+
+    <!-- MaterialButton：pill 形圆角，主色填充 -->
+    <style name="Widget.KgmDecoder.Button" parent="Widget.Material3.Button">
+        <item name="cornerRadius">28dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="letterSpacing">0.02</item>
     </style>
 
-    <!--
-        ★ 兼容旧主题名
-        如果 AndroidManifest.xml 中引用的是以下主题之一，
-        保留别名避免链接错误
-    -->
+    <!-- MaterialButton 图标版（发送按钮） -->
+    <style name="Widget.KgmDecoder.Button.Icon" parent="Widget.KgmDecoder.Button">
+        <item name="iconPadding">8dp</item>
+        <item name="iconSize">20dp</item>
+    </style>
+
+    <!-- MaterialCardView：大圆角，描边替代阴影 -->
+    <style name="Widget.KgmDecoder.CardView" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <!-- 终端控制台卡片：深色背景，描边 -->
+    <style name="Widget.KgmDecoder.CardView.Terminal" parent="Widget.Material3.CardView.Outlined">
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">@color/m3_outline_variant</item>
+        <item name="cardBackgroundColor">@color/terminal_bg</item>
+    </style>
+
+    <!-- 输入框：TextInputLayout outlined 风格 -->
+    <style name="Widget.KgmDecoder.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">16dp</item>
+        <item name="boxCornerRadiusTopEnd">16dp</item>
+        <item name="boxCornerRadiusBottomStart">16dp</item>
+        <item name="boxCornerRadiusBottomEnd">16dp</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+        <item name="hintTextColor">@color/terminal_hint</item>
+        <item name="android:textColorHint">@color/terminal_hint</item>
+    </style>
+
+    <!-- ============================================================ -->
+    <!-- 兼容别名                                                      -->
+    <!-- ============================================================ -->
     <style name="Theme.App" parent="Theme.KgmDecoder" />
 
-    <!--
-        ★ 如果项目中有引用 Theme.MaterialComponents.DayNight.DarkActionBar 的地方
-        用别名指向原生主题，消除依赖
-    -->
-    <style name="Theme.MaterialComponents.DayNight.DarkActionBar" parent="android:Theme.Material.Light.DarkActionBar" />
-
+    <!-- 旧主题别名，避免链接错误 -->
+    <style name="Theme.MaterialComponents.DayNight.DarkActionBar" parent="Theme.Material3.DayNight.DarkActionBar" />
 </resources>

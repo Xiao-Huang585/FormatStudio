@@ -36,7 +36,7 @@
         android:hardwareAccelerated="true"
         android:allowBackup="true"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+        android:theme="@style/Theme.KgmDecoder"
         android:localeConfig="@xml/locales_config">
 
     <!-- 主 Activity -->

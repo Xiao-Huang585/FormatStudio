@@ -1,46 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- ====== 缺失的系统默认颜色（修复链接错误）====== -->
+    <!-- ============================================================ -->
+    <!-- Material 3 色彩令牌（浅色模式）                              -->
+    <!-- Baseline Purple palette                                     -->
+    <!-- ============================================================ -->
+
+    <!-- Primary -->
+    <color name="m3_primary">#6750A4</color>
+    <color name="m3_on_primary">#FFFFFF</color>
+    <color name="m3_primary_container">#EADDFF</color>
+    <color name="m3_on_primary_container">#21005D</color>
+
+    <!-- Secondary -->
+    <color name="m3_secondary">#625B71</color>
+    <color name="m3_on_secondary">#FFFFFF</color>
+    <color name="m3_secondary_container">#E8DEF8</color>
+    <color name="m3_on_secondary_container">#1D192B</color>
+
+    <!-- Tertiary -->
+    <color name="m3_tertiary">#7D5260</color>
+    <color name="m3_on_tertiary">#FFFFFF</color>
+    <color name="m3_tertiary_container">#FFD8E4</color>
+    <color name="m3_on_tertiary_container">#31111D</color>
+
+    <!-- Error -->
+    <color name="m3_error">#B3261E</color>
+    <color name="m3_on_error">#FFFFFF</color>
+    <color name="m3_error_container">#F9DEDC</color>
+    <color name="m3_on_error_container">#410E0B</color>
+
+    <!-- Background / Surface -->
+    <color name="m3_background">#FEF7FF</color>
+    <color name="m3_on_background">#1D1B20</color>
+    <color name="m3_surface">#FEF7FF</color>
+    <color name="m3_on_surface">#1D1B20</color>
+    <color name="m3_surface_variant">#E7E0EC</color>
+    <color name="m3_on_surface_variant">#49454F</color>
+    <color name="m3_surface_container_low">#F7F2FA</color>
+    <color name="m3_surface_container">#F3EDF7</color>
+    <color name="m3_surface_container_high">#ECE6F0</color>
+    <color name="m3_surface_container_highest">#E6E0E9</color>
+
+    <!-- Outline -->
+    <color name="m3_outline">#79747E</color>
+    <color name="m3_outline_variant">#CAC4D0</color>
+
+    <!-- 终端控制台专用（浅色模式下也用深色背景，模拟终端） -->
+    <color name="terminal_bg">#1A1A2E</color>
+    <color name="terminal_text">#E0E0E0</color>
+    <color name="terminal_hint">#888899</color>
+    <color name="terminal_accent">#B388FF</color>
+
+    <!-- ============================================================ -->
+    <!-- 旧颜色名称 → 映射到新配色（保持兼容，不破坏其他页面）        -->
+    <!-- ============================================================ -->
+    <color name="bg_root">@color/m3_background</color>
+    <color name="bg_mainActivity_title_bar">@color/m3_surface</color>
+    <color name="bg_title_bar">@color/m3_surface_container</color>
+    <color name="bg_console">@color/terminal_bg</color>
+    <color name="bg_input_bar">@color/m3_surface_container</color>
+    <color name="text_console">@color/terminal_text</color>
+    <color name="text_title">@color/m3_on_surface</color>
+    <color name="text_hint">@color/terminal_hint</color>
+    <color name="btn_pick_bg">@color/m3_primary</color>
+    <color name="btn_pick_text">@color/m3_on_primary</color>
+    <color name="bg_card">@color/m3_surface_container</color>
+    <color name="bg_edit_text">@color/m3_surface_container_high</color>
+
+    <!-- Selecting 页面按钮配色（保留，映射到 Material 3 tonal 色） -->
+    <color name="btn_primary_bg">@color/m3_primary</color>
+    <color name="btn_secondary_bg">@color/m3_secondary</color>
+    <color name="btn_third_bg">#7C5CBA</color>
+    <color name="btn_fourth_bg">#E7B05D</color>
+    <color name="btn_fifth_bg">#6ED2DE</color>
+    <color name="btn_sixth_bg">#B6E7CB</color>
+    <color name="selecting_btn_text">#FFFFFF</color>
+    <color name="ripple_color">#40FFFFFF</color>
+
+    <!-- 系统默认颜色（保留） -->
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-
-    <!-- ====== 浅色模式（默认）====== -->
-    <color name="bg_mainActivity_title_bar">#212121</color>
-    <color name="bg_title_bar">#383838</color>
-    <color name="bg_console">#D0D0D0</color>
-    <color name="bg_input_bar">#FFFFFF</color>
-    <color name="bg_root">#F5F5F5</color>
-    <color name="text_console">#000000</color>
-    <color name="text_title">#FFFFFF</color>
-    <color name="text_hint">#888888</color>
-    <color name="btn_pick_bg">#9C27B0</color>
-    <color name="btn_pick_text">#FFFFFF</color>
-
-    <!-- ====== 深色模式专用颜色 ====== -->
-    <color name="night_bg_title_bar">#1A1A1A</color>
-    <color name="night_bg_console">#121212</color>
-    <color name="night_bg_input_bar">#1E1E1E</color>
-    <color name="night_bg_root">#000000</color>
-    <color name="night_text_console">#E0E0E0</color>
-    <color name="night_text_title">#FFFFFF</color>
-    <color name="night_text_hint">#AAAAAA</color>
-    <color name="night_btn_pick_bg">#6A1B9A</color>
-    <color name="night_btn_pick_text">#FFFFFF</color>
-    <color name="night_text_blue">#4D6783</color>
-    <color name="night_window_color">#8891E2</color>
-
-    <color name="bg_card">#A6A6AF</color>              <!-- 卡片背景，按需调整 -->
-    <color name="bg_edit_text">#FF2A2A3C</color>       <!-- 输入框背景 -->
-    <color name="btn_primary_bg">#FF4CAF50</color>     <!-- 主按钮背景 -->
-    <color name="btn_secondary_bg">#FF2196F3</color>   <!-- 次按钮背景 -->
-    <color name="btn_third_bg">#7C5CBA</color>         <!-- 第三按钮背景 -->
-    <color name="btn_fourth_bg">#E7B05D</color>        <!-- 第四按钮背景 -->
-    <color name="btn_fifth_bg">#6ED2DE</color>         <!-- 第五按钮背景 -->
-    <color name="btn_sixth_bg">#B6E7CB</color>         <!-- 第六按钮背景 -->
-    <color name="selecting_btn_text">#FFFFFF</color>    <!-- Selecting 所有按钮统一文本色 -->
-    <color name="ripple_color">#40FFFFFF</color>       <!-- 水波纹 -->
 </resources>
