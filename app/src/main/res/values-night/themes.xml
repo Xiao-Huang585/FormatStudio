@@ -42,12 +42,10 @@
 
         <item name="android:navigationBarColor">@android:color/transparent</item>
 
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSizeExtraSmall">4dp</item>
-        <item name="cornerSizeSmall">8dp</item>
-        <item name="cornerSizeMedium">12dp</item>
-        <item name="cornerSizeLarge">16dp</item>
-        <item name="cornerSizeExtraLarge">28dp</item>
+        <!-- 形状：通过 shapeAppearance 统一定义 Material 3 五档圆角 -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.KgmDecoder.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.KgmDecoder.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.KgmDecoder.Large</item>
 
         <item name="materialButtonStyle">@style/Widget.KgmDecoder.Button</item>
         <item name="materialCardViewStyle">@style/Widget.KgmDecoder.CardView</item>
@@ -60,7 +58,7 @@
         <item name="android:minHeight">48dp</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="letterSpacing">0.02</item>
+        <item name="android:letterSpacing">0.02</item>
     </style>
 
     <style name="Widget.KgmDecoder.Button.Icon" parent="Widget.KgmDecoder.Button">

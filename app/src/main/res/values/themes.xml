@@ -47,13 +47,10 @@
         <!-- 导航栏：透明，让内容延伸 -->
         <item name="android:navigationBarColor">@android:color/transparent</item>
 
-        <!-- 形状：Material 3 大圆角风格 -->
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSizeExtraSmall">4dp</item>
-        <item name="cornerSizeSmall">8dp</item>
-        <item name="cornerSizeMedium">12dp</item>
-        <item name="cornerSizeLarge">16dp</item>
-        <item name="cornerSizeExtraLarge">28dp</item>
+        <!-- 形状：通过 shapeAppearance 统一定义 Material 3 五档圆角 -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.KgmDecoder.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.KgmDecoder.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.KgmDecoder.Large</item>
 
         <!-- 按钮样式 -->
         <item name="materialButtonStyle">@style/Widget.KgmDecoder.Button</item>
@@ -73,7 +70,7 @@
         <item name="android:minHeight">48dp</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="letterSpacing">0.02</item>
+        <item name="android:letterSpacing">0.02</item>
     </style>
 
     <!-- MaterialButton 图标版（发送按钮） -->
@@ -116,5 +113,18 @@
     <style name="Theme.App" parent="Theme.KgmDecoder" />
 
     <!-- 旧主题别名，避免链接错误 -->
-    <style name="Theme.MaterialComponents.DayNight.DarkActionBar" parent="Theme.Material3.DayNight.DarkActionBar" />
+    <style name="Theme.MaterialComponents.DayNight.DarkActionBar" parent="Theme.Material3.DayNight" />
+
+    <!-- ============================================================ -->
+    <!-- 形状外观（Material 3 五档圆角）                               -->
+    <!-- ============================================================ -->
+    <style name="ShapeAppearance.KgmDecoder.Small" parent="ShapeAppearance.Material3.Small">
+        <item name="cornerSize">8dp</item>
+    </style>
+    <style name="ShapeAppearance.KgmDecoder.Medium" parent="ShapeAppearance.Material3.Medium">
+        <item name="cornerSize">16dp</item>
+    </style>
+    <style name="ShapeAppearance.KgmDecoder.Large" parent="ShapeAppearance.Material3.Large">
+        <item name="cornerSize">28dp</item>
+    </style>
 </resources>
