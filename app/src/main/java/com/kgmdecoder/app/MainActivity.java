@@ -25,6 +25,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
+import com.google.android.material.textfield.TextInputLayout;
 import java.io.File;
 import java.util.Locale;
 
@@ -42,6 +43,7 @@ public class MainActivity extends Activity {
     private static MainActivity sInstance;
     private TextView tvConsole;
     private static EditText etInput;
+    private static TextInputLayout tilInput;
     private ScrollView svConsole;
     private ImageView ivClose;
     private ImageButton btnSetting;
@@ -209,6 +211,7 @@ public class MainActivity extends Activity {
         tvConsole = findViewById(R.id.tv_console);
         svConsole = findViewById(R.id.sv_console);
         etInput = findViewById(R.id.et_input);
+        tilInput = findViewById(R.id.til_input);
         ivClose = findViewById(R.id.iv_close);
         btnSetting = findViewById(R.id.btn_setting);
         btnPick = findViewById(R.id.btn_pick);
@@ -361,7 +364,7 @@ public class MainActivity extends Activity {
 
     public static void callJavaSetETHintText(String text) {
         sInstance.runOnUiThread(() -> {
-            etInput.setHint(text);
+            tilInput.setHint(text);
         });
     }
 
