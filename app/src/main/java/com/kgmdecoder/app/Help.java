@@ -131,8 +131,8 @@ public class Help extends Activity {
 
     private void saveCommentKeyValue() {
         String inputText = et_encodeCommentKeyValue.getText().toString().trim();
-        // 写入配置文件第3行（lineIndex 从0开始，第3行索引为2）
-        writeLine(CONFIG_PATH, 2, inputText);
+        // 写入配置文件第3行（writeLine 的 lineIndex 从1开始，第3行=3）
+        writeLine(CONFIG_PATH, 3, inputText);
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
             imm.hideSoftInputFromWindow(et_encodeCommentKeyValue.getWindowToken(), 0);
