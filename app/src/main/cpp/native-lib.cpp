@@ -326,6 +326,7 @@ static void playVideoWithYsPlayer(androidOutStream &cout, androidInStream &cin,
 
     // 6. 开始播放
     player->start();
+    callJavaSetPlayingState(true);  // 禁用文件选择按钮，避免打断播放
     if (hasVideo) cout << String("播放中... 点击视频暂停/恢复，输入 stop 停止", "Playing...") << endl;
     else cout << String("播放中... 输入 stop 停止", "Playing...") << endl;
     cout.flush();
@@ -398,6 +399,7 @@ static void playVideoWithYsPlayer(androidOutStream &cout, androidInStream &cin,
         cout.flush();
     }
 
+    callJavaSetPlayingState(false);  // 恢复文件选择按钮
     callJavaSetETHintText(defaultHint);
     if (hasVideo) callJavaControlPlayArrowVisibility(false);
     // 9. 停止点击轮询线程(仅视频)

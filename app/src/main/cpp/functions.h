@@ -103,6 +103,7 @@ extern jmethodID g_showVideoViewMethodID;
 extern jmethodID g_callJavaIsSurfaceClickedMethodID;
 extern jmethodID g_callJavaControlPlayArrowVisibilityMethodID;
 extern jmethodID g_callJavaSetETHintTextMethodID;
+extern jmethodID g_callJavaSetPlayingStateMethodID;
 extern jmethodID g_callJavaGetLanguageID;
 // ====== 线程相关 ======
 extern std::mutex g_inputMutex;
@@ -202,6 +203,7 @@ void callJavaShowVideoView(bool show);
 bool callJavaIsSurfaceClicked();
 void callJavaControlPlayArrowVisibility(bool visibility);
 void callJavaSetETHintText(const String text);
+void callJavaSetPlayingState(bool playing);
 int callJavaGetLanguage();
 
 // ============================

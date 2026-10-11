@@ -369,6 +369,19 @@ public class MainActivity extends Activity {
     }
 
     /**
+     * C++ 层调用：播放状态变化时启用/禁用文件选择按钮
+     * 播放中禁用 btn_pick，避免进入文件选择/Selecting 打断播放
+     */
+    public static void callJavaSetPlayingState(boolean playing) {
+        if (sInstance != null && sInstance.btnPick != null) {
+            sInstance.runOnUiThread(() -> {
+                sInstance.btnPick.setEnabled(!playing);
+                sInstance.btnPick.setAlpha(playing ? 0.4f : 1.0f);
+            });
+        }
+    }
+
+    /**
      * C++ 层调用：显示/隐藏视频播放视图
      * 当 C++ 开始播放视频时调用 showVideoView(true)
      * 播放结束时调用 showVideoView(false)
