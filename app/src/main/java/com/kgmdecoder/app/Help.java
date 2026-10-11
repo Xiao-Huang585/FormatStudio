@@ -13,10 +13,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 import com.kgmdecoder.app.BuildConfig;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+
 public class Help extends Activity {
     private ImageButton back;
     private SwitchMaterial experimentalFunction;
     private EditText et_encodeThreads;
+    private EditText et_encodeCommentKeyValue;
 
     // 配置文件路径，统一常量，避免硬编码重复
     private static final String CONFIG_PATH = "/data/user/0/com.kgmdecoder.app/files/config.dat";
@@ -28,6 +34,7 @@ public class Help extends Activity {
         setContentView(R.layout.help);
         back = findViewById(R.id.btnBack);
         et_encodeThreads = findViewById(R.id.et_encodeThreads);
+        et_encodeCommentKeyValue = findViewById(R.id.et_encodeCommentKeyValue);
         experimentalFunction = findViewById(R.id.switch_experimentalFunction);
 
         // 动态填充版本号到帮助文本
@@ -39,6 +46,11 @@ public class Help extends Activity {
         experimentalFunction.setChecked(checkEnableExperimentalFunction());
         int threads = getEncodeThreads();
         et_encodeThreads.setText(String.valueOf(threads));
+        // 读取配置文件第3行：comment 键值对
+        String commentValue = readConfigLine(2);
+        if (commentValue != null) {
+            et_encodeCommentKeyValue.setText(commentValue);
+        }
 
         back.setOnClickListener(v -> finish());
 
@@ -72,6 +84,27 @@ public class Help extends Activity {
             }
             return false;
         });
+
+        // comment 键值对输入框：回车保存
+        et_encodeCommentKeyValue.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE ||
+                    actionId == EditorInfo.IME_ACTION_NEXT ||
+                    actionId == EditorInfo.IME_ACTION_GO ||
+                    actionId == EditorInfo.IME_ACTION_SEND ||
+                    actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
+                saveCommentKeyValue();
+                return true;
+            }
+            return false;
+        });
+        et_encodeCommentKeyValue.setOnKeyListener((v, keyCode, event) -> {
+            if (keyCode == android.view.KeyEvent.KEYCODE_ENTER
+                    && event.getAction() == android.view.KeyEvent.ACTION_UP) {
+                saveCommentKeyValue();
+                return true;
+            }
+            return false;
+        });
     }
 
     private void saveEncodeThreads() {
@@ -93,6 +126,35 @@ public class Help extends Activity {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
             imm.hideSoftInputFromWindow(et_encodeThreads.getWindowToken(), 0);
+        }
+    }
+
+    private void saveCommentKeyValue() {
+        String inputText = et_encodeCommentKeyValue.getText().toString().trim();
+        // 写入配置文件第3行（lineIndex 从0开始，第3行索引为2）
+        writeLine(CONFIG_PATH, 2, inputText);
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(et_encodeCommentKeyValue.getWindowToken(), 0);
+        }
+    }
+
+    /**
+     * 读取配置文件指定行（lineIndex 从0开始）
+     * @return 该行内容，文件不存在或行号越界返回 null
+     */
+    private String readConfigLine(int lineIndex) {
+        File file = new File(CONFIG_PATH);
+        if (!file.exists()) return null;
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line = null;
+            for (int i = 0; i <= lineIndex; i++) {
+                line = reader.readLine();
+                if (line == null) return null;
+            }
+            return line;
+        } catch (IOException e) {
+            return null;
         }
     }
 
