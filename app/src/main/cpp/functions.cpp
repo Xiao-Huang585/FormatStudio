@@ -278,11 +278,18 @@ std::string androidInStream::readLine()
 
 std::string androidInStream::blockReadInput(JNIEnv* env)
 {
-    std::unique_lock<std::mutex> lock(g_inputMutex);
-    g_inputReady = false;
+    // 请求输入框焦点（不需要持锁，避免与 passInputToCpp 死锁）
     env->CallStaticVoidMethod(g_MainActivityClass, g_getJavaInputMethodID);
+
+    std::unique_lock<std::mutex> lock(g_inputMutex);
+    // 关键修复：不在 wait 之前重置 g_inputReady。
+    // 如果在获得锁之前 passInputToCpp 已经设置了 g_inputReady=true，
+    // 此处重置会导致输入丢失，wait 永远阻塞。
+    // wait 的谓词会检查 g_inputReady，已就绪则直接返回不阻塞。
     g_inputCv.wait(lock, [] { return g_inputReady.load(); });
-    return g_inputData;
+    std::string data = g_inputData;
+    g_inputReady = false;  // 消费后再重置
+    return data;
 }
 
 // ============================
