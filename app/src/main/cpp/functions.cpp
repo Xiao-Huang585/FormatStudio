@@ -21,6 +21,7 @@ jmethodID g_callJavaIsSurfaceClickedMethodID = nullptr;
 jmethodID g_callJavaControlPlayArrowVisibilityMethodID = nullptr;
 jmethodID g_callJavaSetETHintTextMethodID = nullptr;
 jmethodID g_callJavaSetPlayingStateMethodID = nullptr;
+jmethodID g_callJavaSetVideoSizeMethodID = nullptr;
 jmethodID g_callJavaGetLanguageID = nullptr;
 std::mutex g_inputMutex;
 std::condition_variable g_inputCv;
@@ -163,6 +164,7 @@ bool initGlobalRefs(JNIEnv *env) {
     g_callJavaControlPlayArrowVisibilityMethodID = env->GetStaticMethodID(g_MainActivityClass, "callJavaControlPlayArrowVisibility", "(Z)V");
     g_callJavaSetETHintTextMethodID = env->GetStaticMethodID(g_MainActivityClass, "callJavaSetETHintText", "(Ljava/lang/String;)V");
     g_callJavaSetPlayingStateMethodID = env->GetStaticMethodID(g_MainActivityClass, "callJavaSetPlayingState", "(Z)V");
+    g_callJavaSetVideoSizeMethodID = env->GetStaticMethodID(g_MainActivityClass, "callJavaSetVideoSize", "(II)V");
     g_callJavaGetLanguageID = env->GetStaticMethodID(g_MainActivityClass, "callJavaGetLanguage", "()Ljava/lang/String;");
     return true;
 }
@@ -412,6 +414,22 @@ void callJavaSetPlayingState(bool playing) {
     env->CallStaticVoidMethod(g_MainActivityClass, g_callJavaSetPlayingStateMethodID, playing ? JNI_TRUE : JNI_FALSE);
     if (env->ExceptionCheck()) {
         LOGD("callJavaSetPlayingState: 调用异常");
+        env->ExceptionClear();
+    }
+}
+void callJavaSetVideoSize(int width, int height) {
+    JNIEnv *env = getThreadJNIEnv();
+    if (env == nullptr) {
+        LOGD("callJavaSetVideoSize: 获取JNIEnv失败");
+        return;
+    }
+    if (!g_MainActivityClass || !g_callJavaSetVideoSizeMethodID) {
+        LOGD("callJavaSetVideoSize: 未初始化");
+        return;
+    }
+    env->CallStaticVoidMethod(g_MainActivityClass, g_callJavaSetVideoSizeMethodID, width, height);
+    if (env->ExceptionCheck()) {
+        LOGD("callJavaSetVideoSize: 调用异常");
         env->ExceptionClear();
     }
 }

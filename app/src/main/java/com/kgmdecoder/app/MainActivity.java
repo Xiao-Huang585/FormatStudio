@@ -11,7 +11,9 @@ import android.os.LocaleList;
 import android.provider.DocumentsContract;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.GestureDetector;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -51,6 +53,11 @@ public class MainActivity extends Activity {
     private TextView btnPick;
     // 视频播放 SurfaceView
     private SurfaceView surfaceView;
+    // 视频原始尺寸（用于自适应宽高比）
+    private int videoWidth = 0;
+    private int videoHeight = 0;
+    // 是否处于横屏全屏模式
+    private boolean isFullscreenLandscape = false;
 
     // ====== Native 方法声明 ======
     public native void triggerCppToCallJava();
@@ -226,9 +233,20 @@ public class MainActivity extends Activity {
         // 选择文件按钮
         btnPick.setOnClickListener(new PickFileButtonClickListener());
 
-        surfaceView.setOnClickListener(v -> {
-            clickTimestamp = System.currentTimeMillis();
+        // SurfaceView 单击暂停/恢复 + 双击切换横竖屏
+        GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                clickTimestamp = System.currentTimeMillis();
+                return true;
+            }
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                toggleFullscreen();
+                return true;
+            }
         });
+        surfaceView.setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
 
         btnSetting.setOnClickListener(v -> {
             Intent intent = new Intent(this, Help.class);
@@ -297,6 +315,10 @@ public class MainActivity extends Activity {
         super.onConfigurationChanged(newConfig);
         String newLang = getCurrentEffectiveLanguageTag();
         Log.d(TAG, "config changed, new lang tag:" + newLang);
+        // 屏幕旋转后重新计算 SurfaceView 尺寸
+        if (surfaceView != null && surfaceView.getVisibility() == View.VISIBLE) {
+            surfaceView.post(() -> updateSurfaceViewSize());
+        }
     }
 
     // ============================
@@ -382,6 +404,76 @@ public class MainActivity extends Activity {
     }
 
     /**
+     * C++ 层调用：回调视频原始尺寸，用于自适应 SurfaceView 宽高比
+     */
+    public static void callJavaSetVideoSize(int width, int height) {
+        if (sInstance != null) {
+            sInstance.runOnUiThread(() -> {
+                sInstance.videoWidth = width;
+                sInstance.videoHeight = height;
+                sInstance.updateSurfaceViewSize();
+            });
+        }
+    }
+
+    /**
+     * 根据视频宽高比和当前可用区域，动态调整 SurfaceView 尺寸（fit-center，不拉伸）
+     */
+    private void updateSurfaceViewSize() {
+        if (surfaceView == null) return;
+
+        // 获取 SurfaceView 父容器的可用尺寸
+        View parent = (View) surfaceView.getParent();
+        if (parent == null || parent.getWidth() == 0 || parent.getHeight() == 0) return;
+
+        int availableW = parent.getWidth();
+        int availableH = parent.getHeight();
+
+        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams lp =
+                (androidx.constraintlayout.widget.ConstraintLayout.LayoutParams) surfaceView.getLayoutParams();
+
+        if (videoWidth <= 0 || videoHeight <= 0) {
+            // 无视频尺寸信息，填满可用区域
+            lp.width = 0;
+            lp.height = 0;
+            lp.dimensionRatio = null;
+            surfaceView.setLayoutParams(lp);
+            return;
+        }
+
+        float videoRatio = (float) videoWidth / videoHeight;
+        float availableRatio = (float) availableW / availableH;
+
+        if (videoRatio > availableRatio) {
+            // 视频更宽：宽度填满，高度按比例
+            lp.width = 0;
+            lp.height = 0;
+            lp.dimensionRatio = "W," + videoWidth + ":" + videoHeight;
+        } else {
+            // 视频更高：高度填满，宽度按比例
+            lp.width = 0;
+            lp.height = 0;
+            lp.dimensionRatio = "H," + videoWidth + ":" + videoHeight;
+        }
+        surfaceView.setLayoutParams(lp);
+    }
+
+    /**
+     * 双击 SurfaceView 切换横屏全屏 / 竖屏
+     */
+    private void toggleFullscreen() {
+        if (isFullscreenLandscape) {
+            // 切回竖屏
+            setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            isFullscreenLandscape = false;
+        } else {
+            // 切横屏全屏（传感器方向，用户可正/反手持）
+            setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+            isFullscreenLandscape = true;
+        }
+    }
+
+    /**
      * C++ 层调用：显示/隐藏视频播放视图
      * 当 C++ 开始播放视频时调用 showVideoView(true)
      * 播放结束时调用 showVideoView(false)
@@ -393,6 +485,19 @@ public class MainActivity extends Activity {
                     sInstance.surfaceView.setVisibility(
                             show ? View.VISIBLE : View.GONE);
                     Log.d(TAG, "SurfaceView visibility: " + (show ? "VISIBLE" : "GONE"));
+                    if (show) {
+                        // SurfaceView 从 GONE 变为 VISIBLE 后需等布局完成再算尺寸
+                        sInstance.surfaceView.post(() -> sInstance.updateSurfaceViewSize());
+                    } else {
+                        // 播放结束：重置视频尺寸，恢复竖屏
+                        sInstance.videoWidth = 0;
+                        sInstance.videoHeight = 0;
+                        if (sInstance.isFullscreenLandscape) {
+                            sInstance.setRequestedOrientation(
+                                    android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                            sInstance.isFullscreenLandscape = false;
+                        }
+                    }
                 }
             });
         }

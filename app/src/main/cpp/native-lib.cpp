@@ -327,6 +327,11 @@ static void playVideoWithYsPlayer(androidOutStream &cout, androidInStream &cin,
     // 6. 开始播放
     player->start();
     callJavaSetPlayingState(true);  // 禁用文件选择按钮，避免打断播放
+    // 回调视频原始尺寸，Java 层据此自适应 SurfaceView 宽高比
+    if (hasVideo && player->ysVideoPlayer && player->ysVideoPlayer->avCodecContext) {
+        callJavaSetVideoSize(player->ysVideoPlayer->avCodecContext->width,
+                              player->ysVideoPlayer->avCodecContext->height);
+    }
     if (hasVideo) cout << String("播放中... 点击视频暂停/恢复，输入 stop 停止", "Playing...") << endl;
     else cout << String("播放中... 输入 stop 停止", "Playing...") << endl;
     cout.flush();
