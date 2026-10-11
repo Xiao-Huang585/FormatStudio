@@ -289,6 +289,18 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
 
     const bool needGlobalHeader = !!(outFmtCtx_.raw()->oformat->flags & AVFMT_GLOBALHEADER);
 
+    auto readComment = []() -> const char* {
+        std::ifstream config("/data/user/0/com.kgmdecoder.app/files/config.dat");
+        std::string line;
+        constexpr size_t target = 3;
+        size_t idx = 0;
+        while (std::getline(config, line)) {
+            idx++;
+            if (idx == target) return line.c_str();
+        }
+        return nullptr;
+    };
+
     // ========== 视频初始化 ==========
     if (wantVideo) {
         // 尝试启用Android硬件编码（allowHardware=false 时强制软件编码）
@@ -522,6 +534,21 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
     // av_interleaved_write_frame 会按此选项把所有流包时间戳整体偏移，使最小 dts >= 0。
     outFmtCtx_.raw()->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_ZERO;
 
+    // 读取配置文件第3行 comment 键值对，写入输出文件 metadata
+    // 空值不写入（av_dict_set 传 nullptr 会删除已有条目，空字符串则会写入空值）
+    {
+        std::ifstream cfg("/data/user/0/com.kgmdecoder.app/files/config.dat");
+        if (cfg.is_open()) {
+            std::string line;
+            std::getline(cfg, line); // 第1行：experimentalFunction
+            std::getline(cfg, line); // 第2行：encodeThreads
+            std::getline(cfg, line); // 第3行：comment
+            if (!line.empty()) {
+                av_dict_set(&outFmtCtx_.raw()->metadata, "comment", line.c_str(), 0);
+            }
+        }
+    }
+
     // 写文件头
     outFmtCtx_.writeHeader(ec);
     if (ec) {
@@ -582,6 +609,11 @@ bool FFmpeg::getMediaInfo() const {
         cout << String("总码率: 未知", "Total bitrate: Unknown") << endl;
     }
 
+    AVDictionaryEntry* entry = nullptr;
+    entry = av_dict_get(rawCtx->metadata, "comment", nullptr, 0);
+    if (entry && entry->value)
+        cout << String("介绍: ", "Comment: ") << entry->value << endl;
+
     cout << String("流的数量: ", "Stream number: ") << fmtCtx_.streamsCount() << endl;
 
     if (hasVideo()) {
@@ -624,7 +656,7 @@ bool FFmpeg::getMediaInfo() const {
             cout << String("  码率: ", "  Bitrate:") << (codecpar->bit_rate / 1000) << " kbps" << endl;
         }
 
-        AVDictionaryEntry* entry = nullptr;
+        entry = nullptr;
         entry = av_dict_get(rawCtx->metadata, "artist", nullptr, 0);
         if (entry && entry->value)
             cout << String("  艺术家: ", "Artist: ") << entry->value << endl;
@@ -765,10 +797,10 @@ int FFmpeg::openOutputWithCompressMedia(const char* outputPath,
     return 0;
 }
 
-// ============================
+// =============================================================
 // 直接复用源文件所有解码器参数初始化输出
 // 分辨率/帧率/码率/采样率/声道布局均不变，仅编码线程数由 config.dat 控制
-// ============================
+// =============================================================
 int FFmpeg::openOutputWithSourceParams(const char* outputPath) {
     if (!fmtCtx_.isOpened()) {
         cout << String("未打开输入文件...", "Didn't open input file...") << endl;
@@ -875,9 +907,9 @@ int FFmpeg::openOutputWithSourceParams(const char* outputPath) {
     );
 }
 
-// ============================
+// ====================================================
 // 无参编码循环：编码完整文件（从 0 到结束），内部委托给核心实现
-// ============================
+// ====================================================
 int FFmpeg::encodeToFile() {
     return encodeToFileWithLut(0, (uint64_t)-1, nullptr);
 }
