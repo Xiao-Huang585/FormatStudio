@@ -51,31 +51,49 @@ public class Help extends Activity {
             }
         });
 
-        // EditText：单行输入，按下完成键确认保存线程数
+        // EditText：单行输入，按下完成键/回车确认保存线程数
         et_encodeThreads.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                // 读取输入框文本
-                String inputText = et_encodeThreads.getText().toString().trim();
-
-                // 写入配置文件第2行
-                writeLine(CONFIG_PATH, 2, inputText);
-                if (getEncodeThreads() == -1) {
-                    writeLine(CONFIG_PATH, 2, "2");
-                    Toast.makeText(this, "请写入一个合法的值(否则为2)", Toast.LENGTH_SHORT).show();
-                    et_encodeThreads.setText("2");
-                }
-                if (getEncodeThreads() == -2) {
-                    writeLine(CONFIG_PATH, 2, String.valueOf(Runtime.getRuntime().availableProcessors()));
-                }
-
-                // 收起软键盘
-                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(et_encodeThreads.getWindowToken(), 0);
-
-                return true; // 消费事件
+            if (actionId == EditorInfo.IME_ACTION_DONE ||
+                    actionId == EditorInfo.IME_ACTION_NEXT ||
+                    actionId == EditorInfo.IME_ACTION_GO ||
+                    actionId == EditorInfo.IME_ACTION_SEND ||
+                    actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
+                saveEncodeThreads();
+                return true;
             }
             return false;
         });
+        // 兼容物理键盘/部分输入法的回车键
+        et_encodeThreads.setOnKeyListener((v, keyCode, event) -> {
+            if (keyCode == android.view.KeyEvent.KEYCODE_ENTER
+                    && event.getAction() == android.view.KeyEvent.ACTION_UP) {
+                saveEncodeThreads();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void saveEncodeThreads() {
+        // 读取输入框文本
+        String inputText = et_encodeThreads.getText().toString().trim();
+
+        // 写入配置文件第2行
+        writeLine(CONFIG_PATH, 2, inputText);
+        if (getEncodeThreads() == -1) {
+            writeLine(CONFIG_PATH, 2, "2");
+            Toast.makeText(this, "请写入一个合法的值(否则为2)", Toast.LENGTH_SHORT).show();
+            et_encodeThreads.setText("2");
+        }
+        if (getEncodeThreads() == -2) {
+            writeLine(CONFIG_PATH, 2, String.valueOf(Runtime.getRuntime().availableProcessors()));
+        }
+
+        // 收起软键盘
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(et_encodeThreads.getWindowToken(), 0);
+        }
     }
 
     // native 本地方法声明
