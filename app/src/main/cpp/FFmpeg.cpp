@@ -1057,6 +1057,7 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
     cout << String("正在编码...", "Encoding...") << endl;
 
     // 写包 lambda
+    int64_t audioPktPts = 0;  // 手动维护音频包 pts（opus 编码器会忽略输入 pts）
     auto writePkt = [&](av::Packet &pkt, const av::Stream &st, const AVRational &encTb,
                          int64_t frameNbSamples) -> bool {
         if (!st.isValid() || !pkt) return false;
@@ -1075,27 +1076,20 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
                 rawPkt->duration = 1;
             }
         }
+        // 关键修复：FFmpeg 内置原生 opus 编码器会忽略输入 frame->pts，
+        // 自己维护一个从 0 开始的内部 pts 计数器，导致输出包的 pts 完全错误。
+        // 这里对所有音频包手动维护 pts 序列，不依赖编码器输出的 pts。
+        if (isAudioPkt) {
+            rawPkt->pts = audioPktPts;
+            rawPkt->dts = audioPktPts;
+            audioPktPts += rawPkt->duration > 0 ? rawPkt->duration : 1;
+        }
         // 调试：打印音频包时间戳（前20个 + 每100个）
         if (isAudioPkt && (writtenAPkts < 20 || writtenAPkts % 100 == 0)) {
-            LOGD("audio pkt[%d] pre:  pts=%lld dts=%lld dur=%lld encTb=%d/%d stTb=%d/%d",
+            LOGD("audio pkt[%d]: pts=%lld dts=%lld dur=%lld stTb=%d/%d",
                  writtenAPkts,
                  (long long)rawPkt->pts, (long long)rawPkt->dts, (long long)rawPkt->duration,
-                 encTb.num, encTb.den, st.raw()->time_base.num, st.raw()->time_base.den);
-        }
-        static int64_t audioTsOffset = AV_NOPTS_VALUE;
-        if (isAudioPkt  && rawPkt->dts != AV_NOPTS_VALUE) {
-            if (audioTsOffset == AV_NOPTS_VALUE && rawPkt->dts < 0) {
-                audioTsOffset = -rawPkt->dts;
-            }
-            if (audioTsOffset > 0) {
-                rawPkt->pts += audioTsOffset;
-                rawPkt->dts += audioTsOffset;
-            }
-        }
-        if (isAudioPkt && (writtenAPkts < 20 || writtenAPkts % 100 == 0)) {
-            LOGD("audio pkt[%d] post: pts=%lld dts=%lld dur=%lld",
-                 writtenAPkts,
-                 (long long)rawPkt->pts, (long long)rawPkt->dts, (long long)rawPkt->duration);
+                 st.raw()->time_base.num, st.raw()->time_base.den);
         }
         std::error_code writeEc;
         outFmtCtx_.writePacket(pkt, writeEc);
