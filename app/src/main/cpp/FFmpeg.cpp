@@ -497,6 +497,15 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                 LOGD("打开音频编码器%s失败: %s", avcodec_get_name(aCodec.id()), ec.message().c_str());
                 aenc_ = av::AudioEncoderContext();
             } else {
+                LOGD("AUDIO ENCODER OPENED: name=%s frame_size=%d initial_padding=%d extradata_size=%d sample_fmt=%d channels=%d sample_rate=%d time_base=%d/%d",
+                     aenc_.raw()->codec->name,
+                     aenc_.raw()->frame_size,
+                     aenc_.raw()->initial_padding,
+                     aenc_.raw()->extradata_size,
+                     aenc_.raw()->sample_fmt,
+                     aenc_.raw()->ch_layout.nb_channels,
+                     aenc_.raw()->sample_rate,
+                     aenc_.raw()->time_base.num, aenc_.raw()->time_base.den);
                 outAStream_ = outFmtCtx_.addStream(aenc_, ec);
                 // 关键：把输出音频流的 time_base 显式设为编码器时基(Opus 为 1/48000)。
                 // Ogg muxer 用流 time_base 把 pkt->pts 换算成 granule；若二者不一致，
@@ -508,6 +517,12 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                 if (outAStream_.isValid()) {
                     outAStream_.raw()->codecpar->bit_rate = aenc_.raw()->bit_rate;
                 }
+                LOGD("AUDIO STREAM AFTER addStream: codecpar extradata_size=%d initial_padding=%d ch=%d sr=%d fmt=%d",
+                     outAStream_.isValid() ? outAStream_.raw()->codecpar->extradata_size : -1,
+                     outAStream_.isValid() ? outAStream_.raw()->codecpar->initial_padding : -1,
+                     outAStream_.isValid() ? outAStream_.raw()->codecpar->ch_layout.nb_channels : -1,
+                     outAStream_.isValid() ? outAStream_.raw()->codecpar->sample_rate : -1,
+                     outAStream_.isValid() ? outAStream_.raw()->codecpar->format : -1);
                 if (ec) {
                     cout << String("创建输出音频流失败: ",
                                    "Fail to create output audio stream: ") << ec.message() << endl;
@@ -968,7 +983,7 @@ int FFmpeg::encodeToFile(int8_t brightness, float gamma) {
 // 核心编码循环：所有 encodeToFile 重载的唯一实现，brightnessLut=nullptr 时不做亮度调整
 // ============================
 int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const uint8_t* brightnessLut) {
-    LOGI("解码线程: %hhu", encodeThreads);
+    LOGI("遍码线程: %hhu", encodeThreads);
     if (!outFmtCtx_.isOpened()) {
         cout << String("输出未初始化...", "Output not initialized...") << endl;
         LOGD("输出未初始化...");
