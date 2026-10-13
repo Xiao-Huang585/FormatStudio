@@ -175,9 +175,9 @@ int FFmpeg::openInput(const char* url) {
     return 0;
 }
 
-// ============================
+// ==========================================
 // 辅助：根据编码器支持的采样格式自动挑选输出采样格式
-// ============================
+// ==========================================
 static AVSampleFormat pickEncoderSampleFormat(const AVCodec *codec) {
     if (!codec) {
         return AV_SAMPLE_FMT_FLTP;
@@ -204,9 +204,9 @@ static AVSampleFormat pickEncoderSampleFormat(const AVCodec *codec) {
     return sampleFmts[0];
 }
 
-// =================================
+// ==================================
 // 用指定编码器ID完成输出初始化（公开入口）
-// =================================
+// ==================================
 int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID,
                                    int64_t videoBitrate,
                                    const char* presetStr,
@@ -288,18 +288,6 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
     }
 
     const bool needGlobalHeader = !!(outFmtCtx_.raw()->oformat->flags & AVFMT_GLOBALHEADER);
-
-    auto readComment = []() -> const char* {
-        std::ifstream config("/data/user/0/com.kgmdecoder.app/files/config.dat");
-        std::string line;
-        constexpr size_t target = 3;
-        size_t idx = 0;
-        while (std::getline(config, line)) {
-            idx++;
-            if (idx == target) return line.c_str();
-        }
-        return nullptr;
-    };
 
     // ========== 视频初始化 ==========
     if (wantVideo) {
@@ -428,6 +416,10 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
             LOGD("创建输出视频流失败: %s", ec.message().c_str());
             return ec.value();
         }
+        // 显式将输出流的 time_base 与编码器对齐：avformat_new_stream 只给出默认值，
+        // 若其 num 非 0，muxer 的 init_muxer 不会再用 sample_rate 推导 time_base，
+        // 导致写入时把编码器时基(如 1/48000)的 pts 错误换算，Ogg 的 granule 失真 -> 播放加速。
+        outVStream_.raw()->time_base = venc_.raw()->time_base;
 
         swsCtx_ = sws_getContext(
                 vdec_.width(), vdec_.height(), vdec_.pixelFormat(),
@@ -456,6 +448,17 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
 
             AVSampleFormat outSampleFmt = pickEncoderSampleFormat(aCodec.raw());
             int outSampleRate = (targetSampleRate > 0) ? targetSampleRate : adec_.sampleRate();
+            // Opus 只支持 8/12/16/24/48 kHz。若仍按源采样率(常见 44.1kHz)交给编码器，
+            // 编码器会按 48kHz 处理，而重采样器仍输出源采样率，时间戳推进过快 → 播放加速。
+            if (audioID == AV_CODEC_ID_OPUS &&
+                outSampleRate != 8000 && outSampleRate != 12000 && outSampleRate != 16000 &&
+                outSampleRate != 24000 && outSampleRate != 48000) {
+                outSampleRate = (outSampleRate >= 36000) ? 48000 :
+                                (outSampleRate >= 20000) ? 24000 :
+                                (outSampleRate >= 14000) ? 16000 :
+                                (outSampleRate >= 10000) ? 12000 : 8000;
+                LOGD("Opus 不支持源采样率，已重采样为 %d Hz", outSampleRate);
+            }
             aenc_.setSampleRate(outSampleRate);
             aenc_.setSampleFormat(outSampleFmt);
             aenc_.setBitRate(audioBitrate > 0 ? audioBitrate : 128 * 1000);
@@ -479,6 +482,14 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                 LOGD("音频编码器 %s 压缩级别设为 2(提速)", aCodec.name());
             }
 
+            // FFmpeg 内置的 opus/vorbis 原生编码器被标记为 experimental（本工程未编译 libopus/libvorbis），
+            // 未开启严格合规时 avcodec_open2 会直接报 "Experimental feature" 并打开失败，
+            // 导致 ogg 输出没有任何音频流，随后写入文件头时报 "Invalid argument"。
+            if (aCodec.raw()->capabilities & AV_CODEC_CAP_EXPERIMENTAL) {
+                aenc_.raw()->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
+                LOGD("音频编码器 %s 为实验性编码器，已启用 experimental 合规", aCodec.name());
+            }
+
             aenc_.open(ec);
             if (ec) {
                 cout << String("打开音频编码器失败: ", "Fail to open audio encoder: ")
@@ -487,6 +498,12 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                 aenc_ = av::AudioEncoderContext();
             } else {
                 outAStream_ = outFmtCtx_.addStream(aenc_, ec);
+                // 关键：把输出音频流的 time_base 显式设为编码器时基(Opus 为 1/48000)。
+                // Ogg muxer 用流 time_base 把 pkt->pts 换算成 granule；若二者不一致，
+                // 时间戳会被错误换算，播放时音频加速。
+                if (outAStream_.isValid()) {
+                    outAStream_.raw()->time_base = aenc_.raw()->time_base;
+                }
                 // 复制 bit_rate 到 codecpar
                 if (outAStream_.isValid()) {
                     outAStream_.raw()->codecpar->bit_rate = aenc_.raw()->bit_rate;
@@ -972,11 +989,20 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
     AVAudioFifo *afifo = nullptr;
     int encFrameSize = 0;
     bool varFrameSize = false;
+    int outChannels = 0;
+    uint64_t outChannelMask = 0;
     if (audioStreamOk) {
         encFrameSize = aenc_.raw()->frame_size;
         varFrameSize = !!(aenc_.raw()->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE);
+        outChannels = aenc_.raw()->ch_layout.nb_channels;
+        outChannelMask = aenc_.raw()->ch_layout.u.mask;
+        if (outChannelMask == 0) {
+            AVChannelLayout defLayout = {};
+            av_channel_layout_default(&defLayout, outChannels);
+            outChannelMask = defLayout.u.mask;
+        }
         if (!varFrameSize && encFrameSize > 0) {
-            afifo = av_audio_fifo_alloc(outSampleFmt, 2 /*stereo*/, encFrameSize * 4);
+            afifo = av_audio_fifo_alloc(outSampleFmt, outChannels, encFrameSize * 4);
         }
     }
 
@@ -1159,7 +1185,7 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
         int dstNbSamples = swr_get_out_samples(swrCtx_, decSamples.samplesCount());
         if (dstNbSamples <= 0) return;
         av::AudioSamples encSamples(outSampleFmt, dstNbSamples,
-                                    AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+                                    outChannelMask, aenc_.sampleRate());
         int swrRet = swr_convert(swrCtx_,
                                  encSamples.raw()->data, dstNbSamples,
                                  (const uint8_t **) decSamples.raw()->data,
@@ -1169,7 +1195,7 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
             av_audio_fifo_write(afifo, (void **) encSamples.raw()->data, swrRet);
             while (av_audio_fifo_size(afifo) >= encFrameSize) {
                 av::AudioSamples encFrame(outSampleFmt, encFrameSize,
-                                          AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+                                          outChannelMask, aenc_.sampleRate());
                 av_audio_fifo_read(afifo, (void **) encFrame.raw()->data, encFrameSize);
                 encFrame.raw()->pts = aEncNextPts;
                 aEncNextPts += encFrameSize;
@@ -1289,7 +1315,7 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
             int avail = swr_get_out_samples(swrCtx_, 0);
             if (avail <= 0) break;
             av::AudioSamples encSamples(outSampleFmt, avail,
-                                        AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+                                        outChannelMask, aenc_.sampleRate());
             int swrRet = swr_convert(swrCtx_, encSamples.raw()->data, avail, nullptr, 0);
             if (swrRet <= 0) break;
             if (afifo) {
@@ -1311,7 +1337,7 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
                 int fifoSize = av_audio_fifo_size(afifo);
                 int n = (fifoSize < encFrameSize) ? fifoSize : encFrameSize;
                 av::AudioSamples encFrame(outSampleFmt, n,
-                                          AV_CH_LAYOUT_STEREO, adec_.sampleRate());
+                                          outChannelMask, aenc_.sampleRate());
                 av_audio_fifo_read(afifo, (void **) encFrame.raw()->data, n);
                 encFrame.raw()->pts = aEncNextPts;
                 aEncNextPts += n;
