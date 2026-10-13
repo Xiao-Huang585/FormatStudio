@@ -578,7 +578,12 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
     }
 
     if (hasVideo()) LOGI("视频码率: %li", venc_.bitRate());
-    if (hasAudio()) LOGI("音频码率: %li", aenc_.bitRate());
+    if (hasAudio()) {
+        LOGI("音频码率: %li", aenc_.bitRate());
+        LOGD("AFTER writeHeader: outAStream timeBase=%d/%d encTimeBase=%d/%d",
+             outAStream_.raw()->time_base.num, outAStream_.raw()->time_base.den,
+             aenc_.raw()->time_base.num, aenc_.raw()->time_base.den);
+    }
 
     return 0;
 }
@@ -1001,6 +1006,10 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
             av_channel_layout_default(&defLayout, outChannels);
             outChannelMask = defLayout.u.mask;
         }
+        LOGD("AUDIO ENCODER: name=%s frame_size=%d varFrame=%d channels=%d sampleRate=%d sampleFmt=%d timeBase=%d/%d",
+             aenc_.raw()->codec->name, encFrameSize, varFrameSize, outChannels,
+             aenc_.sampleRate(), aenc_.sampleFormat().get(),
+             aenc_.raw()->time_base.num, aenc_.raw()->time_base.den);
         if (!varFrameSize && encFrameSize > 0) {
             afifo = av_audio_fifo_alloc(outSampleFmt, outChannels, encFrameSize * 4);
         }
@@ -1066,9 +1075,10 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
                 rawPkt->duration = 1;
             }
         }
-        // 调试：打印音频包时间戳（rescale 前后）
-        if (isAudioPkt && writtenAPkts < 3) {
-            LOGD("audio pkt pre:  pts=%lld dts=%lld dur=%lld encTb=%d/%d stTb=%d/%d",
+        // 调试：打印音频包时间戳（前20个 + 每100个）
+        if (isAudioPkt && (writtenAPkts < 20 || writtenAPkts % 100 == 0)) {
+            LOGD("audio pkt[%d] pre:  pts=%lld dts=%lld dur=%lld encTb=%d/%d stTb=%d/%d",
+                 writtenAPkts,
                  (long long)rawPkt->pts, (long long)rawPkt->dts, (long long)rawPkt->duration,
                  encTb.num, encTb.den, st.raw()->time_base.num, st.raw()->time_base.den);
         }
@@ -1082,8 +1092,9 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
                 rawPkt->dts += audioTsOffset;
             }
         }
-        if (isAudioPkt && writtenAPkts < 3) {
-            LOGD("audio pkt post: pts=%lld dts=%lld dur=%lld",
+        if (isAudioPkt && (writtenAPkts < 20 || writtenAPkts % 100 == 0)) {
+            LOGD("audio pkt[%d] post: pts=%lld dts=%lld dur=%lld",
+                 writtenAPkts,
                  (long long)rawPkt->pts, (long long)rawPkt->dts, (long long)rawPkt->duration);
         }
         std::error_code writeEc;
@@ -1191,6 +1202,9 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
                                  (const uint8_t **) decSamples.raw()->data,
                                  decSamples.samplesCount());
         if (swrRet < 0) return;
+        LOGD("AUDIO SWR: in=%d outEst=%d outActual=%d fifoBefore=%d aEncNextPts=%lld",
+             decSamples.samplesCount(), dstNbSamples, swrRet,
+             afifo ? av_audio_fifo_size(afifo) : -1, (long long)aEncNextPts);
         if (afifo) {
             av_audio_fifo_write(afifo, (void **) encSamples.raw()->data, swrRet);
             while (av_audio_fifo_size(afifo) >= encFrameSize) {
@@ -1205,6 +1219,10 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
                     LOGD("音频编码错误: %s", encEc.message().c_str());
                     return;
                 }
+                LOGD("AUDIO ENC[FIFO]: framePts=%lld pktValid=%d pktPts=%lld pktDur=%lld",
+                     (long long)encFrame.raw()->pts, (int)!!encPkt,
+                     encPkt ? (long long)encPkt.raw()->pts : -1,
+                     encPkt ? (long long)encPkt.raw()->duration : -1);
                 if (writePkt(encPkt, outAStream_, aenc_.raw()->time_base, encFrameSize)) {
                     ++writtenAPkts;
                 }
@@ -1220,6 +1238,10 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
                 LOGD("音频编码错误: %s", encEc.message().c_str());
                 return;
             }
+            LOGD("AUDIO ENC[direct]: framePts=%lld frameSamples=%d pktValid=%d pktPts=%lld pktDur=%lld",
+                 (long long)encSamples.raw()->pts, swrRet, (int)!!encPkt,
+                 encPkt ? (long long)encPkt.raw()->pts : -1,
+                 encPkt ? (long long)encPkt.raw()->duration : -1);
             if (writePkt(encPkt, outAStream_, aenc_.raw()->time_base, nbSmpl)) {
                 ++writtenAPkts;
             }
