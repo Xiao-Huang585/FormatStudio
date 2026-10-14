@@ -517,6 +517,18 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                 if (outAStream_.isValid()) {
                     outAStream_.raw()->codecpar->bit_rate = aenc_.raw()->bit_rate;
                 }
+                // 关键：手动确保 initial_padding（Opus pre-skip）和 extradata（OpusHead）
+                // 复制到 codecpar。ogg muxer 用 initial_padding 算 granulepos，用 extradata
+                // 识别 opus 流。avcpp addStream 可能没复制全，这里手动补一次。
+                if (outAStream_.isValid()) {
+                    outAStream_.raw()->codecpar->initial_padding = aenc_.raw()->initial_padding;
+                    if (aenc_.raw()->extradata && aenc_.raw()->extradata_size > 0) {
+                        av_free(outAStream_.raw()->codecpar->extradata);
+                        outAStream_.raw()->codecpar->extradata = (uint8_t*) av_mallocz(aenc_.raw()->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+                        memcpy(outAStream_.raw()->codecpar->extradata, aenc_.raw()->extradata, aenc_.raw()->extradata_size);
+                        outAStream_.raw()->codecpar->extradata_size = aenc_.raw()->extradata_size;
+                    }
+                }
                 LOGD("AUDIO STREAM AFTER addStream: codecpar extradata_size=%d initial_padding=%d ch=%d sr=%d fmt=%d",
                      outAStream_.isValid() ? outAStream_.raw()->codecpar->extradata_size : -1,
                      outAStream_.isValid() ? outAStream_.raw()->codecpar->initial_padding : -1,
