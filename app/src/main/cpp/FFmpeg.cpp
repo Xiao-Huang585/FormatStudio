@@ -497,21 +497,24 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                 LOGD("打开音频编码器%s失败: %s", avcodec_get_name(aCodec.id()), ec.message().c_str());
                 aenc_ = av::AudioEncoderContext();
             } else {
-                LOGD("AUDIO ENCODER OPENED: name=%s frame_size=%d initial_padding=%d extradata_size=%d sample_fmt=%d channels=%d sample_rate=%d time_base=%d/%d",
-                     aenc_.raw()->codec->name,
-                     aenc_.raw()->frame_size,
-                     aenc_.raw()->initial_padding,
-                     aenc_.raw()->extradata_size,
-                     aenc_.raw()->sample_fmt,
-                     aenc_.raw()->ch_layout.nb_channels,
-                     aenc_.raw()->sample_rate,
-                     aenc_.raw()->time_base.num, aenc_.raw()->time_base.den);
+                // FFmpeg 8.x 的原生 opus 编码器把 avctx->frame_size 设为由 opus_delay 推导出的块大小
+                // （默认 360ms → 960 样本），但其心理声学模块(enc_psy)仍按 2.5ms(=120 样本)的步长硬编码推进：
+                // 每产出 1 个包只回退 steps_out=块大小/120=8 步，且每包只从队列取走 1 个块(960 样本)。
+                // 若按上报的 frame_size=960 喂 960 样本帧，则每 8 次调用才出 1 包，输入(8×960)远大于
+                // 输出(960)，导致约 8× 丢帧 → ogg 播放加速、内部 bufqueue 溢出丢帧、尾部冲刷极慢(进度卡 99%)。
+                // 修复：把 opus 的 frame_size 对齐到 2.5ms 步长(48kHz→120)，按 120 样本/帧喂入，
+                // 使“8 次调用 × 120 样本 = 960 样本 = 每包 960 样本”收支平衡（即 FFmpeg ≤7.1 的原始约定）。
+                if (aCodec.id() == AV_CODEC_ID_OPUS) {
+                    int psyStep = aenc_.raw()->sample_rate > 0 ? aenc_.raw()->sample_rate / 400 : 120;
+                    if (psyStep > 0 && aenc_.raw()->frame_size != psyStep) {
+                        aenc_.raw()->frame_size = psyStep;
+                    }
+                }
                 // Opus 原生编码器可能不设置 initial_padding(pre-skip)，
                 // 导致 ogg muxer 计算 granulepos 错误，播放时音频加速/空白。
                 // 标准 Opus 48kHz pre-skip 为 312 样本(6.5ms)。
                 if (aCodec.id() == AV_CODEC_ID_OPUS && aenc_.raw()->initial_padding == 0) {
                     aenc_.raw()->initial_padding = 312;
-                    LOGD("AUDIO ENCODER: manually set initial_padding=312 for opus");
                 }
                 outAStream_ = outFmtCtx_.addStream(aenc_, ec);
                 // 关键：把输出音频流的 time_base 显式设为编码器时基(Opus 为 1/48000)。
@@ -536,12 +539,6 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                         outAStream_.raw()->codecpar->extradata_size = aenc_.raw()->extradata_size;
                     }
                 }
-                LOGD("AUDIO STREAM AFTER addStream: codecpar extradata_size=%d initial_padding=%d ch=%d sr=%d fmt=%d",
-                     outAStream_.isValid() ? outAStream_.raw()->codecpar->extradata_size : -1,
-                     outAStream_.isValid() ? outAStream_.raw()->codecpar->initial_padding : -1,
-                     outAStream_.isValid() ? outAStream_.raw()->codecpar->ch_layout.nb_channels : -1,
-                     outAStream_.isValid() ? outAStream_.raw()->codecpar->sample_rate : -1,
-                     outAStream_.isValid() ? outAStream_.raw()->codecpar->format : -1);
                 if (ec) {
                     cout << String("创建输出音频流失败: ",
                                    "Fail to create output audio stream: ") << ec.message() << endl;
@@ -1040,22 +1037,26 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
             av_channel_layout_default(&defLayout, outChannels);
             outChannelMask = defLayout.u.mask;
         }
-        LOGD("AUDIO ENCODER: name=%s frame_size=%d varFrame=%d channels=%d sampleRate=%d sampleFmt=%d timeBase=%d/%d",
-             aenc_.raw()->codec->name, encFrameSize, varFrameSize, outChannels,
-             aenc_.sampleRate(), aenc_.sampleFormat().get(),
-             aenc_.raw()->time_base.num, aenc_.raw()->time_base.den);
         if (!varFrameSize && encFrameSize > 0) {
             afifo = av_audio_fifo_alloc(outSampleFmt, outChannels, encFrameSize * 4);
         }
     }
 
-    av::VideoFrame yuvFrame;
+    // 初始化滤镜
+    AVFilterGraph* filter_graph = nullptr;
+    AVFilterContext* buffer_src_ctx = nullptr;
+    AVFilterContext* eq_ctx = nullptr;
+    AVFilterContext* buffer_sink_ctx = nullptr;
+    bool brightnessInited = false;
+
+    // 视频帧
+    av::VideoFrame Frame;
     int64_t aEncNextPts = 0;
     int64_t vEncNextPts = 0;
     int writtenVPkts = 0;
     int writtenAPkts = 0;
     if (videoStreamOk) {
-        yuvFrame = av::VideoFrame(AV_PIX_FMT_YUV420P, outWidth, outHeight);
+        Frame = av::VideoFrame(AV_PIX_FMT_YUV420P, outWidth, outHeight);
     }
     AVRational vInTimeBase = {0, 0};
     AVRational aInTimeBase = {0, 0};
@@ -1118,13 +1119,6 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
             rawPkt->dts = audioPktPts;
             audioPktPts += rawPkt->duration > 0 ? rawPkt->duration : 1;
         }
-        // 调试：打印音频包时间戳（前20个 + 每100个）
-        if (isAudioPkt && (writtenAPkts < 20 || writtenAPkts % 100 == 0)) {
-            LOGD("audio pkt[%d]: pts=%lld dts=%lld dur=%lld stTb=%d/%d",
-                 writtenAPkts,
-                 (long long)rawPkt->pts, (long long)rawPkt->dts, (long long)rawPkt->duration,
-                 st.raw()->time_base.num, st.raw()->time_base.den);
-        }
         std::error_code writeEc;
         outFmtCtx_.writePacket(pkt, writeEc);
         if (writeEc) {
@@ -1154,6 +1148,11 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
         // 亮度调整：对 Y（亮度）平面应用 256 项 LUT，U/V 色度平面不变
         // 仅支持 8bit YUV 格式；10bit/16bit 视频跳过 LUT（256 项表不够用）
         if (brightnessLut) {
+
+            if (brightnessInited) {
+                
+            }
+
             const AVPixFmtDescriptor *pixDesc = av_pix_fmt_desc_get((AVPixelFormat)decFrame.raw()->format);
             bool is8bitYuv = pixDesc && pixDesc->comp[0].depth == 8;
             static bool lutFormatWarned = false;
@@ -1179,16 +1178,16 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
         sws_scale(swsCtx_,
                   decFrame.raw()->data, decFrame.raw()->linesize,
                   0, decFrame.height(),
-                  yuvFrame.raw()->data, yuvFrame.raw()->linesize);
+                  Frame.raw()->data, Frame.raw()->linesize);
         // 自增帧号作为 pts：VFR 源视频帧间隔不均匀，从源 pts 转换会出现重复/回退，
         // 导致编码器丢帧（运动场景糊）。自增在整数帧率 time_base 下严格单调递增。
         // 时长偏差由写文件尾时设置视频流 duration 兜底。
-        yuvFrame.raw()->pts = vEncNextPts;
+        Frame.raw()->pts = vEncNextPts;
         vEncNextPts++;
         // 调试：只打印第一次，确认帧和编码器参数匹配
         static bool vencDebugPrinted = false;
         if (!vencDebugPrinted) {
-            AVFrame *yf = yuvFrame.raw();
+            AVFrame *yf = Frame.raw();
             LOGD("encode debug: frame fmt=%d w=%d h=%d pts=%lld buf0=%p data0=%p data1=%p data2=%p ls0=%d ls1=%d | codec fmt=%d w=%d h=%d tb=%d/%d fr=%d/%d open=%d",
                  yf->format, yf->width, yf->height, (long long)yf->pts,
                  (void*)yf->buf[0], (void*)yf->data[0], (void*)yf->data[1], (void*)yf->data[2],
@@ -1200,7 +1199,7 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
             vencDebugPrinted = true;
         }
         std::error_code encEc;
-        av::Packet encPkt = venc_.encode(yuvFrame, encEc);
+        av::Packet encPkt = venc_.encode(Frame, encEc);
         if (encEc) {
             LOGD("视频编码错误: %s", encEc.message().c_str());
             return;
@@ -1230,9 +1229,6 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
                                  (const uint8_t **) decSamples.raw()->data,
                                  decSamples.samplesCount());
         if (swrRet < 0) return;
-        LOGD("AUDIO SWR: in=%d outEst=%d outActual=%d fifoBefore=%d aEncNextPts=%lld",
-             decSamples.samplesCount(), dstNbSamples, swrRet,
-             afifo ? av_audio_fifo_size(afifo) : -1, (long long)aEncNextPts);
         if (afifo) {
             av_audio_fifo_write(afifo, (void **) encSamples.raw()->data, swrRet);
             while (av_audio_fifo_size(afifo) >= encFrameSize) {
@@ -1247,10 +1243,6 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
                     LOGD("音频编码错误: %s", encEc.message().c_str());
                     return;
                 }
-                LOGD("AUDIO ENC[FIFO]: framePts=%lld pktValid=%d pktPts=%lld pktDur=%lld",
-                     (long long)encFrame.raw()->pts, (int)!!encPkt,
-                     encPkt ? (long long)encPkt.raw()->pts : -1,
-                     encPkt ? (long long)encPkt.raw()->duration : -1);
                 if (writePkt(encPkt, outAStream_, aenc_.raw()->time_base, encFrameSize)) {
                     ++writtenAPkts;
                 }
@@ -1266,10 +1258,6 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
                 LOGD("音频编码错误: %s", encEc.message().c_str());
                 return;
             }
-            LOGD("AUDIO ENC[direct]: framePts=%lld frameSamples=%d pktValid=%d pktPts=%lld pktDur=%lld",
-                 (long long)encSamples.raw()->pts, swrRet, (int)!!encPkt,
-                 encPkt ? (long long)encPkt.raw()->pts : -1,
-                 encPkt ? (long long)encPkt.raw()->duration : -1);
             if (writePkt(encPkt, outAStream_, aenc_.raw()->time_base, nbSmpl)) {
                 ++writtenAPkts;
             }
