@@ -506,6 +506,13 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                      aenc_.raw()->ch_layout.nb_channels,
                      aenc_.raw()->sample_rate,
                      aenc_.raw()->time_base.num, aenc_.raw()->time_base.den);
+                // Opus 原生编码器可能不设置 initial_padding(pre-skip)，
+                // 导致 ogg muxer 计算 granulepos 错误，播放时音频加速/空白。
+                // 标准 Opus 48kHz pre-skip 为 312 样本(6.5ms)。
+                if (aCodec.id() == AV_CODEC_ID_OPUS && aenc_.raw()->initial_padding == 0) {
+                    aenc_.raw()->initial_padding = 312;
+                    LOGD("AUDIO ENCODER: manually set initial_padding=312 for opus");
+                }
                 outAStream_ = outFmtCtx_.addStream(aenc_, ec);
                 // 关键：把输出音频流的 time_base 显式设为编码器时基(Opus 为 1/48000)。
                 // Ogg muxer 用流 time_base 把 pkt->pts 换算成 granule；若二者不一致，
