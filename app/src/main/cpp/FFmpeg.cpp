@@ -591,13 +591,39 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
             }
         }
 
-        // 读取源文件的信息
+        // 读取源文件的元数据（容器级别）
         const AVDictionary *dict  = fmtCtx_.raw()->metadata;
         const AVDictionaryEntry *entry = nullptr;
+        int srcMetaCount = 0;
         while ((entry = av_dict_iterate(dict, entry))) {
-            LOGI("字典键值%s正在迭代中...", entry->key != nullptr ? entry->key : "<NONE>");
-            if (entry && entry->value) av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
+            if (entry && entry->value) {
+                av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
+                srcMetaCount++;
+            }
         }
+        // 同时复制视频流和音频流的元数据（某些格式如 MP3/ID3 元数据在流级别）
+        if (videoStreamIndex_ >= 0 && videoStreamIndex_ < fmtCtx_.raw()->nb_streams) {
+            const AVDictionary *vDict = fmtCtx_.raw()->streams[videoStreamIndex_]->metadata;
+            entry = nullptr;
+            while ((entry = av_dict_iterate(vDict, entry))) {
+                if (entry && entry->value) {
+                    av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
+                    srcMetaCount++;
+                }
+            }
+        }
+        if (audioStreamIndex_ >= 0 && audioStreamIndex_ < fmtCtx_.raw()->nb_streams) {
+            const AVDictionary *aDict = fmtCtx_.raw()->streams[audioStreamIndex_]->metadata;
+            entry = nullptr;
+            while ((entry = av_dict_iterate(aDict, entry))) {
+                if (entry && entry->value) {
+                    av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
+                    srcMetaCount++;
+                }
+            }
+        }
+        LOGI("元数据复制完成: 源文件共 %d 条，输出容器 metadata 共 %d 条",
+             srcMetaCount, av_dict_count(outFmtCtx_.raw()->metadata));
     }
 
     // 写文件头
