@@ -23,6 +23,8 @@
 #include "avcpp/timestamp.h"
 #include "avcpp/dictionary.h"
 #include "avcpp/channellayout.h"
+#include "avcpp/filters/filtergraph.h"
+#include "avcpp/filters/filtercontext.h"
 
 #include <string>
 #include <memory>
@@ -116,8 +118,8 @@ public:
     /**
      * @brief 带亮度/伽马调整的编码循环（编码完整文件）
      *
-     * 对每一帧的 Y（亮度）平面做 brightness 线性偏移 + gamma 非线性校正，
-     * U/V 色度平面不变。内部用 256 项查找表(LUT)加速，每帧只需查表无需浮点运算。
+     * 使用 FFmpeg 滤镜链(eq=brightness:gamma → format → scale)对每一帧做亮度/伽马调整，
+     * 支持任意位深（8bit/10bit）和任意像素格式，不再限制 YUV420P。
      *
      * @param brightness 亮度偏移，-100~+100（0=不变），正值变亮负值变暗
      * @param gamma      伽马值，建议 0.5~3.0（1.0=不变），<1 变亮 >1 变暗
@@ -192,14 +194,20 @@ public:
 private:
 
     /**
-     * @brief 带可选 LUT 的核心编码循环（所有 encodeToFile 重载的唯一实现）
+     * @brief 核心编码循环（所有 encodeToFile 重载的唯一实现）
      *
-     * @param startTimeUs 起始时间（微秒）
-     * @param endTimeUs   结束时间（微秒），(uint64_t)-1 表示不截止
-     * @param brightnessLut         256 项亮度查找表，nullptr 表示不做亮度调整
+     * 使用 FFmpeg 滤镜链处理视频帧：可选 eq(亮度/伽马) → format(编码器格式) → scale(输出尺寸)。
+     * 不再使用 sws_scale 和 LUT，支持任意像素格式和位深。
+     *
+     * @param startTimeUs      起始时间（微秒）
+     * @param endTimeUs        结束时间（微秒），(uint64_t)-1 表示不截止
+     * @param adjustBrightness 是否启用亮度/伽马调整
+     * @param brightness       亮度偏移，-100~+100（adjustBrightness=false 时忽略）
+     * @param gamma            伽马值（adjustBrightness=false 时忽略）
      * @return 0 表示成功，负数表示错误码
      */
-    int encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const uint8_t* brightnessLut);
+    int encodeToFileCore(uint64_t startTimeUs, uint64_t endTimeUs,
+                         bool adjustBrightness, int8_t brightness, float gamma);
 
     /**
      * @brief 通用输出初始化（私有辅助函数，被 openOutPutWithEncoder /

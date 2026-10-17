@@ -48,10 +48,6 @@ FFmpeg::~FFmpeg() {
 // ============================
 void FFmpeg::close() {
     encodeThreads = 2;
-    if (swsCtx_) {
-        sws_freeContext(swsCtx_);
-        swsCtx_ = nullptr;
-    }
     if (swrCtx_) {
         swr_free(&swrCtx_);
         swrCtx_ = nullptr;
@@ -320,7 +316,17 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
         // 编码器输入格式必须与 sws 输出/yuvFrame 一致（都是 YUV420P）。
         // 不能用 vdec_.pixelFormat()：硬件解码输出 NV12、10bit 源输出 P010/YUV420P10
         // 时，编码器按错误格式解释 UV 平面会导致颜色糊在一起花屏。
-        venc_.raw()->pix_fmt = AV_PIX_FMT_YUV420P;
+        const AVPixelFormat *supportedPixelFmts = venc_.raw()->codec->pix_fmts;
+        if (supportedPixelFmts) {
+            // 使用于源文件最相似的
+            venc_.raw()->pix_fmt = avcodec_find_best_pix_fmt_of_list(
+                    supportedPixelFmts, vdec_.pixelFormat(), 0, nullptr
+            );
+            if (venc_.raw()->pix_fmt == AV_PIX_FMT_NONE)  {venc_.raw()->pix_fmt = supportedPixelFmts[0]; }
+        } else {
+            // 兜底用
+            venc_.raw()->pix_fmt = AV_PIX_FMT_YUV420P;
+        }
 
         AVRational inFrameRate = fmtCtx_.raw()->streams[videoStreamIndex_]->avg_frame_rate;
         if (inFrameRate.den <= 0 || inFrameRate.num <= 0) {
@@ -420,17 +426,6 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
         // 若其 num 非 0，muxer 的 init_muxer 不会再用 sample_rate 推导 time_base，
         // 导致写入时把编码器时基(如 1/48000)的 pts 错误换算，Ogg 的 granule 失真 -> 播放加速。
         outVStream_.raw()->time_base = venc_.raw()->time_base;
-
-        swsCtx_ = sws_getContext(
-                vdec_.width(), vdec_.height(), vdec_.pixelFormat(),
-                outWidth, outHeight, AV_PIX_FMT_YUV420P,
-                SWS_FAST_BILINEAR, nullptr, nullptr, nullptr
-        );
-        if (!swsCtx_) {
-            cout << String("初始化像素格式转换失败...", "Fail to init sws...") << endl;
-            LOGD("初始化像素格式失败...");
-            return -ENOMEM;
-        }
 
         cout << String("视频编码器: ", "Video encoder: ") << avcodec_get_name(videoID)
              << " (" << outWidth << "x" << outHeight << ")" << endl;
@@ -964,41 +959,31 @@ int FFmpeg::openOutputWithSourceParams(const char* outputPath) {
 // 无参编码循环：编码完整文件（从 0 到结束），内部委托给核心实现
 // ====================================================
 int FFmpeg::encodeToFile() {
-    return encodeToFileWithLut(0, (uint64_t)-1, nullptr);
+    return encodeToFileCore(0, (uint64_t)-1, false, 0, 1.0f);
 }
 
 // ============================
 // 带时间范围的编码循环：必须显式传入起止时间，无默认值
 // ============================
 int FFmpeg::encodeToFile(uint64_t startTimeUs, uint64_t endTimeUs) {
-    return encodeToFileWithLut(startTimeUs, endTimeUs, nullptr);
+    return encodeToFileCore(startTimeUs, endTimeUs, false, 0, 1.0f);
 }
 
 // ==================================================
-// 带亮度/伽马调整的编码循环：构建 256 项 LUT 后委托核心循环
+// 带亮度/伽马调整的编码循环：使用滤镜链(eq)做亮度/伽马调整
 // ==================================================
 int FFmpeg::encodeToFile(int8_t brightness, float gamma) {
-    // 构建 256 项亮度查找表（只算一次，后续每帧直接查表）
-    uint8_t lut[256];
-    const float brightOffset = (brightness / 100.0f) * 255.0f;  // -255 ~ +255
-    const float invGamma = (gamma > 0.01f) ? (1.0f / gamma) : 1.0f;
-
-    for (int i = 0; i < 256; i++) {
-        float v = i + brightOffset;                       // 线性亮度偏移
-        v = 255.0f * powf(v / 255.0f, invGamma);        // gamma 非线性校正
-        lut[i] = (uint8_t)std::clamp(v, 0.0f, 255.0f);  // 钳位到 0-255
-    }
-
     cout << String("亮度调整: ", "Brightness: ")
          << "brightness=" << (int)brightness << " gamma=" << gamma << endl;
-
-    return encodeToFileWithLut(0, (uint64_t)-1, lut);
+    return encodeToFileCore(0, (uint64_t)-1, true, brightness, gamma);
 }
 
 // ============================
-// 核心编码循环：所有 encodeToFile 重载的唯一实现，brightnessLut=nullptr 时不做亮度调整
+// 核心编码循环：所有 encodeToFile 重载的唯一实现
+// 使用 FFmpeg 滤镜链处理视频帧：可选 eq(亮度/伽马) → format → scale
 // ============================
-int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const uint8_t* brightnessLut) {
+int FFmpeg::encodeToFileCore(uint64_t startTimeUs, uint64_t endTimeUs,
+                              bool adjustBrightness, int8_t brightness, float gamma) {
     LOGI("遍码线程: %hhu", encodeThreads);
     if (!outFmtCtx_.isOpened()) {
         cout << String("输出未初始化...", "Output not initialized...") << endl;
@@ -1042,22 +1027,16 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
         }
     }
 
-    // 初始化滤镜
-    AVFilterGraph* filter_graph = nullptr;
-    AVFilterContext* buffer_src_ctx = nullptr;
-    AVFilterContext* eq_ctx = nullptr;
-    AVFilterContext* buffer_sink_ctx = nullptr;
-    bool brightnessInited = false;
+    // 视频滤镜图（第一帧到达时初始化，因为需要源格式/尺寸/time_base）
+    AVFilterGraph *filterGraph = nullptr;
+    AVFilterContext *buffersrcCtx = nullptr;
+    AVFilterContext *buffersinkCtx = nullptr;
+    bool filterInited = false;
 
-    // 视频帧
-    av::VideoFrame Frame;
     int64_t aEncNextPts = 0;
     int64_t vEncNextPts = 0;
     int writtenVPkts = 0;
     int writtenAPkts = 0;
-    if (videoStreamOk) {
-        Frame = av::VideoFrame(AV_PIX_FMT_YUV420P, outWidth, outHeight);
-    }
     AVRational vInTimeBase = {0, 0};
     AVRational aInTimeBase = {0, 0};
     if (videoStreamOk) vInTimeBase = fmtCtx_.raw()->streams[videoStreamIndex_]->time_base;
@@ -1128,9 +1107,9 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
         return true;
     };
 
-    // 视频帧编码 lambda
+    // 视频帧编码 lambda：滤镜链(eq→format→scale) → 编码
     auto feedVideoFrame = [&](av::VideoFrame &decFrame) {
-        if (!swsCtx_ || !venc_.isOpened() || !decFrame) return;
+        if (!venc_.isOpened() || !decFrame) return;
         // 帧率转换：目标帧率低于源帧率时按比例丢帧
         if (targetFps < srcFps - 0.01) {
             frameAccum += targetFps;
@@ -1145,67 +1124,107 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
         // 时间范围过滤：起始时间之前 / 截止时间之后的帧不编码
         if (currentTimeUs < (int64_t)startTimeUs) return;
         if (endTimeUs != static_cast<uint64_t>(-1) && currentTimeUs > (int64_t)endTimeUs) return;
-        // 亮度调整：对 Y（亮度）平面应用 256 项 LUT，U/V 色度平面不变
-        // 仅支持 8bit YUV 格式；10bit/16bit 视频跳过 LUT（256 项表不够用）
-        if (brightnessLut) {
 
-            if (brightnessInited) {
-                
-            }
+        // 第一帧时初始化滤镜图
+        if (!filterInited && videoStreamOk) {
+            filterGraph = avfilter_graph_alloc();
+            if (filterGraph) {
+                char args[512];
+                AVRational tb = vInTimeBase.num > 0 ? vInTimeBase : (AVRational){1, 25};
+                AVRational fr = fmtCtx_.raw()->streams[videoStreamIndex_]->avg_frame_rate;
+                if (fr.den <= 0 || fr.num <= 0) fr = {25, 1};
+                snprintf(args, sizeof(args),
+                         "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d:frame_rate=%d/%d",
+                         decFrame.width(), decFrame.height(), decFrame.raw()->format,
+                         tb.num, tb.den, 1, 1, fr.num, fr.den);
 
-            const AVPixFmtDescriptor *pixDesc = av_pix_fmt_desc_get((AVPixelFormat)decFrame.raw()->format);
-            bool is8bitYuv = pixDesc && pixDesc->comp[0].depth == 8;
-            static bool lutFormatWarned = false;
-            if (is8bitYuv) {
-                uint8_t* yPlane = decFrame.raw()->data[0];
-                const int yStride = decFrame.raw()->linesize[0];
-                const int w = decFrame.width();
-                const int h = decFrame.height();
-                for (int row = 0; row < h; row++) {
-                    uint8_t* rowPtr = yPlane + row * yStride;
-                    for (int col = 0; col < w; col++) {
-                        rowPtr[col] = brightnessLut[rowPtr[col]];
+                const AVFilter *buffersrc  = avfilter_get_by_name("buffer");
+                const AVFilter *buffersink = avfilter_get_by_name("buffersink");
+                if (buffersrc && buffersink &&
+                    avfilter_graph_create_filter(&buffersrcCtx, buffersrc, "in", args, nullptr, filterGraph) >= 0 &&
+                    avfilter_graph_create_filter(&buffersinkCtx, buffersink, "out", nullptr, nullptr, filterGraph) >= 0) {
+
+                    // 滤镜链：可选 eq(亮度/伽马) → format(编码器格式) → scale(输出尺寸)
+                    // eq brightness 范围 -1.0~1.0，当前 -100~100 除以 100
+                    char filterDesc[256];
+                    const char *encFmtName = av_get_pix_fmt_name(venc_.raw()->pix_fmt);
+                    if (adjustBrightness) {
+                        float eqBright = brightness / 100.0f;
+                        snprintf(filterDesc, sizeof(filterDesc),
+                                 "eq=brightness=%.4f:gamma=%.4f,format=%s,scale=%d:%d",
+                                 eqBright, gamma, encFmtName ? encFmtName : "yuv420p",
+                                 outWidth, outHeight);
+                    } else {
+                        snprintf(filterDesc, sizeof(filterDesc),
+                                 "format=%s,scale=%d:%d",
+                                 encFmtName ? encFmtName : "yuv420p",
+                                 outWidth, outHeight);
                     }
+
+                    AVFilterInOut *outputs = avfilter_inout_alloc();
+                    AVFilterInOut *inputs  = avfilter_inout_alloc();
+                    outputs->name       = av_strdup("in");
+                    outputs->filter_ctx = buffersrcCtx;
+                    outputs->pad_idx    = 0;
+                    outputs->next       = nullptr;
+                    inputs->name        = av_strdup("out");
+                    inputs->filter_ctx  = buffersinkCtx;
+                    inputs->pad_idx     = 0;
+                    inputs->next        = nullptr;
+
+                    if (avfilter_graph_parse_ptr(filterGraph, filterDesc, &inputs, &outputs, nullptr) >= 0 &&
+                        avfilter_graph_config(filterGraph, nullptr) >= 0) {
+                        filterInited = true;
+                        LOGD("滤镜初始化成功: %s", filterDesc);
+                    } else {
+                        LOGD("滤镜图解析/配置失败，回退直接编码");
+                        avfilter_inout_free(&inputs);
+                        avfilter_inout_free(&outputs);
+                    }
+                    avfilter_inout_free(&inputs);
+                    avfilter_inout_free(&outputs);
                 }
-            } else if (!lutFormatWarned) {
-                LOGD("亮度 LUT 跳过: 像素格式 %s 不是 8bit YUV (depth=%d), 亮度调整不生效",
-                     pixDesc ? pixDesc->name : "unknown",
-                     pixDesc ? pixDesc->comp[0].depth : 0);
-                cout << String("提示: 非 8bit 视频，亮度调整未生效", "Note: non-8bit video, brightness adjustment skipped") << endl;
-                lutFormatWarned = true;
+            }
+            if (!filterInited) {
+                LOGD("滤镜初始化失败，回退到直接编码（不做格式转换/缩放/亮度）");
             }
         }
-        sws_scale(swsCtx_,
-                  decFrame.raw()->data, decFrame.raw()->linesize,
-                  0, decFrame.height(),
-                  Frame.raw()->data, Frame.raw()->linesize);
-        // 自增帧号作为 pts：VFR 源视频帧间隔不均匀，从源 pts 转换会出现重复/回退，
-        // 导致编码器丢帧（运动场景糊）。自增在整数帧率 time_base 下严格单调递增。
-        // 时长偏差由写文件尾时设置视频流 duration 兜底。
-        Frame.raw()->pts = vEncNextPts;
-        vEncNextPts++;
-        // 调试：只打印第一次，确认帧和编码器参数匹配
-        static bool vencDebugPrinted = false;
-        if (!vencDebugPrinted) {
-            AVFrame *yf = Frame.raw();
-            LOGD("encode debug: frame fmt=%d w=%d h=%d pts=%lld buf0=%p data0=%p data1=%p data2=%p ls0=%d ls1=%d | codec fmt=%d w=%d h=%d tb=%d/%d fr=%d/%d open=%d",
-                 yf->format, yf->width, yf->height, (long long)yf->pts,
-                 (void*)yf->buf[0], (void*)yf->data[0], (void*)yf->data[1], (void*)yf->data[2],
-                 yf->linesize[0], yf->linesize[1],
-                 venc_.raw()->pix_fmt, venc_.raw()->width, venc_.raw()->height,
-                 venc_.raw()->time_base.num, venc_.raw()->time_base.den,
-                 venc_.raw()->framerate.num, venc_.raw()->framerate.den,
-                 avcodec_is_open(venc_.raw()));
-            vencDebugPrinted = true;
-        }
-        std::error_code encEc;
-        av::Packet encPkt = venc_.encode(Frame, encEc);
-        if (encEc) {
-            LOGD("视频编码错误: %s", encEc.message().c_str());
-            return;
-        }
-        if (writePkt(encPkt, outVStream_, venc_.raw()->time_base, 0)) {
-            ++writtenVPkts;
+
+        // 通过滤镜处理帧
+        if (filterInited) {
+            if (av_buffersrc_add_frame_flags(buffersrcCtx, decFrame.raw(), AV_BUFFERSRC_FLAG_KEEP_REF) < 0)
+                return;
+            while (true) {
+                av::VideoFrame filtFrame;
+                int ret = av_buffersink_get_frame(buffersinkCtx, filtFrame.raw());
+                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
+                if (ret < 0) return;
+
+                filtFrame.raw()->pts = vEncNextPts;
+                vEncNextPts++;
+                std::error_code encEc;
+                av::Packet encPkt = venc_.encode(filtFrame, encEc);
+                if (encEc) {
+                    LOGD("视频编码错误: %s", encEc.message().c_str());
+                    return;
+                }
+                if (writePkt(encPkt, outVStream_, venc_.raw()->time_base, 0)) {
+                    ++writtenVPkts;
+                }
+            }
+        } else {
+            // 回退：滤镜不可用时直接编码（要求源格式与编码器格式一致）
+            decFrame.raw()->pts = vEncNextPts;
+            vEncNextPts++;
+            std::error_code encEc;
+            av::Packet encPkt = venc_.encode(decFrame, encEc);
+            if (encEc) {
+                LOGD("视频编码错误: %s", encEc.message().c_str());
+                return;
+            }
+            if (writePkt(encPkt, outVStream_, venc_.raw()->time_base, 0)) {
+                ++writtenVPkts;
+            }
         }
     };
 
@@ -1328,7 +1347,7 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
     }
 
     // ========== 冲刷解码器 ==========
-    if (videoStreamOk && swsCtx_) {
+    if (videoStreamOk) {
         avcodec_send_packet(vdec_.raw(), nullptr);
         while (true) {
             std::error_code decEc;
@@ -1442,6 +1461,7 @@ int FFmpeg::encodeToFileWithLut(uint64_t startTimeUs, uint64_t endTimeUs, const 
          processedPkts, writtenVPkts, writtenAPkts);
 
     if (afifo) av_audio_fifo_free(afifo);
+    if (filterGraph) avfilter_graph_free(&filterGraph);
     return 0;
 }
 
