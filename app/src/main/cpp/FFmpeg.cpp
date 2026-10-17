@@ -622,6 +622,32 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                 }
             }
         }
+
+        // 复制封面（纯音频文件）
+        if (hasAudio() && !hasVideo()) {
+            for (size_t i = 0; i < fmtCtx_.streamsCount(); i++) {
+                av::Stream inStream = fmtCtx_.stream(i);
+                if (inStream.isAttachment()) {
+                    // 创建输出附件流
+                    av::Stream outStream = outFmtCtx_.addStream();
+                    // 复制 codecpar（图片格式/尺寸/extradata）
+                    avcodec_parameters_copy(outStream.raw()->codecpar, inStream.raw()->codecpar);
+                    outStream.raw()->codecpar->codec_tag = 0;
+                    // 设置附件标记
+                    outStream.raw()->disposition = AV_DISPOSITION_ATTACHED_PIC;
+                    // 复制封面数据包（增加引用计数）
+                    av_packet_ref(&outStream.raw()->attached_pic, &inStream.raw()->attached_pic);
+                    // 复制流元数据
+                    av_dict_copy(&outStream.raw()->metadata, inStream.raw()->metadata, 0);
+                    LOGI("已复制封面: %dx%d, %d bytes",
+                         inStream.raw()->codecpar->width,
+                         inStream.raw()->codecpar->height,
+                         inStream.raw()->attached_pic.size);
+                    break;
+                }
+            }
+        }
+
         LOGI("元数据复制完成: 源文件共 %d 条，输出容器 metadata 共 %d 条",
              srcMetaCount, av_dict_count(outFmtCtx_.raw()->metadata));
     }
