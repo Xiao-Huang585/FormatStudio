@@ -121,7 +121,7 @@ public:
      * 使用 FFmpeg 滤镜链(eq=brightness:gamma → format → scale)对每一帧做亮度/伽马调整，
      * 支持任意位深（8bit/10bit）和任意像素格式，不再限制 YUV420P。
      *
-     * @param brightness 亮度偏移，-100~+100（0=不变），正值变亮负值变暗
+     * @param brightness 亮度偏移，-128~+127（0=不变），正值变亮负值变暗
      * @param gamma      伽马值，建议 0.5~3.0（1.0=不变），<1 变亮 >1 变暗
      * @return 0 表示成功，负数表示错误码
      */
@@ -202,7 +202,7 @@ private:
      * @param startTimeUs      起始时间（微秒）
      * @param endTimeUs        结束时间（微秒），(uint64_t)-1 表示不截止
      * @param adjustBrightness 是否启用亮度/伽马调整
-     * @param brightness       亮度偏移，-100~+100（adjustBrightness=false 时忽略）
+     * @param brightness       亮度偏移，-128~+127（adjustBrightness=false 时忽略）
      * @param gamma            伽马值（adjustBrightness=false 时忽略）
      * @return 0 表示成功，负数表示错误码
      */

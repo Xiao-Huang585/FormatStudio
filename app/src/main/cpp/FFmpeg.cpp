@@ -1149,7 +1149,7 @@ int FFmpeg::encodeToFileCore(uint64_t startTimeUs, uint64_t endTimeUs,
                     char filterDesc[256];
                     const char *encFmtName = av_get_pix_fmt_name(venc_.raw()->pix_fmt);
                     if (adjustBrightness) {
-                        float eqBright = brightness / 100.0f;
+                        float eqBright = brightness / 128.0f;
                         snprintf(filterDesc, sizeof(filterDesc),
                                  "eq=brightness=%.4f:gamma=%.4f,format=%s,scale=%d:%d",
                                  eqBright, gamma, encFmtName ? encFmtName : "yuv420p",
