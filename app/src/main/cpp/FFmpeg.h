@@ -25,6 +25,7 @@
 #include "avcpp/channellayout.h"
 #include "avcpp/filters/filtergraph.h"
 #include "avcpp/filters/filtercontext.h"
+#include "avcpp/dictionary.h"
 
 #include <string>
 #include <memory>
@@ -250,6 +251,9 @@ private:
     // 音频解码器（RAII 管理）
     av::AudioDecoderContext adec_;
     int audioStreamIndex_ = -1;
+
+    // 封面流（纯音频文件）
+    int coverStreamIndex_ = -1;
 
     // 视频编码器
     av::VideoEncoderContext venc_;

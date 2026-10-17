@@ -624,25 +624,30 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
         }
 
         // 复制封面（纯音频文件）
+        coverStreamIndex_ = -1;
         if (hasAudio() && !hasVideo()) {
             for (size_t i = 0; i < fmtCtx_.streamsCount(); i++) {
                 av::Stream inStream = fmtCtx_.stream(i);
                 if (inStream.isAttachment()) {
                     // 创建输出附件流
                     av::Stream outStream = outFmtCtx_.addStream();
+                    coverStreamIndex_ = outStream.index();
                     // 复制 codecpar（图片格式/尺寸/extradata）
                     avcodec_parameters_copy(outStream.raw()->codecpar, inStream.raw()->codecpar);
                     outStream.raw()->codecpar->codec_tag = 0;
-                    // 设置附件标记
+                    // 设置附件标记和 time_base
                     outStream.raw()->disposition = AV_DISPOSITION_ATTACHED_PIC;
+                    outStream.raw()->time_base = {1, 90000};
                     // 复制封面数据包（增加引用计数）
                     av_packet_ref(&outStream.raw()->attached_pic, &inStream.raw()->attached_pic);
                     // 复制流元数据
                     av_dict_copy(&outStream.raw()->metadata, inStream.raw()->metadata, 0);
-                    LOGI("已复制封面: %dx%d, %d bytes",
+                    LOGI("已复制封面: streamIdx=%d, %dx%d, %d bytes, codec=%s",
+                         coverStreamIndex_,
                          inStream.raw()->codecpar->width,
                          inStream.raw()->codecpar->height,
-                         inStream.raw()->attached_pic.size);
+                         inStream.raw()->attached_pic.size,
+                         avcodec_get_name(inStream.raw()->codecpar->codec_id));
                     break;
                 }
             }
@@ -1362,6 +1367,26 @@ int FFmpeg::encodeToFileCore(uint64_t startTimeUs, uint64_t endTimeUs,
                      seekStreamIndex, (long long)seekTs, (unsigned long long)startTimeUs);
             } else {
                 LOGD("seek 失败，回退到从开头解码: ret=%d", seekRet);
+            }
+        }
+    }
+
+    // 写封面数据包（纯音频文件的附件流）
+    if (coverStreamIndex_ >= 0) {
+        av::Stream coverStream = outFmtCtx_.stream(coverStreamIndex_);
+        if (coverStream.isValid() && coverStream.raw()->attached_pic.size > 0) {
+            av::Packet coverPkt;
+            av_packet_ref(coverPkt.raw(), &coverStream.raw()->attached_pic);
+            coverPkt.raw()->stream_index = coverStreamIndex_;
+            coverPkt.raw()->pts = 0;
+            coverPkt.raw()->dts = 0;
+            coverPkt.raw()->duration = 0;
+            std::error_code coverEc;
+            outFmtCtx_.writePacket(coverPkt, coverEc);
+            if (coverEc) {
+                LOGD("写封面包失败: %s", coverEc.message().c_str());
+            } else {
+                LOGI("封面包已写入: %d bytes", coverPkt.raw()->size);
             }
         }
     }
