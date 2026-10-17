@@ -577,9 +577,9 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
     // av_interleaved_write_frame 会按此选项把所有流包时间戳整体偏移，使最小 dts >= 0。
     outFmtCtx_.raw()->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_ZERO;
 
-    // 读取配置文件第3行 comment 键值对，写入输出文件 metadata
-    // 空值不写入（av_dict_set 传 nullptr 会删除已有条目，空字符串则会写入空值）
     {
+        // 读取配置文件第3行 comment 键值对，写入输出文件 metadata
+        // 空值不写入（av_dict_set 传 nullptr 会删除已有条目，空字符串则会写入空值）
         std::ifstream cfg("/data/user/0/com.kgmdecoder.app/files/config.dat");
         if (cfg.is_open()) {
             std::string line;
@@ -589,6 +589,14 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
             if (!line.empty()) {
                 av_dict_set(&outFmtCtx_.raw()->metadata, "comment", line.c_str(), 0);
             }
+        }
+
+        // 读取源文件的信息
+        const AVDictionary *dict  = fmtCtx_.raw()->metadata;
+        const AVDictionaryEntry *entry = nullptr;
+        while ((entry = av_dict_iterate(dict, entry))) {
+            LOGI("字典键值%s正在迭代中...", entry->key != nullptr ? entry->key : "<NONE>");
+            if (entry && entry->value) av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
         }
     }
 
