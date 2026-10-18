@@ -5,8 +5,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.AdapterView;
@@ -310,9 +308,6 @@ public class Selecting extends Activity {
             etOutput.setText(downloadDir + "/" + fileName);
         }
 
-        // 给参数窗口里所有 EditText 挂回车确认（递归遍历嵌套布局）
-        attachEnterToConfirm(currentSubView);
-
         // 入场动画：上滑 + 轻微缩放 + 淡入
         isParamAnimating = true;
         float dip = getResources().getDisplayMetrics().density;
@@ -331,41 +326,6 @@ public class Selecting extends Activity {
                 .setInterpolator(new DecelerateInterpolator(1.5f))
                 .withEndAction(() -> isParamAnimating = false)
                 .start();
-    }
-
-    /**
-     * 递归遍历 View 树，给所有 EditText 挂回车确认（触发确认按钮）
-     * 多行框的回车也被拦截（不换行），直接确认
-     */
-    private void attachEnterToConfirm(View view) {
-        if (view instanceof EditText) {
-            EditText et = (EditText) view;
-            et.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_DONE ||
-                    actionId == EditorInfo.IME_ACTION_NEXT ||
-                    actionId == EditorInfo.IME_ACTION_GO ||
-                    actionId == EditorInfo.IME_ACTION_SEND ||
-                    actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
-                    et.post(() -> btnConfirmEncode.performClick());
-                    return true;
-                }
-                return false;
-            });
-            et.setOnKeyListener((v, keyCode, event) -> {
-                if (keyCode == android.view.KeyEvent.KEYCODE_ENTER) {
-                    if (event.getAction() == android.view.KeyEvent.ACTION_UP) {
-                        et.post(() -> btnConfirmEncode.performClick());
-                    }
-                    return true; // DOWN/UP 都消费，阻止多行框换行
-                }
-                return false;
-            });
-        } else if (view instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                attachEnterToConfirm(group.getChildAt(i));
-            }
-        }
     }
 
     /**
