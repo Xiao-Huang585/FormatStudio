@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.AdapterView;
@@ -308,6 +310,11 @@ public class Selecting extends Activity {
             etOutput.setText(downloadDir + "/" + fileName);
         }
 
+        // 元数据布局：回车收起软键盘（不确认编码）
+        if (layoutId == R.layout.layout_metadata_params) {
+            attachEnterToHideKeyboard(currentSubView);
+        }
+
         // 入场动画：上滑 + 轻微缩放 + 淡入
         isParamAnimating = true;
         float dip = getResources().getDisplayMetrics().density;
@@ -326,6 +333,49 @@ public class Selecting extends Activity {
                 .setInterpolator(new DecelerateInterpolator(1.5f))
                 .withEndAction(() -> isParamAnimating = false)
                 .start();
+    }
+
+    /**
+     * 递归遍历 View 树，给所有 EditText 挂回车：收起软键盘（不确认编码）
+     */
+    private void attachEnterToHideKeyboard(View view) {
+        if (view instanceof EditText) {
+            EditText et = (EditText) view;
+            et.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_DONE ||
+                    actionId == EditorInfo.IME_ACTION_NEXT ||
+                    actionId == EditorInfo.IME_ACTION_GO ||
+                    actionId == EditorInfo.IME_ACTION_SEND ||
+                    actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
+                    hideKeyboard(et);
+                    return true;
+                }
+                return false;
+            });
+            et.setOnKeyListener((v, keyCode, event) -> {
+                if (keyCode == android.view.KeyEvent.KEYCODE_ENTER
+                        && event.getAction() == android.view.KeyEvent.ACTION_UP) {
+                    hideKeyboard(et);
+                    return true;
+                }
+                return false;
+            });
+        } else if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                attachEnterToHideKeyboard(group.getChildAt(i));
+            }
+        }
+    }
+
+    /** 收起软键盘并清除焦点 */
+    private void hideKeyboard(View view) {
+        android.view.inputmethod.InputMethodManager imm =
+            (android.view.inputmethod.InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+        view.clearFocus();
     }
 
     /**
