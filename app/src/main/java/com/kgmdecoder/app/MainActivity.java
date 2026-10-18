@@ -27,6 +27,12 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
+
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
 import com.google.android.material.textfield.TextInputLayout;
 import java.io.File;
 import java.util.Locale;
@@ -58,6 +64,11 @@ public class MainActivity extends Activity {
     private int videoHeight = 0;
     // 是否处于横屏全屏模式
     private boolean isFullscreenLandscape = false;
+    // 全屏时点击画面用于唤出的底部输入栏（及其分割线）
+    private View inputBar;
+    private View inputBarDivider;
+    // 当前全屏下输入栏是否显示
+    private boolean controlsVisible = true;
 
     // ====== Native 方法声明 ======
     public native void triggerCppToCallJava();
@@ -224,6 +235,8 @@ public class MainActivity extends Activity {
         btnPick = findViewById(R.id.btn_pick);
         surfaceView = findViewById(R.id.surface_view);
         playArrow = findViewById(R.id.playArrow);
+        inputBar = findViewById(R.id.input_bar);
+        inputBarDivider = findViewById(R.id.input_bar_divider);
 
         // 关闭按钮
         ivClose.setOnClickListener(new CloseButtonClickListener());
@@ -238,6 +251,10 @@ public class MainActivity extends Activity {
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
                 clickTimestamp = System.currentTimeMillis();
+                // 横屏独占全屏下：点击画面 → C++ 层暂停/恢复，同时切换底部输入框显隐
+                if (isFullscreenLandscape) {
+                    setControlsVisible(!controlsVisible);
+                }
                 return true;
             }
             @Override
@@ -421,41 +438,60 @@ public class MainActivity extends Activity {
      */
     private void updateSurfaceViewSize() {
         if (surfaceView == null) return;
-
-        // 获取 SurfaceView 父容器的可用尺寸
         View parent = (View) surfaceView.getParent();
         if (parent == null || parent.getWidth() == 0 || parent.getHeight() == 0) return;
 
         int availableW = parent.getWidth();
-        int availableH = parent.getHeight();
+        int availableH;
+        if (isFullscreenLandscape) {
+            // 横屏独占全屏：视频铺满整个父布局
+            availableH = parent.getHeight();
+        } else {
+            // 窗口模式：底部到 input_bar 顶部为止，避免覆盖输入框；
+            // 真实可用高度 = input_bar 顶部到 parent 顶部的距离（而不是整个 parent 高度）
+            if (inputBar == null || inputBar.getHeight() == 0 || inputBar.getTop() <= 0) return;
+            availableH = inputBar.getTop();
+        }
 
         androidx.constraintlayout.widget.ConstraintLayout.LayoutParams lp =
                 (androidx.constraintlayout.widget.ConstraintLayout.LayoutParams) surfaceView.getLayoutParams();
 
-        if (videoWidth <= 0 || videoHeight <= 0) {
-            // 无视频尺寸信息，填满可用区域
-            lp.width = 0;
-            lp.height = 0;
-            lp.dimensionRatio = null;
-            surfaceView.setLayoutParams(lp);
-            return;
-        }
-
-        float videoRatio = (float) videoWidth / videoHeight;
-        float availableRatio = (float) availableW / availableH;
-
-        if (videoRatio > availableRatio) {
-            // 视频更宽：宽度填满，高度按比例
-            lp.width = 0;
-            lp.height = 0;
-            lp.dimensionRatio = "W," + videoWidth + ":" + videoHeight;
+        // =========关键：清除全部旧垂直约束=========
+        lp.topToTop = ConstraintLayout.LayoutParams.PARENT_ID;   // 顶部绑定父布局顶部
+        lp.topToBottom = -1;
+        if (isFullscreenLandscape) {
+            lp.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID; // 全屏：底部绑定父布局底部
+            lp.bottomToTop = -1;
         } else {
-            // 视频更高：高度填满，宽度按比例
-            lp.width = 0;
-            lp.height = 0;
-            lp.dimensionRatio = "H," + videoWidth + ":" + videoHeight;
+            lp.bottomToBottom = -1;
+            lp.bottomToTop = R.id.input_bar;                          // 否则绑定 input_bar 顶部
         }
+
+        // 水平约束：左右绑定父布局
+        lp.startToStart = ConstraintLayout.LayoutParams.PARENT_ID;
+        lp.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID;
+
+        lp.width = ConstraintLayout.LayoutParams.MATCH_CONSTRAINT; // 0dp
+        lp.height = ConstraintLayout.LayoutParams.MATCH_CONSTRAINT;// 0dp
+
+        if (videoWidth <= 0 || videoHeight <= 0) {
+            lp.dimensionRatio = null;
+        } else {
+            float videoRatio = (float) videoWidth / videoHeight;
+            float availableRatio = (float) availableW / availableH;
+            // ConstraintLayout 的 W/H 前缀指的是“被比例推导的那个维度”：
+            //   "H,w:h" → 先按约束定宽，再按比例算高；"W,w:h" → 先按约束定高，再按比例算宽。
+            if (videoRatio > availableRatio) {
+                // 视频比可用区域更“宽”：以宽度为准（宽度受限，高度按比例缩小）
+                lp.dimensionRatio = "H," + videoWidth + ":" + videoHeight;
+            } else {
+                // 视频更“高”：以高度为准（高度受限，宽度按比例缩小）
+                lp.dimensionRatio = "W," + videoWidth + ":" + videoHeight;
+            }
+        }
+
         surfaceView.setLayoutParams(lp);
+        surfaceView.requestLayout(); // 强制重新布局，非常重要
     }
 
     /**
@@ -463,14 +499,49 @@ public class MainActivity extends Activity {
      */
     private void toggleFullscreen() {
         if (isFullscreenLandscape) {
-            // 切回竖屏
+            // 退出横屏独占全屏，回到竖屏
             setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             isFullscreenLandscape = false;
+            exitImmersiveFullscreen();
+            setControlsVisible(true);
         } else {
-            // 切横屏全屏（传感器方向，用户可正/反手持）
+            // 进入横屏独占全屏（传感器方向，用户可正/反手持）
             setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
             isFullscreenLandscape = true;
+            // 独占全屏：隐藏系统栏与底部输入栏，视频铺满整屏
+            enterImmersiveFullscreen();
+            setControlsVisible(false);
         }
+    }
+
+    /**
+     * 进入独占全屏：隐藏系统状态栏/导航栏（下滑可临时唤出）
+     */
+    private void enterImmersiveFullscreen() {
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        controller.hide(WindowInsetsCompat.Type.systemBars());
+        controller.setSystemBarsBehavior(
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+    }
+
+    /**
+     * 退出独占全屏：恢复系统状态栏/导航栏
+     */
+    private void exitImmersiveFullscreen() {
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        controller.show(WindowInsetsCompat.Type.systemBars());
+    }
+
+    /**
+     * 显示/隐藏底部输入栏。全屏下点击画面（暂停）时唤出，便于输入 stop 退出
+     */
+    private void setControlsVisible(boolean visible) {
+        controlsVisible = visible;
+        int visibility = visible ? View.VISIBLE : View.GONE;
+        if (inputBar != null) inputBar.setVisibility(visibility);
+        if (inputBarDivider != null) inputBarDivider.setVisibility(visibility);
     }
 
     /**
@@ -496,6 +567,8 @@ public class MainActivity extends Activity {
                             sInstance.setRequestedOrientation(
                                     android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                             sInstance.isFullscreenLandscape = false;
+                            sInstance.exitImmersiveFullscreen();
+                            sInstance.setControlsVisible(true);
                         }
                     }
                 }
