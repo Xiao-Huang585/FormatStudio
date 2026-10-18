@@ -17,6 +17,7 @@ extern "C" {
 
 #include <cmath>
 #include <algorithm>
+#include <utility>
 #include "functions.h"
 
 FFmpeg *ffmpeg = nullptr;
@@ -214,6 +215,20 @@ int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID,
                                    bool allowHardware) {
     return initOutputContext(videoID, audioID, videoBitrate, presetStr, targetFps, audioBitrate,
                              outWidth, outHeight, targetSampleRate, allowHardware);
+}
+
+// ============================
+// 额外写入一条元数据到输出文件
+// 必须在 initOutputContext（写文件头）之前调用
+// ============================
+void FFmpeg::addMetadata(const AVDictionaryEntry *entry) {
+    if (!entry || !entry->key || !entry->value) return;
+    if (!outFmtCtx_.isOpened()) {
+        LOGD("addMetadata: 输出未打开，跳过");
+        return;
+    }
+    av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
+    LOGI("额外元数据已写入: %s=%s", entry->key, entry->value);
 }
 
 // ============================

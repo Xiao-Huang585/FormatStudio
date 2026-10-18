@@ -29,6 +29,7 @@
 
 #include <string>
 #include <memory>
+#include <utility>
 
 /**
  * @brief 基于 avcpp 的媒体处理类
@@ -191,6 +192,16 @@ public:
     inline void setOutputPath(std::string path) { outPath_ = path; }
     inline int videoStreamIndex() const { return videoStreamIndex_; }
     inline int audioStreamIndex() const { return audioStreamIndex_; }
+
+    /**
+     * @brief 额外写入一条元数据到输出文件
+     *
+     * 必须在 initOutputContext（写文件头）之前调用，否则元数据不会写入容器。
+     * 若键已存在，flags=0 不会覆盖（保留原值）。
+     *
+     * @param entry 元数据键值对，key 和 value 均不能为空
+     */
+    void addMetadata(const AVDictionaryEntry *entry);
 
 private:
 
