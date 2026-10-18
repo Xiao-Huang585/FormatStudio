@@ -212,9 +212,11 @@ int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID,
                                    int outWidth,
                                    int outHeight,
                                    int targetSampleRate,
-                                   bool allowHardware) {
+                                   bool allowHardware,
+                                   bool copySourceMetadata) {
     return initOutputContext(videoID, audioID, videoBitrate, presetStr, targetFps, audioBitrate,
-                             outWidth, outHeight, targetSampleRate, allowHardware);
+                             outWidth, outHeight, targetSampleRate, allowHardware,
+                             false, copySourceMetadata);
 }
 
 // ============================
@@ -245,7 +247,8 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
                                int outHeight,
                                int targetSampleRate,
                                bool allowHardware,
-                               bool keepSourceChannelLayout) {
+                               bool keepSourceChannelLayout,
+                               bool copySourceMetadata) {
     if (!fmtCtx_.isOpened()) {
         cout << String("未打开输入文件...", "Didn't open input file...") << endl;
         LOGD("未打开输出文件...");
@@ -606,70 +609,75 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
             }
         }
 
-        // 读取源文件的元数据（容器级别）
-        const AVDictionary *dict  = fmtCtx_.raw()->metadata;
-        const AVDictionaryEntry *entry = nullptr;
-        int srcMetaCount = 0;
-        while ((entry = av_dict_iterate(dict, entry))) {
-            if (entry && entry->value) {
-                av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
-                srcMetaCount++;
-            }
-        }
-        // 同时复制视频流和音频流的元数据（某些格式如 MP3/ID3 元数据在流级别）
-        if (videoStreamIndex_ >= 0 && videoStreamIndex_ < fmtCtx_.raw()->nb_streams) {
-            const AVDictionary *vDict = fmtCtx_.raw()->streams[videoStreamIndex_]->metadata;
-            entry = nullptr;
-            while ((entry = av_dict_iterate(vDict, entry))) {
+        if (copySourceMetadata) {
+            // 读取源文件的元数据（容器级别）
+            const AVDictionary *dict  = fmtCtx_.raw()->metadata;
+            const AVDictionaryEntry *entry = nullptr;
+            int srcMetaCount = 0;
+            while ((entry = av_dict_iterate(dict, entry))) {
                 if (entry && entry->value) {
                     av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
                     srcMetaCount++;
                 }
             }
-        }
-        if (audioStreamIndex_ >= 0 && audioStreamIndex_ < fmtCtx_.raw()->nb_streams) {
-            const AVDictionary *aDict = fmtCtx_.raw()->streams[audioStreamIndex_]->metadata;
-            entry = nullptr;
-            while ((entry = av_dict_iterate(aDict, entry))) {
-                if (entry && entry->value) {
-                    av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
-                    srcMetaCount++;
+            // 同时复制视频流和音频流的元数据（某些格式如 MP3/ID3 元数据在流级别）
+            if (videoStreamIndex_ >= 0 && videoStreamIndex_ < fmtCtx_.raw()->nb_streams) {
+                const AVDictionary *vDict = fmtCtx_.raw()->streams[videoStreamIndex_]->metadata;
+                entry = nullptr;
+                while ((entry = av_dict_iterate(vDict, entry))) {
+                    if (entry && entry->value) {
+                        av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
+                        srcMetaCount++;
+                    }
                 }
             }
-        }
-
-        // 复制封面（纯音频文件）
-        coverStreamIndex_ = -1;
-        if (hasAudio() && !hasVideo()) {
-            for (size_t i = 0; i < fmtCtx_.streamsCount(); i++) {
-                av::Stream inStream = fmtCtx_.stream(i);
-                if (inStream.isAttachment()) {
-                    // 创建输出附件流
-                    av::Stream outStream = outFmtCtx_.addStream();
-                    coverStreamIndex_ = outStream.index();
-                    // 复制 codecpar（图片格式/尺寸/extradata）
-                    avcodec_parameters_copy(outStream.raw()->codecpar, inStream.raw()->codecpar);
-                    outStream.raw()->codecpar->codec_tag = 0;
-                    // 设置附件标记和 time_base
-                    outStream.raw()->disposition = AV_DISPOSITION_ATTACHED_PIC;
-                    outStream.raw()->time_base = {1, 90000};
-                    // 复制封面数据包（增加引用计数）
-                    av_packet_ref(&outStream.raw()->attached_pic, &inStream.raw()->attached_pic);
-                    // 复制流元数据
-                    av_dict_copy(&outStream.raw()->metadata, inStream.raw()->metadata, 0);
-                    LOGI("已复制封面: streamIdx=%d, %dx%d, %d bytes, codec=%s",
-                         coverStreamIndex_,
-                         inStream.raw()->codecpar->width,
-                         inStream.raw()->codecpar->height,
-                         inStream.raw()->attached_pic.size,
-                         avcodec_get_name(inStream.raw()->codecpar->codec_id));
-                    break;
+            if (audioStreamIndex_ >= 0 && audioStreamIndex_ < fmtCtx_.raw()->nb_streams) {
+                const AVDictionary *aDict = fmtCtx_.raw()->streams[audioStreamIndex_]->metadata;
+                entry = nullptr;
+                while ((entry = av_dict_iterate(aDict, entry))) {
+                    if (entry && entry->value) {
+                        av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
+                        srcMetaCount++;
+                    }
                 }
             }
-        }
 
-        LOGI("元数据复制完成: 源文件共 %d 条，输出容器 metadata 共 %d 条",
-             srcMetaCount, av_dict_count(outFmtCtx_.raw()->metadata));
+            // 复制封面（纯音频文件）
+            coverStreamIndex_ = -1;
+            if (hasAudio() && !hasVideo()) {
+                for (size_t i = 0; i < fmtCtx_.streamsCount(); i++) {
+                    av::Stream inStream = fmtCtx_.stream(i);
+                    if (inStream.isAttachment()) {
+                        // 创建输出附件流
+                        av::Stream outStream = outFmtCtx_.addStream();
+                        coverStreamIndex_ = outStream.index();
+                        // 复制 codecpar（图片格式/尺寸/extradata）
+                        avcodec_parameters_copy(outStream.raw()->codecpar, inStream.raw()->codecpar);
+                        outStream.raw()->codecpar->codec_tag = 0;
+                        // 设置附件标记和 time_base
+                        outStream.raw()->disposition = AV_DISPOSITION_ATTACHED_PIC;
+                        outStream.raw()->time_base = {1, 90000};
+                        // 复制封面数据包（增加引用计数）
+                        av_packet_ref(&outStream.raw()->attached_pic, &inStream.raw()->attached_pic);
+                        // 复制流元数据
+                        av_dict_copy(&outStream.raw()->metadata, inStream.raw()->metadata, 0);
+                        LOGI("已复制封面: streamIdx=%d, %dx%d, %d bytes, codec=%s",
+                             coverStreamIndex_,
+                             inStream.raw()->codecpar->width,
+                             inStream.raw()->codecpar->height,
+                             inStream.raw()->attached_pic.size,
+                             avcodec_get_name(inStream.raw()->codecpar->codec_id));
+                        break;
+                    }
+                }
+            }
+
+            LOGI("元数据复制完成: 源文件共 %d 条，输出容器 metadata 共 %d 条",
+                 srcMetaCount, av_dict_count(outFmtCtx_.raw()->metadata));
+        } else {
+            coverStreamIndex_ = -1;
+            LOGI("已跳过源文件元数据复制(copySourceMetadata=false)");
+        }
     }
 
     // 写文件头
@@ -785,10 +793,10 @@ bool FFmpeg::getMediaInfo() const {
         }
 
         entry = nullptr;
-        entry = av_dict_get(rawCtx->metadata, "artist", nullptr, 0);
+        entry = av_dict_get(rawCtx->metadata, "g_artist", nullptr, 0);
         if (entry && entry->value)
             cout << String("  艺术家: ", "Artist: ") << entry->value << endl;
-        entry = av_dict_get(rawCtx->metadata, "album", nullptr, 0);
+        entry = av_dict_get(rawCtx->metadata, "g_album", nullptr, 0);
         if (entry && entry->value)
             cout << String("  专辑: ", "  Album") << entry->value << endl;
         entry = av_dict_get(rawCtx->metadata, "encoder", nullptr, 0);
@@ -805,7 +813,8 @@ bool FFmpeg::getMediaInfo() const {
 // preset 1=体积最小, 10=体积较大；不改变源编码器；不使用CRF
 // ============================
 int FFmpeg::openOutputWithCompressMedia(const char* outputPath,
-                                          int presetLevel) {
+                                          int presetLevel,
+                                          bool copySourceMetadata) {
     if (presetLevel < 1 || presetLevel > 10)
         throw std::invalid_argument("presetLevel must be 1~10!");
 
@@ -915,7 +924,9 @@ int FFmpeg::openOutputWithCompressMedia(const char* outputPath,
             outAudioBitrate,
             outWidth, outHeight,
             targetSampleRate,
-            false  // allowHardware=false
+            false,  // allowHardware=false
+            false,  // keepSourceChannelLayout=false
+            copySourceMetadata
     );
     if (ret != 0) {
         return ret;
@@ -929,7 +940,8 @@ int FFmpeg::openOutputWithCompressMedia(const char* outputPath,
 // 直接复用源文件所有解码器参数初始化输出
 // 分辨率/帧率/码率/采样率/声道布局均不变，仅编码线程数由 config.dat 控制
 // =============================================================
-int FFmpeg::openOutputWithSourceParams(const char* outputPath) {
+int FFmpeg::openOutputWithSourceParams(const char* outputPath,
+                                        bool copySourceMetadata) {
     if (!fmtCtx_.isOpened()) {
         cout << String("未打开输入文件...", "Didn't open input file...") << endl;
         return -EINVAL;
@@ -1031,7 +1043,8 @@ int FFmpeg::openOutputWithSourceParams(const char* outputPath) {
             0, 0,
             0,
             true,   // allowHardware=true：若源为 H264/H265 可自动启用 mediacodec 硬编
-            true    // keepSourceChannelLayout=true：沿用源声道布局
+            true,   // keepSourceChannelLayout=true：沿用源声道布局
+            copySourceMetadata
     );
 }
 

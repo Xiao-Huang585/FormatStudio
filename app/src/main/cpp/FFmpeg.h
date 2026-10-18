@@ -92,7 +92,8 @@ public:
      * @return 0 表示成功，负数表示错误码
      */
     int openOutputWithCompressMedia(const char* outputPath,
-                                     int presetLevel);
+                                     int presetLevel,
+                                     bool copySourceMetadata = true);
 
     /**
      * @brief 纯编码循环（可复用），输出必须已由 openOutPutWithEncoder /
@@ -151,7 +152,8 @@ public:
                                int outWidth = 0,
                                int outHeight = 0,
                                int targetSampleRate = 0,
-                               bool allowHardware = true);
+                               bool allowHardware = true,
+                               bool copySourceMetadata = true);
 
     /**
      * @brief 直接复用源文件所有解码器参数初始化输出（分辨率/帧率/码率/采样率/声道布局均不变）
@@ -164,7 +166,8 @@ public:
      * @param outputPath 输出文件路径（扩展名决定封装格式）
      * @return 0 表示成功，负数表示错误码
      */
-    int openOutputWithSourceParams(const char* outputPath);
+    int openOutputWithSourceParams(const char* outputPath,
+                                    bool copySourceMetadata = true);
 
     /**
      * @brief 便捷重载：用指定名称的编码器初始化输出并编码写出文件
@@ -244,7 +247,8 @@ private:
                            int outHeight = 0,
                            int targetSampleRate = 0,
                            bool allowHardware = true,
-                           bool keepSourceChannelLayout = false);
+                           bool keepSourceChannelLayout = false,
+                           bool copySourceMetadata = true);
 
     bool inited = false;
 
