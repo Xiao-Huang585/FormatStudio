@@ -37,6 +37,11 @@ int64_t g_startTimeUs = -1;        // -1 = 无
 int64_t g_endTimeUs = -1;          // -1 = 无
 int8_t g_brightness = 0;           // 亮度偏移 -128~127, 0=不变
 float g_gamma = 1.0f;              // Gamma 0.5~3.0, 1.0=不变
+char* g_title = nullptr;             // 标题元数据
+char* g_album = nullptr;             // 专辑元数据
+char* g_artist = nullptr;            // 艺术家元数据
+char* g_date = nullptr;              // 日期元数据
+char* g_language = nullptr;          // 语言元数据
 } // namespace enc_par
 
 // ====== 应用路径（由 MainActivity 通过 passAppPaths 传入，替代硬编码） ======
@@ -612,6 +617,40 @@ Java_com_kgmdecoder_app_MainActivity_passBrightnessConfig(JNIEnv *env, jobject t
     env->ReleaseStringUTFChars(jOutputPath, outputPath);
     LOGD("亮度参数: output=%s brightness=%hhd gamma=%f", enc_par::g_outputPath.c_str(),
          enc_par::g_brightness, enc_par::g_gamma);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passMetaDataConfig(JNIEnv *env, jobject thiz,
+                                                        jstring jOutputPath, jstring jTitle, jstring jAlbum,
+                                                        jstring jArtist, jstring jDate, jstring jLanguage
+) {
+    std::lock_guard<std::mutex> lock(g_inputMutex);
+
+    // outputPath 是 std::string，直接赋值会复制
+    const char* ptr = env->GetStringUTFChars(jOutputPath, nullptr);
+    enc_par::g_outputPath = ptr ? ptr : "";
+    env->ReleaseStringUTFChars(jOutputPath, ptr);
+
+    // 其余是 char*，必须 strdup 复制，否则 Release 后变悬空指针
+    auto dupStr = [&](jstring js, char* &dst) {
+        const char* p = env->GetStringUTFChars(js, nullptr);
+        free(dst);
+        dst = p ? strdup(p) : nullptr;
+        env->ReleaseStringUTFChars(js, p);
+    };
+    dupStr(jTitle, enc_par::g_title);
+    dupStr(jAlbum, enc_par::g_album);
+    dupStr(jArtist, enc_par::g_artist);
+    dupStr(jDate, enc_par::g_date);
+    dupStr(jLanguage, enc_par::g_language);
+
+    LOGD("元数据: output=%s title=%s artist=%s album=%s date=%s language=%s",
+         enc_par::g_outputPath.c_str(),
+         enc_par::g_title ? enc_par::g_title : "(null)",
+         enc_par::g_artist ? enc_par::g_artist : "(null)",
+         enc_par::g_album ? enc_par::g_album : "(null)",
+         enc_par::g_date ? enc_par::g_date : "(null)",
+         enc_par::g_language ? enc_par::g_language : "(null)");
 }
 
 // ============================

@@ -77,6 +77,8 @@ public class MainActivity extends Activity {
     public native void passCompressConfig(String outputPath, int level);
     public native void passTrimConfig(String outputPath, long startTimeUs, long endTimeUs);
     public native void passBrightnessConfig(String outputPath, short brightness, float gamma);
+    public native void passMetaDataConfig(String outputPath, String title, String album,
+                                          String artist, String date, String language);
     // 传递应用常用路径（替代 C++ 侧硬编码 /sdcard、/storage/emulated/0 等）
     public native void passAppPaths(String externalStorageDir, String downloadDir, String filesDir);
     // 同步打开媒体文件（跳转 Selecting 前调用，使 hasVideo/hasAudio 生效）
@@ -146,6 +148,7 @@ public class MainActivity extends Activity {
                     Log.d(TAG, "编码参数: 输出=" + outputPath
                             + " 视频编码器=" + videoCodec
                             + " 音频编码器=" + audioCodec);
+
                     passEncoderConfig(outputPath,
                             videoCodec != null ? videoCodec : "",
                             audioCodec != null ? audioCodec : "");
@@ -161,6 +164,7 @@ public class MainActivity extends Activity {
                     if (compressLevel.length() == 2) {
                         level = 10;
                     }
+
                     passCompressConfig(outputPath, level);
                     passInputToCpp(selectedFilePath + "\n" + function);
                 } else if ("EncodeWithTrim".equals(function)) {
@@ -168,13 +172,30 @@ public class MainActivity extends Activity {
                     final int AV_TIME_BASE = 1000000;
                     long startTimeUs = (long)(data.getDoubleExtra("StartTime", 0) * AV_TIME_BASE);
                     long endTimeUs   = (long)(data.getDoubleExtra("EndTime", 0)   * AV_TIME_BASE);
+
                     passTrimConfig(outputPath, startTimeUs, endTimeUs);
                     passInputToCpp(selectedFilePath + "\n" + function);
                 } else if ("EncodeWithBrightness".equals(function)) {
                     String outputPath = data.getStringExtra("OutputPath");
                     short brightness = (short)(data.getIntExtra("Brightness", 0));
                     float gamma = data.getFloatExtra("Gamma", 1.0f);
+
                     passBrightnessConfig(outputPath, brightness, gamma);
+                    passInputToCpp(selectedFilePath + "\n" + function);
+                } else if ("EncodeWithMetadata".equals(function)) {
+                    String outputPath = data.getStringExtra("OutputPath");
+                    String title = data.getStringExtra("MetadataTitle");
+                    if (title == null) title = "";
+                    String album = data.getStringExtra("MetadataAlbum");
+                    if (album == null) album = "";
+                    String artist = data.getStringExtra("MetadataArtist");
+                    if (artist == null) artist = "";
+                    String language = data.getStringExtra("MetadataLanguage");
+                    if (language == null) language = "";
+                    String date = data.getStringExtra("MetadataDate");
+                    if (date == null) date = "";
+
+                    passMetaDataConfig(outputPath, title, album, artist, date, language);
                     passInputToCpp(selectedFilePath + "\n" + function);
                 } else {
                     // 传给 C++ 处理，格式: 路径\n功能名

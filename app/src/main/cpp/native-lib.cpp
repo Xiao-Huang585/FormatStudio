@@ -823,6 +823,49 @@ void cppMain(jobject thiz) {
                     continue;
                 }
 
+                if (functionName == "EncodeWithMetadata") {
+                    cout << String("===== 开始元数据编码 =====", "===== Start metadata encoding =====") << endl;
+                    cout << String("输出路径: ", "Output path: ") << enc_par::g_outputPath << endl;
+                    cout << String("标题: ", "Title: ") << enc_par::g_title << endl;
+                    cout << String("专辑: ", "Album: ") << enc_par::g_album << endl;
+                    cout << String("艺术家: ", "Artist: ") << enc_par::g_artist << endl;
+                    cout << String("日期: ", "Date: ") << enc_par::g_date << endl;
+                    cout << String("语言: ", "Language: ") << enc_par::g_language << endl;
+                    cout.flush();
+
+                    if (enc_par::g_outputPath.empty()) {
+                        cout << String("输出路径为空, 取消编码", "Output path is empty, canceled") << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    ffmpeg->addMetadata("title", enc_par::g_title);
+                    ffmpeg->addMetadata("artist", enc_par::g_artist);
+                    ffmpeg->addMetadata("album", enc_par::g_album);
+                    ffmpeg->addMetadata("date", enc_par::g_date);
+                    ffmpeg->addMetadata("language", enc_par::g_language);
+
+                    int initRet = ffmpeg->openOutputWithSourceParams(enc_par::g_outputPath.c_str(), false);
+                    if (initRet != 0) {
+                        cout << String("元数据输出初始化失败，错误码: ", "Metadata output init failed, error code: ")
+                             << initRet << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    int encRet = ffmpeg->encodeToFile();
+                    if (encRet == 0) {
+                        cout << String("元数据编码完成！", "Metadata encoding finished!") << endl;
+                    } else {
+                        cout << String("元数据编码失败，错误码: ", "Metadata encoding failed, error code: ")
+                             << encRet << endl;
+                    }
+                    cout.flush();
+
+                    // 结果保留在控制台，下一条命令到达时主循环会自动清空
+                    continue;
+                }
+
                 if (functionName == "PlayVideo" && (ffmpeg->hasVideo() || ffmpeg->hasAudio())) {
                     callJavaClear();
                     bool hasAudio = ffmpeg->hasAudio(), hasVideo = ffmpeg->hasVideo();
