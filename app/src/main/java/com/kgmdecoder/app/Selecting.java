@@ -21,7 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 enum FunctionWindow {
-    BRIGHTNESS, TRIM, COMPRESS, ENCODER, NONE
+    METADATA, BRIGHTNESS, TRIM, COMPRESS, ENCODER, NONE
 }
 
 public class Selecting extends Activity {
@@ -31,6 +31,7 @@ public class Selecting extends Activity {
     private Button encodeWithCompressBtn;
     private Button encodeWithTrimBtn;
     private Button encodeWithBrightnessBtn;
+    private Button encodeWithMetadataBtn;
 
     // 外壳控件（在主selecting.xml，可以onCreate直接find）
     private View parametersWindow;
@@ -74,6 +75,7 @@ public class Selecting extends Activity {
         encodeWithCompressBtn = findViewById(R.id.EncodeWithCompress);
         encodeWithTrimBtn = findViewById(R.id.EncodeWithTrim);
         encodeWithBrightnessBtn = findViewById(R.id.EncodeWithBrightness);
+        encodeWithMetadataBtn = findViewById(R.id.EncodeWithMetaData);
 
 
         // 外壳控件
@@ -142,6 +144,12 @@ public class Selecting extends Activity {
                         return "";
                     }
                 }});
+            }
+        );
+
+        encodeWithMetadataBtn.setOnClickListener(v -> {
+                showParamWindow(R.layout.layout_metadata_params, getString(R.string.Selecting_parametersTitle));
+                window = FunctionWindow.METADATA;
             }
         );
 
@@ -280,6 +288,32 @@ public class Selecting extends Activity {
                 res.putExtra("OutputPath", outputPath);
                 res.putExtra("Brightness", brightness);
                 res.putExtra("Gamma", gamma);
+                setResult(RESULT_OK, res);
+                finish();
+            }
+            if (window == FunctionWindow.METADATA) {
+                if (currentSubView == null) return;
+                EditText etOutputPath = currentSubView.findViewById(R.id.et_output_path);
+                String outputPath = etOutputPath.getText().toString().trim();
+                if (outputPath.isEmpty()) {
+                    Toast.makeText(this, R.string.Selecting_toast_emptyOutputPath, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                EditText etTitle = currentSubView.findViewById(R.id.et_title);
+                EditText etAlbum = currentSubView.findViewById(R.id.et_album);
+                EditText etArtist = currentSubView.findViewById(R.id.et_artist);
+                EditText etDate = currentSubView.findViewById(R.id.et_date);
+                EditText etLanguage = currentSubView.findViewById(R.id.et_language);
+
+                Intent res = new Intent();
+                res.putExtra("Function", "EncodeWithMetadata");
+                res.putExtra("OutputPath", outputPath);
+                res.putExtra("MetadataTitle", etTitle.getText().toString().trim());
+                res.putExtra("MetadataAlbum", etAlbum.getText().toString().trim());
+                res.putExtra("MetadataArtist", etArtist.getText().toString().trim());
+                res.putExtra("MetadataDate", etDate.getText().toString().trim());
+                res.putExtra("MetadataLanguage", etLanguage.getText().toString().trim());
                 setResult(RESULT_OK, res);
                 finish();
             }
