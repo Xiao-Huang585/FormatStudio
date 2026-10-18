@@ -5,8 +5,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.AdapterView;
@@ -21,7 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 enum FunctionWindow {
-    METADATA, BRIGHTNESS, TRIM, COMPRESS, ENCODER, NONE
+    BRIGHTNESS, TRIM, COMPRESS, ENCODER, NONE
 }
 
 public class Selecting extends Activity {
@@ -31,7 +29,6 @@ public class Selecting extends Activity {
     private Button encodeWithCompressBtn;
     private Button encodeWithTrimBtn;
     private Button encodeWithBrightnessBtn;
-    private Button encodeWithMetadataBtn;
 
     // 外壳控件（在主selecting.xml，可以onCreate直接find）
     private View parametersWindow;
@@ -75,7 +72,6 @@ public class Selecting extends Activity {
         encodeWithCompressBtn = findViewById(R.id.EncodeWithCompress);
         encodeWithTrimBtn = findViewById(R.id.EncodeWithTrim);
         encodeWithBrightnessBtn = findViewById(R.id.EncodeWithBrightness);
-        encodeWithMetadataBtn = findViewById(R.id.EncodeWithMetaData);
 
 
         // 外壳控件
@@ -144,12 +140,6 @@ public class Selecting extends Activity {
                         return "";
                     }
                 }});
-            }
-        );
-
-        encodeWithMetadataBtn.setOnClickListener(v -> {
-                showParamWindow(R.layout.layout_metadata_params, getString(R.string.Selecting_parametersTitle));
-                window = FunctionWindow.METADATA;
             }
         );
 
@@ -291,47 +281,6 @@ public class Selecting extends Activity {
                 setResult(RESULT_OK, res);
                 finish();
             }
-            if (window == FunctionWindow.METADATA) {
-                if (currentSubView == null) return;
-                EditText etOutputPath = currentSubView.findViewById(R.id.et_output_path);
-                String outputPath = etOutputPath.getText().toString().trim();
-
-                if (outputPath.isEmpty()) {
-                    Toast.makeText(this, getString(R.string.Selecting_toast_emptyOutputPath), Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                EditText etTitle = currentSubView.findViewById(R.id.et_title);
-                String title = etTitle.getText().toString().trim();
-
-                EditText etAlbum = currentSubView.findViewById(R.id.et_album);
-                String album = etAlbum.getText().toString().trim();
-
-                EditText etArtist = currentSubView.findViewById(R.id.et_artist);
-                String artist = etArtist.getText().toString().trim();
-
-                EditText etLanguage = currentSubView.findViewById(R.id.et_language);
-                String language = etLanguage.getText().toString().trim();
-
-                EditText etDate = currentSubView.findViewById(R.id.et_date);
-                String date = etDate.getText().toString().trim();
-
-                if (title.isEmpty() && album.isEmpty() && artist.isEmpty() && language.isEmpty() && date.isEmpty()) {
-                    Toast.makeText(this, getString(R.string.Selecting_toast_invalidMetadata), Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                Intent res = new Intent();
-                // 全字符串
-                res.putExtra("Function", "EncodeWithMetadata");
-                res.putExtra("Artist", artist);
-                res.putExtra("Title", title);
-                res.putExtra("Album", album);
-                res.putExtra("Language", language);
-                res.putExtra("Date", date);
-                setResult(RESULT_OK, res);
-                finish();
-            }
         });
     }
 
@@ -359,9 +308,6 @@ public class Selecting extends Activity {
             etOutput.setText(downloadDir + "/" + fileName);
         }
 
-        // 给参数窗口里所有 EditText 挂回车确认（递归遍历嵌套布局）
-        attachEnterToConfirm(currentSubView);
-
         // 入场动画：上滑 + 轻微缩放 + 淡入
         isParamAnimating = true;
         float dip = getResources().getDisplayMetrics().density;
@@ -380,40 +326,6 @@ public class Selecting extends Activity {
                 .setInterpolator(new DecelerateInterpolator(1.5f))
                 .withEndAction(() -> isParamAnimating = false)
                 .start();
-    }
-
-    /**
-     * 递归遍历 View 树，给所有 EditText 挂回车确认（触发确认按钮）
-     * 覆盖软键盘 IME 动作和物理键盘回车键
-     */
-    private void attachEnterToConfirm(View view) {
-        if (view instanceof EditText) {
-            EditText et = (EditText) view;
-            et.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_DONE ||
-                    actionId == EditorInfo.IME_ACTION_NEXT ||
-                    actionId == EditorInfo.IME_ACTION_GO ||
-                    actionId == EditorInfo.IME_ACTION_SEND ||
-                    actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
-                    btnConfirmEncode.performClick();
-                    return true;
-                }
-                return false;
-            });
-            et.setOnKeyListener((v, keyCode, event) -> {
-                if (keyCode == android.view.KeyEvent.KEYCODE_ENTER
-                        && event.getAction() == android.view.KeyEvent.ACTION_UP) {
-                    btnConfirmEncode.performClick();
-                    return true;
-                }
-                return false;
-            });
-        } else if (view instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                attachEnterToConfirm(group.getChildAt(i));
-            }
-        }
     }
 
     /**
