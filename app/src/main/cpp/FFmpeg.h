@@ -206,6 +206,17 @@ public:
      */
     void addMetadata(const AVDictionaryEntry *entry);
 
+    /**
+     * @brief 额外写入一条元数据到输出文件
+     *
+     * 必须在 initOutputContext（写文件头）之前调用，否则元数据不会写入容器。
+     * 若键已存在，flags=0 不会覆盖（保留原值）。
+     *
+     * @param key 键值
+     * @param value 键值所对应的值
+     */
+    void addMetadata(const char* key, const char* value);
+
 private:
 
     /**
@@ -269,6 +280,9 @@ private:
 
     // 封面流（纯音频文件）
     int coverStreamIndex_ = -1;
+
+    // 用户手动添加的元数据（在输出上下文创建前暂存，writeHeader 前合并）
+    AVDictionary *pendingMetadata_ = nullptr;
 
     // 视频编码器
     av::VideoEncoderContext venc_;

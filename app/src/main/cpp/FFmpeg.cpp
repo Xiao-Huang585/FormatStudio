@@ -219,18 +219,31 @@ int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID,
                              false, copySourceMetadata);
 }
 
-// ============================
+// =======================================
 // 额外写入一条元数据到输出文件
 // 必须在 initOutputContext（写文件头）之前调用
-// ============================
+// ========================================
 void FFmpeg::addMetadata(const AVDictionaryEntry *entry) {
     if (!entry || !entry->key || !entry->value) return;
-    if (!outFmtCtx_.isOpened()) {
-        LOGD("addMetadata: 输出未打开，跳过");
-        return;
+    if (outFmtCtx_.isOpened()) {
+        av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
+        LOGI("额外元数据已写入: %s=%s", entry->key, entry->value);
+    } else {
+        av_dict_set(&pendingMetadata_, entry->key, entry->value, 0);
+        LOGI("额外元数据已暂存: %s=%s", entry->key, entry->value);
     }
-    av_dict_set(&outFmtCtx_.raw()->metadata, entry->key, entry->value, 0);
-    LOGI("额外元数据已写入: %s=%s", entry->key, entry->value);
+}
+
+// 同上
+void FFmpeg::addMetadata(const char* key, const char* value) {
+    if (!key || !value) return;
+    if (outFmtCtx_.isOpened()) {
+        av_dict_set(&outFmtCtx_.raw()->metadata, key, value, 0);
+        LOGI("额外元数据已写入: %s=%s", key, value);
+    } else {
+        av_dict_set(&pendingMetadata_, key, value, 0);
+        LOGI("额外元数据已暂存: %s=%s", key, value);
+    }
 }
 
 // ============================
@@ -678,6 +691,19 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
             coverStreamIndex_ = -1;
             LOGI("已跳过源文件元数据复制(copySourceMetadata=false)");
         }
+    }
+
+    // 合并用户手动添加的元数据（优先级高于源元数据，覆盖同名键）
+    if (pendingMetadata_) {
+        AVDictionaryEntry *e = nullptr;
+        int merged = 0;
+        while ((e = av_dict_get(pendingMetadata_, "", e, AV_DICT_IGNORE_SUFFIX))) {
+            av_dict_set(&outFmtCtx_.raw()->metadata, e->key, e->value, 0);
+            merged++;
+        }
+        LOGI("用户元数据已合并: %d 条, 输出容器 metadata 共 %d 条",
+             merged, av_dict_count(outFmtCtx_.raw()->metadata));
+        av_dict_free(&pendingMetadata_);
     }
 
     // 写文件头
