@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- ============================================================ -->
-    <!-- Material 3 色彩令牌（浅色模式）                              -->
-    <!-- Baseline Purple palette                                     -->
+    <!-- Material 3 色彩令牌（浅色模式）                                 -->
+    <!-- Baseline Purple palette                                      -->
     <!-- ============================================================ -->
 
     <!-- Primary -->
@@ -74,6 +74,7 @@
     <color name="btn_fourth_bg">#E7B05D</color>
     <color name="btn_fifth_bg">#6ED2DE</color>
     <color name="btn_sixth_bg">#B6E7CB</color>
+    <color name="btn_seventh_bg">#9ED9D1</color>
     <color name="selecting_btn_text">#FFFFFF</color>
     <color name="ripple_color">#40FFFFFF</color>
 

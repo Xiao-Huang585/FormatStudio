@@ -121,10 +121,17 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/EncodeWithBrightness"
                 style="@style/Widget.KgmDecoder.SelectingButton"
-                android:layout_marginBottom="4dp"
                 app:backgroundTint="@color/btn_sixth_bg"
                 app:icon="@drawable/encode_with_brightness"
                 android:text="@string/Selecting_encodeWithBrightness" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/EncodeWithMetaData"
+                style="@style/Widget.KgmDecoder.SelectingButton"
+                android:layout_marginBottom="4dp"
+                app:backgroundTint="@color/btn_seventh_bg"
+                app:icon="@drawable/encode_with_metadata"
+                android:text="设置元数据"/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

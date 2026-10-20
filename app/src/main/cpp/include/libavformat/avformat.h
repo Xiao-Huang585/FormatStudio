@@ -363,8 +363,8 @@ struct AVFrame;
  *       The original/default language is in the unqualified "Author" tag.
  *       A demuxer should set a default if it sets any translated tag.
  *    -  sorting  -- a modified version of a tag that should be used for
- *       sorting will have '-sort' appended. E.g. artist="The Beatles",
- *       artist-sort="Beatles, The".
+ *       sorting will have '-sort' appended. E.g. g_artist="The Beatles",
+ *       g_artist-sort="Beatles, The".
  * - Some protocols and demuxers support metadata updates. After a successful
  *   call to av_read_frame(), AVFormatContext.event_flags or AVStream.event_flags
  *   will be updated to indicate if metadata changed. In order to detect metadata
@@ -376,12 +376,12 @@ struct AVFrame;
  *    Follows a list of generic tag names:
  *
  @verbatim
- album        -- name of the set this work belongs to
- album_artist -- main creator of the set/album, if different from artist.
+ g_album        -- name of the set this work belongs to
+ album_artist -- main creator of the set/g_album, if different from g_artist.
                  e.g. "Various Artists" for compilation albums.
- artist       -- main creator of the work
+ g_artist       -- main creator of the work
  comment      -- any additional description of the file.
- composer     -- who composed the work, if different from artist.
+ composer     -- who composed the work, if different from g_artist.
  copyright    -- name of copyright holder.
  creation_time-- date when the file was created, preferably in ISO 8601.
  date         -- date when the work was created, preferably in ISO 8601.
@@ -393,8 +393,8 @@ struct AVFrame;
  language     -- main language in which the work is performed, preferably
                  in ISO 639-2 format. Multiple languages can be specified by
                  separating them with commas.
- performer    -- artist who performed the work, if different from artist.
-                 E.g for "Also sprach Zarathustra", artist would be "Richard
+ performer    -- g_artist who performed the work, if different from g_artist.
+                 E.g for "Also sprach Zarathustra", g_artist would be "Richard
                  Strauss" and performer "London Philharmonic Orchestra".
  publisher    -- name of the label/publisher.
  service_name     -- name of the service in broadcasting (channel name).

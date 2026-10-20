@@ -15,7 +15,7 @@
     <View
         android:id="@+id/header_bg"
         android:layout_width="0dp"
-        android:layout_height="120dp"
+        android:layout_height="80dp"
         android:background="@color/m3_primary_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -40,7 +40,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="15dp"
         android:layout_marginEnd="24dp"
         android:gravity="start"
         android:text="@string/Help_title"
@@ -89,7 +89,8 @@
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <!-- Material 3 Switch -->
-                <com.google.android.material.switchmaterial.SwitchMaterial
+                <com.google.android.material.switchmaterial.SwitchMaterial xmlns:tools="http://schemas.android.com/tools"
+                    tools:background="@color/m3_surface_container"
                     android:id="@+id/switch_experimentalFunction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -106,7 +107,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
-                    android:text="编码线程: "
+                    android:text="@string/Help_encodeThreads"
                     android:textColor="@color/m3_on_surface"
                     android:textSize="15sp"
                     app:layout_constraintBottom_toBottomOf="@id/et_encodeThreads"
@@ -119,9 +120,9 @@
                     android:layout_width="140dp"
                     android:layout_height="48dp"
                     android:layout_marginStart="8dp"
-                    android:layout_marginTop="24dp"
+                    android:layout_marginTop="50dp"
                     android:background="@drawable/bg_input_bar"
-                    android:gravity="center"
+                    android:gravity="start"
                     android:imeOptions="actionDone"
                     android:inputType="number"
                     android:maxLines="1"
@@ -132,6 +133,37 @@
                     android:textSize="15sp"
                     app:layout_constraintStart_toEndOf="@id/EncodeThreads"
                     app:layout_constraintTop_toBottomOf="@id/switch_experimentalFunction" />
+
+                <TextView
+                    android:id="@+id/encodeCommentKeyValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="40dp"
+                    android:text="@string/Help_encodeCommentKeyValue"
+                    android:textColor="@color/m3_on_surface"
+                    android:textSize="15sp"
+                    app:layout_constraintBottom_toBottomOf="@+id/et_encodeCommentKeyValue"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/EncodeThreads"
+                    app:layout_constraintVertical_bias="0.0" />
+
+                <EditText
+                    android:id="@+id/et_encodeCommentKeyValue"
+                    android:layout_width="140dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="40dp"
+                    android:background="@drawable/bg_input_bar"
+                    android:gravity="start"
+                    android:imeOptions="actionDone"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:textColor="@color/m3_on_surface"
+                    android:textColorHint="@color/m3_on_surface_variant"
+                    android:textSize="15sp"
+                    app:layout_constraintStart_toEndOf="@id/encodeCommentKeyValue"
+                    app:layout_constraintTop_toBottomOf="@id/EncodeThreads" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

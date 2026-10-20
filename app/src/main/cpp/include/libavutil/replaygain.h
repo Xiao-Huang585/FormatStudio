@@ -38,11 +38,11 @@ typedef struct AVReplayGain {
      */
     uint32_t track_peak;
     /**
-     * Same as track_gain, but for the whole album.
+     * Same as track_gain, but for the whole g_album.
      */
     int32_t album_gain;
     /**
-     * Same as track_peak, but for the whole album,
+     * Same as track_peak, but for the whole g_album,
      */
     uint32_t album_peak;
 } AVReplayGain;

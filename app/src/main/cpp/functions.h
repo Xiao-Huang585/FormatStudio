@@ -128,12 +128,16 @@ extern int64_t g_startTimeUs, g_endTimeUs;
 // 亮度参数(由 MainActivity 通过 passBrightnessConfig传入)
 extern int8_t g_brightness;
 extern float g_gamma;                   // Gamma值, 越暗的地方越亮
+
+// 元数据
+extern char *g_title, *g_album, *g_artist, *g_date, *g_language;
 } // namespace enc_par
 
 // ====== 应用路径（由 MainActivity 通过 passAppPaths 传入，替代硬编码） ======
 extern std::string g_externalStorageDir;  // /storage/emulated/0
 extern std::string g_downloadDir;         // /storage/emulated/0/Download
 extern std::string g_filesDir;            // /data/data/com.kgmdecoder.app/files
+extern std::string g_cacheDir;            // /data/data/com.kgmdecoder.app/cache
 
 // 当前选中文件的流信息（由 nativeOpenFile 独立探测，供 Selecting 查询）
 // 独立于全局 ffmpeg 实例：nativeOpenFile 在主线程调用，
@@ -235,6 +239,11 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passTrimConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jlong startTimeUs, jlong endTimeUs);
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passBrightnessConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jshort brightness, jfloat gamma);
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passMetaDataConfig(JNIEnv *env, jobject thiz,
+        jstring outputPath, jstring title, jstring album,
+        jstring artist, jstring date, jstring language
+);
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passAppPaths(JNIEnv *env, jobject thiz, jstring jExternalStorageDir, jstring jDownloadDir, jstring jFilesDir);
 extern "C" JNIEXPORT jboolean JNICALL

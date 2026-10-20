@@ -19,11 +19,14 @@
 
     <string name="Help_experimental_functions">"实验性功能(暂未使用): "</string>
 
+    <string name="Help_encodeThreads">"编码线程: "</string>
+    <string name="Help_encodeCommentKeyValue">"设置文件信息: "</string>
+    <string name="Help_encodeCommentKeyValue_desc">设置文件的comment键值对</string>
     <string name="Selecting_title">选择功能:</string>
 
     <string name="Selecting_showMediaInfo">显示文件信息</string>
 
-    <string name="Selecting_playVideo">播放视频</string>
+    <string name="Selecting_playVideo">播放文件</string>
 
     <string name="Selecting_encodeWithOtherEncoders">使用其他编码器编码</string>
 
@@ -31,6 +34,7 @@
 
     <string name="Selecting_encodeWithTrim">截断时长</string>
 
+    <string name="Selecting_encodeWithMetadata">修改元数据</string>
     <string name="Selecting_parametersTitle">设置参数</string>
 
     <string name="Selecting_subtitle">请选择要执行的功能</string>
@@ -59,6 +63,7 @@
 
     <string name="Selecting_gamma_desc">0.5~3.0, 1.0=不变, &gt;gt1.0变亮, &lt;1.0变暗</string>
 
+    <string name="Selecting_setLanguage">语言</string>
     <string name="Selecting_confirm">确认</string>
 
     <!-- Toast 提示文本 -->
@@ -77,5 +82,10 @@
     <string name="Selecting_toast_invalidBrightness">非法的亮度(-128~127)</string>
 
     <string name="Selecting_toast_invalidGamma">非法的Gamma值(0.5~3.0)</string>
+    <string name="Selecting_setArtist">艺术家</string>
+    <string name="Selecting_setAlbum">专辑</string>
+    <string name="Selecting_setTitle">标题</string>
+    <string name="Selecting_setDate">日期</string>
+    <string name="Selecting_toast_invalidMetadata">没有任何可用的元数据</string>
 </resources>
 

@@ -48,6 +48,7 @@ char* g_language = nullptr;          // 语言元数据
 std::string g_externalStorageDir = "/storage/emulated/0";  // 默认兜底
 std::string g_downloadDir = "/sdcard/Download";            // 默认兜底
 std::string g_filesDir = "/data/data/com.kgmdecoder.app/files"; // 默认兜底
+std::string g_cacheDir = "/data/data/com.kgmdecoder.app/cache"; // 默认兜底
 
 // 当前选中文件的流信息（nativeOpenFile 探测结果）
 std::atomic<bool> g_fileHasVideo = false;
@@ -669,12 +670,20 @@ Java_com_kgmdecoder_app_MainActivity_passAppPaths(JNIEnv *env, jobject thiz,
     g_downloadDir = dlDir;
     g_filesDir = fDir;
 
+    // 从 filesDir 推导 cacheDir: .../files -> .../cache
+    g_cacheDir = g_filesDir;
+    size_t pos = g_cacheDir.rfind("/files");
+    if (pos != std::string::npos && pos + 6 == g_cacheDir.size()) {
+        g_cacheDir.replace(pos, 6, "/cache");
+    }
+
     env->ReleaseStringUTFChars(jExternalStorageDir, extDir);
     env->ReleaseStringUTFChars(jDownloadDir, dlDir);
     env->ReleaseStringUTFChars(jFilesDir, fDir);
 
-    LOGD("应用路径: ext=%s download=%s files=%s",
-         g_externalStorageDir.c_str(), g_downloadDir.c_str(), g_filesDir.c_str());
+    LOGD("应用路径: ext=%s download=%s files=%s cache=%s",
+         g_externalStorageDir.c_str(), g_downloadDir.c_str(),
+         g_filesDir.c_str(), g_cacheDir.c_str());
 }
 
 // ============================

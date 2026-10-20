@@ -1,0 +1,638 @@
+2026-10-11 20:19:01.022 12012-12043 native_D                com.kgmdecoder.app                   D  ===== FFmpeg 可用编码器列表 =====
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: a64multi             longname: Multicolor charset for Commodore 64
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: a64multi5            longname: Multicolor charset for Commodore 64, extended with 5th color (colram)
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: alias_pix            longname: Alias/Wavefront PIX image
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: amv                  longname: AMV Video
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: apng                 longname: APNG (Animated Portable Network Graphics) image
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: asv1                 longname: ASUS V1
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: asv2                 longname: ASUS V2
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: avrp                 longname: Avid 1:1 10-bit RGB Packer
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: avui                 longname: Avid Meridien Uncompressed
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: bitpacked            longname: Bitpacked
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: cfhd                 longname: GoPro CineForm HD
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: cinepak              longname: Cinepak
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: cljr                 longname: Cirrus Logic AccuPak
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: comfortnoise         longname: RFC 3389 comfort noise generator
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: dnxhd                longname: VC3/DNxHD
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: dpx                  longname: DPX (Digital Picture Exchange) image
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: dvvideo              longname: DV (Digital Video)
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: dxv                  longname: Resolume DXV
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: ffv1                 longname: FFmpeg video codec #1
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: ffvhuff              longname: Huffyuv FFmpeg variant
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: fits                 longname: Flexible Image Transport System
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: flashsv              longname: Flash Screen Video
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: flashsv2             longname: Flash Screen Video Version 2
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: flv                  longname: FLV / Sorenson Spark / Sorenson H.263 (Flash Video)
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: h261                 longname: H.261
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: h263                 longname: H.263 / H.263-1996
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: h263p                longname: H.263+ / H.263-1998 / H.263 version 2
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: huffyuv              longname: Huffyuv / HuffYUV
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: ljpeg                longname: Lossless JPEG
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: magicyuv             longname: MagicYUV video
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: mpeg1video           longname: MPEG-1 video
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: mpeg2video           longname: MPEG-2 video
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: mpeg4                longname: MPEG-4 part 2
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: msmpeg4v2            longname: MPEG-4 part 2 Microsoft variant version 2
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: msmpeg4              longname: MPEG-4 part 2 Microsoft variant version 3
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: msrle                longname: Microsoft RLE
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: msvideo1             longname: Microsoft Video-1
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: pfm                  longname: PFM (Portable FloatMap) image
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: pgmyuv               longname: PGMYUV (Portable GrayMap YUV) image
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: phm                  longname: PHM (Portable HalfFloatMap) image
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: prores               longname: Apple ProRes
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: prores_aw            longname: Apple ProRes
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: prores_ks            longname: Apple ProRes (iCodec Pro)
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: qtrle                longname: QuickTime Animation (RLE) video
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: r10k                 longname: AJA Kona 10-bit RGB Codec
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: r210                 longname: Uncompressed RGB 10-bit
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: rawvideo             longname: raw video
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: roqvideo             longname: id RoQ video
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: rpza                 longname: QuickTime video (RPZA)
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: rv10                 longname: RealVideo 1.0
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: rv20                 longname: RealVideo 2.0
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: s302m                longname: SMPTE 302M
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: smc                  longname: QuickTime Graphics (SMC)
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: snow                 longname: Snow
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: speedhq              longname: NewTek SpeedHQ
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: svq1                 longname: Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: utvideo              longname: Ut Video
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: v210                 longname: Uncompressed 4:2:2 10-bit
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: v308                 longname: Uncompressed packed 4:4:4
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: v408                 longname: Uncompressed packed QT 4:4:4:4
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: v410                 longname: Uncompressed 4:4:4 10-bit
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: vbn                  longname: Vizrt Binary Image
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: vc2                  longname: SMPTE VC-2
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: wbmp                 longname: WBMP (Wireless Application Protocol Bitmap) image
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: wrapped_avframe      longname: AVFrame to AVPacket passthrough
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: wmv1                 longname: Windows Media Video 7
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: wmv2                 longname: Windows Media Video 8
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: xbm                  longname: XBM (X BitMap) image
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: xface                longname: X-face image
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: y41p                 longname: Uncompressed YUV 4:1:1 12-bit
+2026-10-11 20:19:01.027 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: yuv4                 longname: Uncompressed packed 4:2:0
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: zlib                 longname: LCL (LossLess Codec Library) ZLIB
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: zmbv                 longname: Zip Motion Blocks Video
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: aac                  longname: AAC (Advanced Audio Coding)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: ac3                  longname: ATSC A/52A (AC-3)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: ac3_fixed            longname: ATSC A/52A (AC-3)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: alac                 longname: ALAC (Apple Lossless Audio Codec)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: aptx                 longname: aptX (Audio Processing Technology for Bluetooth)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: aptx_hd              longname: aptX HD (Audio Processing Technology for Bluetooth)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: dca                  longname: DCA (DTS Coherent Acoustics)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: dfpwm                longname: DFPWM1a audio
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: eac3                 longname: ATSC A/52 E-AC-3
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: flac                 longname: FLAC (Free Lossless Audio Codec)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: g723_1               longname: G.723.1
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: hdr                  longname: HDR (Radiance RGBE format) image
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: mlp                  longname: MLP (Meridian Lossless Packing)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: mp2                  longname: MP2 (MPEG audio layer 2)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: mp2fixed             longname: MP2 fixed point (MPEG audio layer 2)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: nellymoser           longname: Nellymoser Asao
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: opus                 longname: Opus
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: real_144             longname: RealAudio 1.0 (14.4K)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: sbc                  longname: SBC (low-complexity subband codec)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: truehd               longname: TrueHD
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: tta                  longname: TTA (True Audio)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: vorbis               longname: Vorbis
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: wavpack              longname: WavPack
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: wmav1                longname: Windows Media Audio 1
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: wmav2                longname: Windows Media Audio 2
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_alaw             longname: PCM A-law / G.711 A-law
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_bluray           longname: PCM signed 16|20|24-bit big-endian for Blu-ray media
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_dvd              longname: PCM signed 16|20|24-bit big-endian for DVD media
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_f32be            longname: PCM 32-bit floating point big-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_f32le            longname: PCM 32-bit floating point little-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_f64be            longname: PCM 64-bit floating point big-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_f64le            longname: PCM 64-bit floating point little-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_mulaw            longname: PCM mu-law / G.711 mu-law
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s8               longname: PCM signed 8-bit
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s8_planar        longname: PCM signed 8-bit planar
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s16be            longname: PCM signed 16-bit big-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s16be_planar     longname: PCM signed 16-bit big-endian planar
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s16le            longname: PCM signed 16-bit little-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s16le_planar     longname: PCM signed 16-bit little-endian planar
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s24be            longname: PCM signed 24-bit big-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s24daud          longname: PCM D-Cinema audio signed 24-bit
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s24le            longname: PCM signed 24-bit little-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s24le_planar     longname: PCM signed 24-bit little-endian planar
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s32be            longname: PCM signed 32-bit big-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s32le            longname: PCM signed 32-bit little-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s32le_planar     longname: PCM signed 32-bit little-endian planar
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s64be            longname: PCM signed 64-bit big-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_s64le            longname: PCM signed 64-bit little-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_u8               longname: PCM unsigned 8-bit
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_u16be            longname: PCM unsigned 16-bit big-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_u16le            longname: PCM unsigned 16-bit little-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_u24be            longname: PCM unsigned 24-bit big-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_u24le            longname: PCM unsigned 24-bit little-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_u32be            longname: PCM unsigned 32-bit big-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_u32le            longname: PCM unsigned 32-bit little-endian
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: pcm_vidc             longname: PCM Archimedes VIDC
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: roq_dpcm             longname: id RoQ DPCM
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_adx            longname: SEGA CRI ADX ADPCM
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_argo           longname: ADPCM Argonaut Games
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: g722                 longname: G.722 ADPCM
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: g726                 longname: G.726 ADPCM
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: g726le               longname: G.726 little endian ADPCM ("right-justified")
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_ima_amv        longname: ADPCM IMA AMV
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_ima_alp        longname: ADPCM IMA High Voltage Software ALP
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_ima_apm        longname: ADPCM IMA Ubisoft APM
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_ima_qt         longname: ADPCM IMA QuickTime
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_ima_ssi        longname: ADPCM IMA Simon & Schuster Interactive
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_ima_wav        longname: ADPCM IMA WAV
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_ima_ws         longname: ADPCM IMA Westwood
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_ms             longname: ADPCM Microsoft
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_swf            longname: ADPCM Shockwave Flash
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: adpcm_yamaha         longname: ADPCM Yamaha
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][SUBTITLE] name: ssa                  longname: ASS (Advanced SubStation Alpha) subtitle
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][SUBTITLE] name: ass                  longname: ASS (Advanced SubStation Alpha) subtitle
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][SUBTITLE] name: dvbsub               longname: DVB subtitles
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][SUBTITLE] name: dvdsub               longname: DVD subtitles
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][SUBTITLE] name: mov_text             longname: 3GPP Timed Text subtitle
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][SUBTITLE] name: srt                  longname: SubRip subtitle
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][SUBTITLE] name: subrip               longname: SubRip subtitle
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][SUBTITLE] name: text                 longname: Raw text subtitle
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][SUBTITLE] name: ttml                 longname: TTML subtitle
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][SUBTITLE] name: webvtt               longname: WebVTT subtitle
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][SUBTITLE] name: xsub                 longname: DivX subtitles (XSUB)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: libmp3lame           longname: libmp3lame MP3 (MPEG audio layer 3)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: libx264              longname: libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: libx264rgb           longname: libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 RGB
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: libx265              longname: libx265 H.265 / HEVC
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][VIDEO] name: vnull                longname: null video
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [ENC][AUDIO] name: anull                longname: null audio
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  ===== FFmpeg 可用解码器列表 =====
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: aasc                 longname: Autodesk RLE
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: aic                  longname: Apple Intermediate Codec
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: alias_pix            longname: Alias/Wavefront PIX image
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: agm                  longname: Amuse Graphics Movie
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: anm                  longname: Deluxe Paint Animation
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: ansi                 longname: ASCII/ANSI art
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: apng                 longname: APNG (Animated Portable Network Graphics) image
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: apv                  longname: Advanced Professional Video
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: arbc                 longname: Gryphon's Anim Compressor
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: argo                 longname: Argonaut Games Video
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: asv1                 longname: ASUS V1
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: asv2                 longname: ASUS V2
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: aura                 longname: Auravision AURA
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: aura2                longname: Auravision Aura 2
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: avrp                 longname: Avid 1:1 10-bit RGB Packer
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: avrn                 longname: Avid AVI Codec
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: avs                  longname: AVS (Audio Video Standard) video
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: avui                 longname: Avid Meridien Uncompressed
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: bethsoftvid          longname: Bethesda VID video
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: bfi                  longname: Brute Force & Ignorance
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: binkvideo            longname: Bink video
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: bitpacked            longname: Bitpacked
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: bmv_video            longname: Discworld II BMV video
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: brender_pix          longname: BRender PIX image
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: c93                  longname: Interplay C93
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: cavs                 longname: Chinese AVS (Audio Video Standard) (AVS1-P2, JiZhun profile)
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: cdgraphics           longname: CD Graphics video
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: cdtoons              longname: CDToons video
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: cdxl                 longname: Commodore CDXL video
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: cfhd                 longname: GoPro CineForm HD
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: cinepak              longname: Cinepak
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: clearvideo           longname: Iterated Systems ClearVideo
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: cljr                 longname: Cirrus Logic AccuPak
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: cllc                 longname: Canopus Lossless Codec
+2026-10-11 20:19:01.028 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: comfortnoise         longname: RFC 3389 comfort noise generator
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: cpia                 longname: CPiA video format
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: camstudio            longname: CamStudio
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: cyuv                 longname: Creative YUV (CYUV)
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: dds                  longname: DirectDraw Surface image decoder
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: dfa                  longname: Chronomaster DFA
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: dirac                longname: BBC Dirac VC-2
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: dnxhd                longname: VC3/DNxHD
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: dpx                  longname: DPX (Digital Picture Exchange) image
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: dsicinvideo          longname: Delphine Software International CIN video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: dvaudio              longname: Ulead DV Audio
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: dvvideo              longname: DV (Digital Video)
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: dxa                  longname: Feeble Files/ScummVM DXA
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: dxtory               longname: Dxtory
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: dxv                  longname: Resolume DXV
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: eacmv                longname: Electronic Arts CMV video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: eamad                longname: Electronic Arts Madcow Video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: eatgq                longname: Electronic Arts TGQ video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: eatgv                longname: Electronic Arts TGV video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: eatqi                longname: Electronic Arts TQI Video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: 8bps                 longname: QuickTime 8BPS video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: 8svx_exp             longname: 8SVX exponential
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: 8svx_fib             longname: 8SVX fibonacci
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: escape124            longname: Escape 124
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: escape130            longname: Escape 130
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: ffv1                 longname: FFmpeg video codec #1
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: ffvhuff              longname: Huffyuv FFmpeg variant
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: fic                  longname: Mirillis FIC
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: fits                 longname: Flexible Image Transport System
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: flashsv              longname: Flash Screen Video v1
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: flashsv2             longname: Flash Screen Video v2
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: flic                 longname: Autodesk Animator Flic video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: flv                  longname: FLV / Sorenson Spark / Sorenson H.263 (Flash Video)
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: fmvc                 longname: FM Screen Capture Codec
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: 4xm                  longname: 4X Movie
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: fraps                longname: Fraps
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: frwu                 longname: Forward Uncompressed
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: g2m                  longname: Go2Meeting
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: gdv                  longname: Gremlin Digital Video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: gem                  longname: GEM Raster image
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: h261                 longname: H.261
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: h263                 longname: H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: h263i                longname: Intel H.263
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: h263p                longname: H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: h264                 longname: H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: hap                  longname: Vidvox Hap
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: hevc                 longname: HEVC (High Efficiency Video Coding)
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: hnm4video            longname: HNM 4 video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: hq_hqa               longname: Canopus HQ/HQA
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: hqx                  longname: Canopus HQX
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: huffyuv              longname: Huffyuv / HuffYUV
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: hymt                 longname: HuffYUV MT
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: idcinvideo           longname: id Quake II CIN video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: iff                  longname: IFF ACBM/ANIM/DEEP/ILBM/PBM/RGB8/RGBN
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: imm4                 longname: Infinity IMM4
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: imm5                 longname: Infinity IMM5
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: indeo2               longname: Intel Indeo 2
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: indeo3               longname: Intel Indeo 3
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: indeo4               longname: Intel Indeo Video Interactive 4
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: indeo5               longname: Intel Indeo Video Interactive 5
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: interplayvideo       longname: Interplay MVE video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: ipu                  longname: IPU Video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: jv                   longname: Bitmap Brothers JV video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: kgv1                 longname: Kega Game Video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: kmvc                 longname: Karl Morton's video codec
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: lagarith             longname: Lagarith lossless
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: lead                 longname: LEAD MCMP
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: loco                 longname: LOCO
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: lscr                 longname: LEAD Screen Capture
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: m101                 longname: Matrox Uncompressed SD
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: magicyuv             longname: MagicYUV video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mdec                 longname: Sony PlayStation MDEC (Motion DECoder)
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mimic                longname: Mimic
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mmvideo              longname: American Laser Games MM Video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mobiclip             longname: MobiClip Video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: motionpixels         longname: Motion Pixels video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mpeg1video           longname: MPEG-1 video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mpeg2video           longname: MPEG-2 video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mpeg4                longname: MPEG-4 part 2
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mpegvideo            longname: MPEG-1 video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: msa1                 longname: MS ATC Screen
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mscc                 longname: Mandsoft Screen Capture Codec
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: msmpeg4v1            longname: MPEG-4 part 2 Microsoft variant version 1
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: msmpeg4v2            longname: MPEG-4 part 2 Microsoft variant version 2
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: msmpeg4              longname: MPEG-4 part 2 Microsoft variant version 3
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: msp2                 longname: Microsoft Paint (MSP) version 2
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: msrle                longname: Microsoft RLE
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mss1                 longname: MS Screen 1
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mss2                 longname: MS Windows Media Video V9 Screen
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: msvideo1             longname: Microsoft Video 1
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mszh                 longname: LCL (LossLess Codec Library) MSZH
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mts2                 longname: MS Expression Encoder Screen
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mv30                 longname: MidiVid 3.0
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mvc1                 longname: Silicon Graphics Motion Video Compressor 1
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mvc2                 longname: Silicon Graphics Motion Video Compressor 2
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mvdv                 longname: MidiVid VQ
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mvha                 longname: MidiVid Archive Codec
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: mwsc                 longname: MatchWare Screen Capture Codec
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: notchlc              longname: NotchLC
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: nuv                  longname: NuppelVideo/RTJPEG
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: paf_video            longname: Amazing Studio Packed Animation File Video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: pdv                  longname: PDV (PlayDate Video)
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: pixlet               longname: Apple Pixlet
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: prores               longname: Apple ProRes (iCodec Pro)
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: prores_raw           longname: Apple ProRes RAW
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: prosumer             longname: Brooktree ProSumer Video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: psd                  longname: Photoshop PSD file
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: ptx                  longname: V.Flash PTX image
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: qpeg                 longname: Q-team QPEG
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: qtrle                longname: QuickTime Animation (RLE) video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: r10k                 longname: AJA Kona 10-bit RGB Codec
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: r210                 longname: Uncompressed RGB 10-bit
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: rasc                 longname: RemotelyAnywhere Screen Capture
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: rawvideo             longname: raw video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: rka                  longname: RKA (RK Audio)
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: rl2                  longname: RL2 video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: roqvideo             longname: id RoQ video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: rpza                 longname: QuickTime video (RPZA)
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: rscc                 longname: innoHeim/Rsupport Screen Capture Codec
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: rtv1                 longname: RTV1 (RivaTuner Video)
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: rv10                 longname: RealVideo 1.0
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: rv20                 longname: RealVideo 2.0
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: rv30                 longname: RealVideo 3.0
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: rv40                 longname: RealVideo 4.0
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: rv60                 longname: RealVideo 6.0
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: s302m                longname: SMPTE 302M
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: sanm                 longname: LucasArts SANM/Smush video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: scpr                 longname: ScreenPressor
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: screenpresso         longname: Screenpresso
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: sga                  longname: Digital Pictures SGA Video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: sgirle               longname: Silicon Graphics RLE 8-bit video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: sheervideo           longname: BitJazz SheerVideo
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: simbiosis_imx        longname: Simbiosis Interactive IMX Video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: smackvid             longname: Smacker video
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: smc                  longname: QuickTime Graphics (SMC)
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: snow                 longname: Snow
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: speedhq              longname: NewTek SpeedHQ
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: speex                longname: Speex
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: srgc                 longname: Screen Recorder Gold Codec
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: svq1                 longname: Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: svq3                 longname: Sorenson Vector Quantizer 3 / Sorenson Video 3 / SVQ3
+2026-10-11 20:19:01.029 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: targa_y216           longname: Pinnacle TARGA CineWave YUV16
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: theora               longname: Theora
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: tiertexseqvideo      longname: Tiertex Limited SEQ video
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: tmv                  longname: 8088flex TMV
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: truemotion1          longname: Duck TrueMotion 1.0
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: truemotion2          longname: Duck TrueMotion 2.0
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: truemotion2rt        longname: Duck TrueMotion 2.0 Real Time
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: camtasia             longname: TechSmith Screen Capture Codec
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: tscc2                longname: TechSmith Screen Codec 2
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: txd                  longname: Renderware TXD (TeXture Dictionary) image
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: ultimotion           longname: IBM UltiMotion
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: utvideo              longname: Ut Video
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: v210                 longname: Uncompressed 4:2:2 10-bit
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: v210x                longname: Uncompressed 4:2:2 10-bit
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: v308                 longname: Uncompressed packed 4:4:4
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: v408                 longname: Uncompressed packed QT 4:4:4:4
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: v410                 longname: Uncompressed 4:4:4 10-bit
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vb                   longname: Beam Software VB
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vbn                  longname: Vizrt Binary Image
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vble                 longname: VBLE Lossless Codec
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vc1                  longname: SMPTE VC-1
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vc1image             longname: Windows Media Video 9 Image v2
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vcr1                 longname: ATI VCR1
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vmdvideo             longname: Sierra VMD video
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vmix                 longname: vMix Video
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vmnc                 longname: VMware Screen Codec / VMware Video
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vp3                  longname: On2 VP3
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vp4                  longname: On2 VP4
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vp5                  longname: On2 VP5
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vp6                  longname: On2 VP6
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vp6a                 longname: On2 VP6 (Flash version, with alpha channel)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vp6f                 longname: On2 VP6 (Flash version)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vp7                  longname: On2 VP7
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vp8                  longname: On2 VP8
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vp9                  longname: Google VP9
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vqavideo             longname: Westwood Studios VQA (Vector Quantized Animation) video
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vqc                  longname: ViewQuest VQC
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: vvc                  longname: VVC (Versatile Video Coding)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: wbmp                 longname: WBMP (Wireless Application Protocol Bitmap) image
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: wcmv                 longname: WinCAM Motion Video
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: wrapped_avframe      longname: AVPacket to AVFrame passthrough
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: wmv1                 longname: Windows Media Video 7
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: wmv2                 longname: Windows Media Video 8
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: wmv3                 longname: Windows Media Video 9
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: wmv3image            longname: Windows Media Video 9 Image
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: wnv1                 longname: Winnov WNV1
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: xan_wc3              longname: Wing Commander III / Xan
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: xan_wc4              longname: Wing Commander IV / Xxan
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: xbm                  longname: XBM (X BitMap) image
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: xface                longname: X-face image
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: xl                   longname: Miro VideoXL
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: xpm                  longname: XPM (X PixMap) image
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: y41p                 longname: Uncompressed YUV 4:1:1 12-bit
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: ylc                  longname: YUY2 Lossless Codec
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: yop                  longname: Psygnosis YOP Video
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: yuv4                 longname: Uncompressed packed 4:2:0
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: 012v                 longname: Uncompressed 4:2:2 10-bit
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: zerocodec            longname: ZeroCodec Lossless Video
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: zlib                 longname: LCL (LossLess Codec Library) ZLIB
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: zmbv                 longname: Zip Motion Blocks Video
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: aac                  longname: AAC (Advanced Audio Coding)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: aac_fixed            longname: AAC (Advanced Audio Coding)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: aac_latm             longname: AAC LATM (Advanced Audio Coding LATM syntax)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: ac3                  longname: ATSC A/52A (AC-3)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: ac3_fixed            longname: ATSC A/52A (AC-3)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: acelp.kelvin         longname: Sipro ACELP.KELVIN
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: ahx                  longname: CRI AHX
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: alac                 longname: ALAC (Apple Lossless Audio Codec)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: als                  longname: MPEG-4 Audio Lossless Coding (ALS)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: amrnb                longname: AMR-NB (Adaptive Multi-Rate NarrowBand)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: amrwb                longname: AMR-WB (Adaptive Multi-Rate WideBand)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: apac                 longname: Marian's A-pac audio
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: ape                  longname: Monkey's Audio
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: aptx                 longname: aptX (Audio Processing Technology for Bluetooth)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: aptx_hd              longname: aptX HD (Audio Processing Technology for Bluetooth)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: atrac1               longname: ATRAC1 (Adaptive TRansform Acoustic Coding)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: atrac3               longname: ATRAC3 (Adaptive TRansform Acoustic Coding 3)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: atrac3al             longname: ATRAC3 AL (Adaptive TRansform Acoustic Coding 3 Advanced Lossless)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: atrac3plus           longname: ATRAC3+ (Adaptive TRansform Acoustic Coding 3+)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: atrac3plusal         longname: ATRAC3+ AL (Adaptive TRansform Acoustic Coding 3+ Advanced Lossless)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: atrac9               longname: ATRAC9 (Adaptive TRansform Acoustic Coding 9)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: binkaudio_dct        longname: Bink Audio (DCT)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: binkaudio_rdft       longname: Bink Audio (RDFT)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: bmv_audio            longname: Discworld II BMV audio
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: bonk                 longname: Bonk audio
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: cook                 longname: Cook / Cooker / Gecko (RealAudio G2)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: dca                  longname: DCA (DTS Coherent Acoustics)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: dfpwm                longname: DFPWM1a audio
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: dolby_e              longname: Dolby E
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: dsd_lsbf             longname: DSD (Direct Stream Digital), least significant bit first
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: dsd_msbf             longname: DSD (Direct Stream Digital), most significant bit first
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: dsd_lsbf_planar      longname: DSD (Direct Stream Digital), least significant bit first, planar
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: dsd_msbf_planar      longname: DSD (Direct Stream Digital), most significant bit first, planar
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: dsicinaudio          longname: Delphine Software International CIN audio
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: dss_sp               longname: Digital Speech Standard - Standard Play mode (DSS SP)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: dst                  longname: DST (Digital Stream Transfer)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: eac3                 longname: ATSC A/52B (AC-3, E-AC-3)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: evrc                 longname: EVRC (Enhanced Variable Rate Codec)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: fastaudio            longname: MobiClip FastAudio
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: wavesynth            longname: Wave synthesis pseudo-codec
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: flac                 longname: FLAC (Free Lossless Audio Codec)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: ftr                  longname: FTR Voice
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: g723_1               longname: G.723.1
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: g728                 longname: G.728)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: g729                 longname: G.729
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: gsm                  longname: GSM
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: gsm_ms               longname: GSM Microsoft variant
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: hca                  longname: CRI HCA
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: hcom                 longname: HCOM Audio
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: hdr                  longname: HDR (Radiance RGBE format) image
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: iac                  longname: IAC (Indeo Audio Coder)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: ilbc                 longname: iLBC (Internet Low Bitrate Codec)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: imc                  longname: IMC (Intel Music Coder)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: interplayacm         longname: Interplay ACM
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mace3                longname: MACE (Macintosh Audio Compression/Expansion) 3:1
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mace6                longname: MACE (Macintosh Audio Compression/Expansion) 6:1
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: metasound            longname: Voxware MetaSound
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: misc4                longname: Micronas SC-4 Audio
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mlp                  longname: MLP (Meridian Lossless Packing)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mp1                  longname: MP1 (MPEG audio layer 1)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mp1float             longname: MP1 (MPEG audio layer 1)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mp2                  longname: MP2 (MPEG audio layer 2)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mp2float             longname: MP2 (MPEG audio layer 2)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mp3float             longname: MP3 (MPEG audio layer 3)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mp3                  longname: MP3 (MPEG audio layer 3)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mp3adufloat          longname: ADU (Application Data Unit) MP3 (MPEG audio layer 3)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mp3adu               longname: ADU (Application Data Unit) MP3 (MPEG audio layer 3)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mp3on4float          longname: MP3onMP4
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mp3on4               longname: MP3onMP4
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mpc7                 longname: Musepack SV7
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: mpc8                 longname: Musepack SV8
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: msnsiren             longname: MSN Siren
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: nellymoser           longname: Nellymoser Asao
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: on2avc               longname: On2 Audio for Video Codec
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: opus                 longname: Opus
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: osq                  longname: OSQ (Original Sound Quality)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: paf_audio            longname: Amazing Studio Packed Animation File Audio
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: qcelp                longname: QCELP / PureVoice
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: qdm2                 longname: QDesign Music Codec 2
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: qdmc                 longname: QDesign Music Codec 1
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: qoa                  longname: QOA (Quite OK Audio)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: real_144             longname: RealAudio 1.0 (14.4K)
+2026-10-11 20:19:01.030 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: real_288             longname: RealAudio 2.0 (28.8K)
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: ralf                 longname: RealAudio Lossless
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: sbc                  longname: SBC (low-complexity subband codec)
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: shorten              longname: Shorten
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: sipr                 longname: RealAudio SIPR / ACELP.NET
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: siren                longname: Siren
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: smackaud             longname: Smacker audio
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: sonic                longname: Sonic
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: tak                  longname: TAK (Tom's lossless Audio Kompressor)
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: truehd               longname: TrueHD
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: truespeech           longname: DSP Group TrueSpeech
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: tta                  longname: TTA (True Audio)
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: twinvq               longname: VQF TwinVQ
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: vmdaudio             longname: Sierra VMD audio
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: vorbis               longname: Vorbis
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: wavarc               longname: Waveform Archiver
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: wavpack              longname: WavPack
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: wmalossless          longname: Windows Media Audio Lossless
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: wmapro               longname: Windows Media Audio 9 Professional
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: wmav1                longname: Windows Media Audio 1
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: wmav2                longname: Windows Media Audio 2
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: wmavoice             longname: Windows Media Audio Voice
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: ws_snd1              longname: Westwood Audio (SND1)
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: xma1                 longname: Xbox Media Audio 1
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: xma2                 longname: Xbox Media Audio 2
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_alaw             longname: PCM A-law / G.711 A-law
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_bluray           longname: PCM signed 16|20|24-bit big-endian for Blu-ray media
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_dvd              longname: PCM signed 16|20|24-bit big-endian for DVD media
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_f16le            longname: PCM 16.8 floating point little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_f24le            longname: PCM 24.0 floating point little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_f32be            longname: PCM 32-bit floating point big-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_f32le            longname: PCM 32-bit floating point little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_f64be            longname: PCM 64-bit floating point big-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_f64le            longname: PCM 64-bit floating point little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_lxf              longname: PCM signed 20-bit little-endian planar
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_mulaw            longname: PCM mu-law / G.711 mu-law
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s8               longname: PCM signed 8-bit
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s8_planar        longname: PCM signed 8-bit planar
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s16be            longname: PCM signed 16-bit big-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s16be_planar     longname: PCM signed 16-bit big-endian planar
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s16le            longname: PCM signed 16-bit little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s16le_planar     longname: PCM signed 16-bit little-endian planar
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s24be            longname: PCM signed 24-bit big-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s24daud          longname: PCM D-Cinema audio signed 24-bit
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s24le            longname: PCM signed 24-bit little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s24le_planar     longname: PCM signed 24-bit little-endian planar
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s32be            longname: PCM signed 32-bit big-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s32le            longname: PCM signed 32-bit little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s32le_planar     longname: PCM signed 32-bit little-endian planar
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s64be            longname: PCM signed 64-bit big-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_s64le            longname: PCM signed 64-bit little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_sga              longname: PCM SGA
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_u8               longname: PCM unsigned 8-bit
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_u16be            longname: PCM unsigned 16-bit big-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_u16le            longname: PCM unsigned 16-bit little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_u24be            longname: PCM unsigned 24-bit big-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_u24le            longname: PCM unsigned 24-bit little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_u32be            longname: PCM unsigned 32-bit big-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_u32le            longname: PCM unsigned 32-bit little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: pcm_vidc             longname: PCM Archimedes VIDC
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: cbd2_dpcm            longname: DPCM Cuberoot-Delta-Exact
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: derf_dpcm            longname: DPCM Xilam DERF
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: gremlin_dpcm         longname: DPCM Gremlin
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: interplay_dpcm       longname: DPCM Interplay
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: roq_dpcm             longname: DPCM id RoQ
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: sdx2_dpcm            longname: DPCM Squareroot-Delta-Exact
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: sol_dpcm             longname: DPCM Sol
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: xan_dpcm             longname: DPCM Xan
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: wady_dpcm            longname: DPCM Marble WADY
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_4xm            longname: ADPCM 4X Movie
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_adx            longname: SEGA CRI ADX ADPCM
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_afc            longname: ADPCM Nintendo Gamecube AFC
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_agm            longname: ADPCM AmuseGraphics Movie
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_aica           longname: ADPCM Yamaha AICA
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_argo           longname: ADPCM Argonaut Games
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_circus         longname: ADPCM Circus
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ct             longname: ADPCM Creative Technology
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_dtk            longname: ADPCM Nintendo Gamecube DTK
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ea             longname: ADPCM Electronic Arts
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ea_maxis_xa    longname: ADPCM Electronic Arts Maxis CDROM XA
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ea_r1          longname: ADPCM Electronic Arts R1
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ea_r2          longname: ADPCM Electronic Arts R2
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ea_r3          longname: ADPCM Electronic Arts R3
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ea_xas         longname: ADPCM Electronic Arts XAS
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: g722                 longname: G.722 ADPCM
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: g726                 longname: G.726 ADPCM
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: g726le               longname: G.726 ADPCM little-endian
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_acorn      longname: ADPCM IMA Acorn Replay
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_amv        longname: ADPCM IMA AMV
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_alp        longname: ADPCM IMA High Voltage Software ALP
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_apc        longname: ADPCM IMA CRYO APC
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_apm        longname: ADPCM IMA Ubisoft APM
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_cunning    longname: ADPCM IMA Cunning Developments
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_dat4       longname: ADPCM IMA Eurocom DAT4
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_dk3        longname: ADPCM IMA Duck DK3
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_dk4        longname: ADPCM IMA Duck DK4
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_ea_eacs    longname: ADPCM IMA Electronic Arts EACS
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_ea_sead    longname: ADPCM IMA Electronic Arts SEAD
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_escape     longname: ADPCM IMA Acorn Escape
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_hvqm2      longname: ADPCM IMA HVQM2
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_hvqm4      longname: ADPCM IMA HVQM4
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_iss        longname: ADPCM IMA Funcom ISS
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_magix      longname: ADPCM IMA Magix
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_moflex     longname: ADPCM IMA MobiClip MOFLEX
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_mtf        longname: ADPCM IMA Capcom's MT Framework
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_oki        longname: ADPCM IMA Dialogic OKI
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_pda        longname: ADPCM IMA PlayDate
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_qt         longname: ADPCM IMA QuickTime
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_rad        longname: ADPCM IMA Radical
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_ssi        longname: ADPCM IMA Simon & Schuster Interactive
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_smjpeg     longname: ADPCM IMA Loki SDL MJPEG
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_wav        longname: ADPCM IMA WAV
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_ws         longname: ADPCM IMA Westwood
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ima_xbox       longname: ADPCM IMA Xbox
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_ms             longname: ADPCM Microsoft
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_mtaf           longname: ADPCM MTAF
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_n64            longname: ADPCM Silicon Graphics N64
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_psx            longname: ADPCM Playstation
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_psxc           longname: ADPCM Playstation C
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_sanyo          longname: ADPCM Sanyo
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_sbpro_2        longname: ADPCM Sound Blaster Pro 2-bit
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_sbpro_3        longname: ADPCM Sound Blaster Pro 2.6-bit
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_sbpro_4        longname: ADPCM Sound Blaster Pro 4-bit
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_swf            longname: ADPCM Shockwave Flash
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_thp            longname: ADPCM Nintendo THP
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_thp_le         longname: ADPCM Nintendo THP (little-endian)
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_vima           longname: LucasArts VIMA audio
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_xa             longname: ADPCM CDROM XA
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_xmd            longname: ADPCM Konami XMD
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_yamaha         longname: ADPCM Yamaha
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][AUDIO] name: adpcm_zork           longname: ADPCM Zork
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: ssa                  longname: ASS (Advanced SubStation Alpha) subtitle
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: ass                  longname: ASS (Advanced SubStation Alpha) subtitle
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: cc_dec               longname: Closed Captions (EIA-608 / CEA-708)
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: dvbsub               longname: DVB subtitles
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: dvdsub               longname: DVD subtitles
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: jacosub              longname: JACOsub subtitle
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: microdvd             longname: MicroDVD subtitle
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: mov_text             longname: 3GPP Timed Text subtitle
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: mpl2                 longname: MPL2 subtitle
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: pgssub               longname: HDMV Presentation Graphic Stream subtitles
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: pjs                  longname: PJS subtitle
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: realtext             longname: RealText subtitle
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: sami                 longname: SAMI subtitle
+2026-10-11 20:19:01.031 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: srt                  longname: SubRip subtitle
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: stl                  longname: Spruce subtitle format
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: subrip               longname: SubRip subtitle
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: subviewer            longname: SubViewer subtitle
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: subviewer1           longname: SubViewer1 subtitle
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: text                 longname: Raw text subtitle
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: vplayer              longname: VPlayer subtitle
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: webvtt               longname: WebVTT subtitle
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][SUBTITLE] name: xsub                 longname: XSUB
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: bintext              longname: Binary text
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: xbin                 longname: eXtended BINary text
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: idf                  longname: iCEDraw text
+2026-10-11 20:19:01.032 12012-12043 native_D                com.kgmdecoder.app                   D  [DEC][VIDEO] name: av1                  longname: Alliance for Open Media AV1

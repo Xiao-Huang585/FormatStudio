@@ -10,7 +10,7 @@
     android:layout_height="match_parent"
     android:background="@color/m3_background"
     android:fitsSystemWindows="true"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity" >
 
     <!-- ====== 顶部应用栏 ====== -->
     <LinearLayout
@@ -113,7 +113,6 @@
         android:focusable="true"
         android:visibility="gone"
         android:clickable="true"
-        android:translationZ="10dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/input_bar"
         app:layout_constraintStart_toStartOf="parent"

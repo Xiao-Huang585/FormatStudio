@@ -14,6 +14,9 @@
 #include "YsPlayer/YsFFmpegPlayer.h"
 #include "YsPlayer/YsCallJava.h"
 
+#include <cstdio>   // rename / remove
+#include <chrono>   // std::chrono::system_clock
+
 
 // ====== 原生 FFmpeg 头文件（简单播放器用） ======
 extern "C" {
@@ -636,6 +639,45 @@ void cppMain(jobject thiz) {
                     continue;
                 }
 
+                // 输入输出路径相同时，先编码到 cache 目录，完成后再移回原路径
+                bool needMoveBack = false;
+                std::string originalOutputPath;
+
+                if (!enc_par::g_outputPath.empty() && fullPath == enc_par::g_outputPath) {
+                    needMoveBack = true;
+                    originalOutputPath = enc_par::g_outputPath;
+                    // 提取文件名
+                    size_t slashPos = enc_par::g_outputPath.find_last_of('/');
+                    std::string fileName = (slashPos == std::string::npos)
+                            ? enc_par::g_outputPath
+                            : enc_par::g_outputPath.substr(slashPos + 1);
+                    // 临时路径：cacheDir/.tmp_<时间戳>_<文件名>
+                    auto now = std::chrono::system_clock::now().time_since_epoch().count();
+                    enc_par::g_outputPath = g_cacheDir + "/.tmp_" + std::to_string(now) + "_" + fileName;
+                    LOGD("输入输出路径相同，临时输出到: %s", enc_par::g_outputPath.c_str());
+                    cout << String("输入输出路径相同，将先编码到缓存再移回",
+                                   "Input=output path, encoding to cache then moving back") << endl;
+                    cout.flush();
+                }
+
+                // 编码收尾：输入输出路径相同时，将临时文件移回原路径（成功）或删除（失败）
+                auto finalizeOutput = [&](int encRet) {
+                    if (needMoveBack) {
+                        if (encRet == 0) {
+                            if (rename(enc_par::g_outputPath.c_str(), originalOutputPath.c_str()) == 0) {
+                                LOGD("已将临时文件移回: %s", originalOutputPath.c_str());
+                                cout << String("已移回原路径", "Moved back to original path") << endl;
+                            } else {
+                                cout << String("警告: 无法将临时文件移回原路径，临时文件保留在缓存目录",
+                                               "Warning: failed to move temp file back, kept in cache") << endl;
+                            }
+                        } else {
+                            remove(enc_par::g_outputPath.c_str());
+                            LOGD("编码失败，已删除临时文件: %s", enc_par::g_outputPath.c_str());
+                        }
+                    }
+                };
+
                 if (functionName == "EncodeWithOtherEncoders") {
                     cout << String("===== 开始编码 =====", "===== Start encoding =====") << endl;
                     cout << String("输出路径: ", "Output path: ") << enc_par::g_outputPath << endl;
@@ -690,6 +732,7 @@ void cppMain(jobject thiz) {
                         cout << String("编码失败，错误码: ", "Encoding failed, error code: ")
                              << encRet << endl;
                     }
+                    finalizeOutput(encRet);
                     cout.flush();
 
                     // 结果保留在控制台，下一条命令到达时主循环会自动清空
@@ -731,6 +774,7 @@ void cppMain(jobject thiz) {
                         cout << String("压缩失败，错误码: ", "Compressing failed, error code: ")
                              << encRet << endl;
                     }
+                    finalizeOutput(encRet);
                     cout.flush();
 
                     // 结果保留在控制台，下一条命令到达时主循环会自动清空
@@ -776,6 +820,7 @@ void cppMain(jobject thiz) {
                         cout << String("截取失败，错误码: ", "Trim failed, error code: ")
                              << encRet << endl;
                     }
+                    finalizeOutput(encRet);
                     cout.flush();
 
                     // 结果保留在控制台，下一条命令到达时主循环会自动清空
@@ -817,6 +862,7 @@ void cppMain(jobject thiz) {
                         cout << String("亮度编码失败，错误码: ", "Brightness encoding failed, error code: ")
                              << encRet << endl;
                     }
+                    finalizeOutput(encRet);
                     cout.flush();
 
                     // 结果保留在控制台，下一条命令到达时主循环会自动清空
@@ -860,6 +906,7 @@ void cppMain(jobject thiz) {
                         cout << String("元数据编码失败，错误码: ", "Metadata encoding failed, error code: ")
                              << encRet << endl;
                     }
+                    finalizeOutput(encRet);
                     cout.flush();
 
                     // 结果保留在控制台，下一条命令到达时主循环会自动清空

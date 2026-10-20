@@ -22,11 +22,18 @@
 
     <string name="Help_experimental_functions">"Experimental functions(unused): "</string>
 
+    <string name="Help_encodeThreads">Encode threads: </string>
+
+    <string name="Help_encodeCommentKeyValue">File comment key value: </string>
+
+    <!-- TODO -->
+    <string name="Help_encodeCommentKeyValue_desc">Set "comment" key value in encoding</string>
+
     <string name="Selecting_title">Select functions:</string>
 
     <string name="Selecting_showMediaInfo">Show Media info</string>
 
-    <string name="Selecting_playVideo">Play video</string>
+    <string name="Selecting_playVideo">Play file</string>
 
     <string name="Selecting_encodeWithOtherEncoders">Use other encoder to encode</string>
 
@@ -35,6 +42,8 @@
     <string name="Selecting_encodeWithTrim">Trim file</string>
 
     <string name="Selecting_encodeWithBrightness">Encode with specific brightness</string>
+
+    <string name="Selecting_encodeWithMetadata">Encode with metadata</string>
 
     <string name="Selecting_parametersTitle">Set Parameters</string>
 
@@ -62,6 +71,16 @@
 
     <string name="Selecting_gamma_desc">0.5~3.0, 1.0=no change, &gt;1.0 brighter, &lt;1.0 darker</string>
 
+    <string name="Selecting_setArtist">Artist</string>
+
+    <string name="Selecting_setAlbum">Album</string>
+
+    <string name="Selecting_setTitle">Title</string>
+
+    <string name="Selecting_setDate">Date</string>
+
+    <string name="Selecting_setLanguage">Language</string>
+
     <string name="Selecting_confirm">confirm</string>
 
     <!-- Toast 提示文本 -->
@@ -80,5 +99,7 @@
     <string name="Selecting_toast_invalidBrightness">Invalid brightness (-128~127)</string>
 
     <string name="Selecting_toast_invalidGamma">Invalid gamma (0.5~3.0)</string>
+
+    <string name="Selecting_toast_invalidMetadata">Invalid metadata</string>
 </resources>
 
