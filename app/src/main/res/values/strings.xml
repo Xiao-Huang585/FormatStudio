@@ -7,7 +7,7 @@
     <string name="version" translatable="false">FormatStudio v%1$s</string>
 
     <!-- 帮助的更新内容 -->
-    <string name="Help_content">%1$s\n1. New functions: \"EncodeWithBrightness\" and \"EncodeWithTrim\"\n2. Softcode paths like \"/sdcard\".\n3. AutoFill path when use functions with outputPath parameter.</string>
+    <string name="Help_content">%1$s\n1. New function \"EncodeWithMetadata\".\n2. Support covering. You can set output path equals the input path.\n3. Now support to encode with opus and vorbis encoder.</string>
 
     <!-- 可选：如果你的界面有标题栏，可添加此属性 -->
     <string name="title_activity_main">Decoding</string>
@@ -74,6 +74,10 @@
     <string name="Selecting_setArtist">Artist</string>
 
     <string name="Selecting_setAlbum">Album</string>
+
+    <string name="Selecting_setAlbumArtist">Album artist</string>
+
+    <string name="Selecting_setGenre">Genre</string>
 
     <string name="Selecting_setTitle">Title</string>
 

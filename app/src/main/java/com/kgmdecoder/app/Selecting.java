@@ -316,6 +316,8 @@ public class Selecting extends Activity {
                 res.putExtra("Artist", etArtist.getText().toString().trim());
                 res.putExtra("Date", etDate.getText().toString().trim());
                 res.putExtra("Language", etLanguage.getText().toString().trim());
+                res.putExtra("AlbumArtist", etAlbumArtist.getText().toString().trim());
+                res.putExtra("Genre", etGenre.getText().toString().trim());
                 setResult(RESULT_OK, res);
                 finish();
             }

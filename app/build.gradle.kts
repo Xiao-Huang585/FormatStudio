@@ -27,7 +27,7 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "26.10.09"
+        versionName = "26.10.21"
 
         // CMake 配置（在 android.defaultConfig 中声明）
         externalNativeBuild {

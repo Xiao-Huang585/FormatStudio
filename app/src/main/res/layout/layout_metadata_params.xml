@@ -20,7 +20,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/et_output_path" />
 
-    <!-- 输出路径输入框 -->
+    <!-- 输出路径 -->
     <EditText
         android:id="@+id/et_output_path"
         android:layout_width="0dp"
@@ -76,6 +76,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- 专辑 -->
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -107,6 +109,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 艺术家 -->
 
     <TextView
         android:layout_width="wrap_content"
@@ -140,6 +144,76 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- 专辑艺术家 -->
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="10dp"
+        android:text="@string/Selecting_setAlbumArtist"
+        android:textColor="@color/m3_on_surface"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/et_albumArtist" />
+
+    <EditText
+        android:id="@+id/et_albumArtist"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="470dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/bg_input_bar"
+        android:imeOptions="actionDone"
+        android:selectAllOnFocus="true"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:textColor="@color/text_console"
+        android:textColorHint="@color/text_hint"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 流派 -->
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="10dp"
+        android:text="@string/Selecting_setGenre"
+        android:textColor="@color/m3_on_surface"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/et_genre" />
+
+    <EditText
+        android:id="@+id/et_genre"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="570dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/bg_input_bar"
+        android:imeOptions="actionDone"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:selectAllOnFocus="true"
+        android:textColor="@color/text_console"
+        android:textColorHint="@color/text_hint"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 日期 -->
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -157,7 +231,7 @@
         android:layout_width="0dp"
         android:layout_height="48dp"
         android:layout_marginStart="24dp"
-        android:layout_marginTop="470dp"
+        android:layout_marginTop="670dp"
         android:layout_marginEnd="24dp"
         android:background="@drawable/bg_input_bar"
         android:imeOptions="actionDone"
@@ -171,6 +245,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 语言 -->
 
     <TextView
         android:layout_width="wrap_content"
@@ -189,7 +265,7 @@
         android:layout_width="0dp"
         android:layout_height="48dp"
         android:layout_marginStart="24dp"
-        android:layout_marginTop="570dp"
+        android:layout_marginTop="770dp"
         android:layout_marginEnd="24dp"
         android:background="@drawable/bg_input_bar"
         android:imeOptions="actionDone"

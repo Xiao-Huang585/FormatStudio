@@ -78,7 +78,7 @@ public class MainActivity extends Activity {
     public native void passTrimConfig(String outputPath, long startTimeUs, long endTimeUs);
     public native void passBrightnessConfig(String outputPath, short brightness, float gamma);
     public native void passMetaDataConfig(String outputPath, String title, String album,
-                                          String artist, String date, String language);
+                                          String artist, String albumArtist, String genre, String date, String language);
     // 传递应用常用路径（替代 C++ 侧硬编码 /sdcard、/storage/emulated/0 等）
     public native void passAppPaths(String externalStorageDir, String downloadDir, String filesDir);
     // 同步打开媒体文件（跳转 Selecting 前调用，使 hasVideo/hasAudio 生效）
@@ -190,12 +190,16 @@ public class MainActivity extends Activity {
                     if (album == null) album = "";
                     String artist = data.getStringExtra("Artist");
                     if (artist == null) artist = "";
+                    String albumArtist = data.getStringExtra("AlbumArtist");
+                    if (albumArtist == null) albumArtist = "";
+                    String genre = data.getStringExtra("Genre");
+                    if (genre == null) genre = "";
                     String language = data.getStringExtra("Language");
                     if (language == null) language = "";
                     String date = data.getStringExtra("Date");
                     if (date == null) date = "";
 
-                    passMetaDataConfig(outputPath, title, album, artist, date, language);
+                    passMetaDataConfig(outputPath, title, album, artist, albumArtist, genre, date, language);
                     passInputToCpp(selectedFilePath + "\n" + function);
                 } else {
                     // 传给 C++ 处理，格式: 路径\n功能名

@@ -4,7 +4,7 @@
     <string name="app_name">Format Studio</string>
 
     <!-- 帮助的更新内容 -->
-    <string name="Help_content">%1$s\n1. 新的函数\"截断时长\"和\"设置视频亮度\"\n2. 软编码诸如\"/sdcard\"这样的路径\n3. 自动填充输出路径</string>
+    <string name="Help_content">%1$s\n1. 新的功能\"设置元数据\"\n2. 支持文件覆盖\n3. 完全支持opus和vorbis编码器</string>
 
     <!-- 可选：如果你的界面有标题栏，可添加此属性 -->
     <string name="title_activity_main">解码</string>
@@ -84,6 +84,8 @@
     <string name="Selecting_toast_invalidGamma">非法的Gamma值(0.5~3.0)</string>
     <string name="Selecting_setArtist">艺术家</string>
     <string name="Selecting_setAlbum">专辑</string>
+    <string name="Selecting_setAlbumArtist">专辑艺术家</string>
+    <string name="Selecting_setGenre">流派</string>
     <string name="Selecting_setTitle">标题</string>
     <string name="Selecting_setDate">日期</string>
     <string name="Selecting_toast_invalidMetadata">没有任何可用的元数据</string>

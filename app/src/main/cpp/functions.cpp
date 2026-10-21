@@ -37,16 +37,18 @@ int64_t g_startTimeUs = -1;        // -1 = 无
 int64_t g_endTimeUs = -1;          // -1 = 无
 int8_t g_brightness = 0;           // 亮度偏移 -128~127, 0=不变
 float g_gamma = 1.0f;              // Gamma 0.5~3.0, 1.0=不变
-char* g_title = nullptr;             // 标题元数据
-char* g_album = nullptr;             // 专辑元数据
-char* g_artist = nullptr;            // 艺术家元数据
-char* g_date = nullptr;              // 日期元数据
-char* g_language = nullptr;          // 语言元数据
+char* g_title = nullptr;           // 标题元数据
+char* g_album = nullptr;           // 专辑元数据
+char* g_artist = nullptr;          // 艺术家元数据
+char* g_albumArtist = nullptr;     // 专辑艺术家数据
+char* g_genre = nullptr;           // 流派数据
+char* g_date = nullptr;            // 日期元数据
+char* g_language = nullptr;        // 语言元数据
 } // namespace enc_par
 
 // ====== 应用路径（由 MainActivity 通过 passAppPaths 传入，替代硬编码） ======
-std::string g_externalStorageDir = "/storage/emulated/0";  // 默认兜底
-std::string g_downloadDir = "/sdcard/Download";            // 默认兜底
+std::string g_externalStorageDir = "/storage/emulated/0";       // 默认兜底
+std::string g_downloadDir = "/sdcard/Download";                 // 默认兜底
 std::string g_filesDir = "/data/data/com.kgmdecoder.app/files"; // 默认兜底
 std::string g_cacheDir = "/data/data/com.kgmdecoder.app/cache"; // 默认兜底
 
@@ -623,7 +625,8 @@ Java_com_kgmdecoder_app_MainActivity_passBrightnessConfig(JNIEnv *env, jobject t
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passMetaDataConfig(JNIEnv *env, jobject thiz,
                                                         jstring jOutputPath, jstring jTitle, jstring jAlbum,
-                                                        jstring jArtist, jstring jDate, jstring jLanguage
+                                                        jstring jArtist, jstring jAlbumArtist, jstring jGenre,
+                                                        jstring jDate, jstring jLanguage
 ) {
     std::lock_guard<std::mutex> lock(g_inputMutex);
 
@@ -642,14 +645,18 @@ Java_com_kgmdecoder_app_MainActivity_passMetaDataConfig(JNIEnv *env, jobject thi
     dupStr(jTitle, enc_par::g_title);
     dupStr(jAlbum, enc_par::g_album);
     dupStr(jArtist, enc_par::g_artist);
+    dupStr(jAlbumArtist, enc_par::g_albumArtist);
+    dupStr(jGenre, enc_par::g_genre);
     dupStr(jDate, enc_par::g_date);
     dupStr(jLanguage, enc_par::g_language);
 
-    LOGD("元数据: output=%s title=%s artist=%s album=%s date=%s language=%s",
+    LOGD("元数据: output=%s title=%s artist=%s album=%s albumArtist=%s genre=%s date=%s language=%s",
          enc_par::g_outputPath.c_str(),
          enc_par::g_title ? enc_par::g_title : "(null)",
          enc_par::g_artist ? enc_par::g_artist : "(null)",
          enc_par::g_album ? enc_par::g_album : "(null)",
+         enc_par::g_albumArtist ? enc_par::g_albumArtist : "(null)",
+         enc_par::g_genre ? enc_par::g_genre : "(null)",
          enc_par::g_date ? enc_par::g_date : "(null)",
          enc_par::g_language ? enc_par::g_language : "(null)");
 }

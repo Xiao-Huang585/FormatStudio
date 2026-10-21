@@ -772,6 +772,28 @@ bool FFmpeg::getMediaInfo() const {
     }
 
     AVDictionaryEntry* entry = nullptr;
+    // 容器级元数据（FFmpeg 通用键名为 title/artist/album/date/language/comment）
+    entry = av_dict_get(rawCtx->metadata, "title", nullptr, 0);
+    if (entry && entry->value)
+        cout << String("标题: ", "Title: ") << entry->value << endl;
+    entry = av_dict_get(rawCtx->metadata, "artist", nullptr, 0);
+    if (entry && entry->value)
+        cout << String("艺术家: ", "Artist: ") << entry->value << endl;
+    entry = av_dict_get(rawCtx->metadata, "album", nullptr, 0);
+    if (entry && entry->value)
+        cout << String("专辑: ", "Album: ") << entry->value << endl;
+    entry = av_dict_get(rawCtx->metadata, "date", nullptr, 0);
+    if (entry && entry->value)
+        cout << String("日期: ", "Date: ") << entry->value << endl;
+    entry = av_dict_get(rawCtx->metadata, "language", nullptr, 0);
+    if (entry && entry->value)
+        cout << String("语言: ", "Language: ") << entry->value << endl;
+    entry = av_dict_get(rawCtx->metadata, "genre", nullptr, 0);
+    if (entry && entry->value)
+        cout << String("流派: ", "  Genre: ") << entry->value << endl;
+    entry = av_dict_get(rawCtx->metadata, "album_artist", nullptr, 0);
+    if (entry && entry->value)
+        cout << String("专辑艺术家: ", "Album artist: ") << entry->value << endl;
     entry = av_dict_get(rawCtx->metadata, "comment", nullptr, 0);
     if (entry && entry->value)
         cout << String("介绍: ", "Comment: ") << entry->value << endl;
@@ -818,16 +840,23 @@ bool FFmpeg::getMediaInfo() const {
             cout << String("  码率: ", "  Bitrate:") << (codecpar->bit_rate / 1000) << " kbps" << endl;
         }
 
+        // 流级元数据（部分容器如 MP3/ID3 的标签存放在流级别而非容器级）
         entry = nullptr;
-        entry = av_dict_get(rawCtx->metadata, "g_artist", nullptr, 0);
+        entry = av_dict_get(aStream->metadata, "artist", nullptr, 0);
         if (entry && entry->value)
-            cout << String("  艺术家: ", "Artist: ") << entry->value << endl;
-        entry = av_dict_get(rawCtx->metadata, "g_album", nullptr, 0);
+            cout << String("  艺术家: ", "  Artist: ") << entry->value << endl;
+        entry = av_dict_get(aStream->metadata, "album", nullptr, 0);
         if (entry && entry->value)
-            cout << String("  专辑: ", "  Album") << entry->value << endl;
-        entry = av_dict_get(rawCtx->metadata, "encoder", nullptr, 0);
+            cout << String("  专辑: ", "  Album: ") << entry->value << endl;
+        entry = av_dict_get(aStream->metadata, "encoder", nullptr, 0);
         if (entry && entry->value)
             cout << String("  编码器: ", "  Encoder: ") << entry->value << endl;
+        entry = av_dict_get(aStream->metadata, "genre", nullptr, 0);
+        if (entry && entry->value)
+            cout << String("  流派: ", "  Genre: ") << entry->value << endl;
+        entry = av_dict_get(aStream->metadata, "album_artist", nullptr, 0);
+        if (entry && entry->value)
+            cout << String("  专辑艺术家: ", "Album artist: ") << entry->value << endl;
     }
 
     cout.flush();

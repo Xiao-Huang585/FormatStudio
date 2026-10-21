@@ -130,7 +130,7 @@ extern int8_t g_brightness;
 extern float g_gamma;                   // Gamma值, 越暗的地方越亮
 
 // 元数据
-extern char *g_title, *g_album, *g_artist, *g_date, *g_language;
+extern char *g_title, *g_album, *g_artist, *g_albumArtist, *g_genre, *g_date, *g_language;
 } // namespace enc_par
 
 // ====== 应用路径（由 MainActivity 通过 passAppPaths 传入，替代硬编码） ======
@@ -241,8 +241,9 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passBrightnessConfig(JNIEnv *env, jobject thiz, jstring jOutputPath, jshort brightness, jfloat gamma);
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passMetaDataConfig(JNIEnv *env, jobject thiz,
-        jstring outputPath, jstring title, jstring album,
-        jstring artist, jstring date, jstring language
+                                                        jstring jOutputPath, jstring jTitle, jstring jAlbum,
+                                                        jstring jArtist, jstring jAlbumArtist, jstring jGenre,
+                                                        jstring jDate, jstring jLanguage
 );
 extern "C" JNIEXPORT void JNICALL
 Java_com_kgmdecoder_app_MainActivity_passAppPaths(JNIEnv *env, jobject thiz, jstring jExternalStorageDir, jstring jDownloadDir, jstring jFilesDir);

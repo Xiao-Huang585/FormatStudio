@@ -655,8 +655,6 @@ void cppMain(jobject thiz) {
                     auto now = std::chrono::system_clock::now().time_since_epoch().count();
                     enc_par::g_outputPath = g_cacheDir + "/.tmp_" + std::to_string(now) + "_" + fileName;
                     LOGD("输入输出路径相同，临时输出到: %s", enc_par::g_outputPath.c_str());
-                    cout << String("输入输出路径相同，将先编码到缓存再移回",
-                                   "Input=output path, encoding to cache then moving back") << endl;
                     cout.flush();
                 }
 
@@ -666,7 +664,6 @@ void cppMain(jobject thiz) {
                         if (encRet == 0) {
                             if (rename(enc_par::g_outputPath.c_str(), originalOutputPath.c_str()) == 0) {
                                 LOGD("已将临时文件移回: %s", originalOutputPath.c_str());
-                                cout << String("已移回原路径", "Moved back to original path") << endl;
                             } else {
                                 cout << String("警告: 无法将临时文件移回原路径，临时文件保留在缓存目录",
                                                "Warning: failed to move temp file back, kept in cache") << endl;
@@ -875,6 +872,8 @@ void cppMain(jobject thiz) {
                     cout << String("标题: ", "Title: ") << enc_par::g_title << endl;
                     cout << String("专辑: ", "Album: ") << enc_par::g_album << endl;
                     cout << String("艺术家: ", "Artist: ") << enc_par::g_artist << endl;
+                    cout << String("专辑艺术家: ", "Album artist: ") << enc_par::g_albumArtist << endl;
+                    cout << String("流派: ", "Genre: ") << enc_par::g_genre << endl;
                     cout << String("日期: ", "Date: ") << enc_par::g_date << endl;
                     cout << String("语言: ", "Language: ") << enc_par::g_language << endl;
                     cout.flush();
@@ -890,6 +889,8 @@ void cppMain(jobject thiz) {
                     ffmpeg->addMetadata("album", enc_par::g_album);
                     ffmpeg->addMetadata("date", enc_par::g_date);
                     ffmpeg->addMetadata("language", enc_par::g_language);
+                    ffmpeg->addMetadata("album_artist", enc_par::g_albumArtist);
+                    ffmpeg->addMetadata("genre", enc_par::g_genre);
 
                     int initRet = ffmpeg->openOutputWithSourceParams(enc_par::g_outputPath.c_str(), false);
                     if (initRet != 0) {
