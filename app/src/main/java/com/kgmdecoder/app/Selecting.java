@@ -305,15 +305,17 @@ public class Selecting extends Activity {
                 EditText etArtist = currentSubView.findViewById(R.id.et_artist);
                 EditText etDate = currentSubView.findViewById(R.id.et_date);
                 EditText etLanguage = currentSubView.findViewById(R.id.et_language);
+                EditText etAlbumArtist = currentSubView.findViewById(R.id.et_albumArtist);
+                EditText etGenre = currentSubView.findViewById(R.id.et_genre);
 
                 Intent res = new Intent();
                 res.putExtra("Function", "EncodeWithMetadata");
                 res.putExtra("OutputPath", outputPath);
-                res.putExtra("MetadataTitle", etTitle.getText().toString().trim());
-                res.putExtra("MetadataAlbum", etAlbum.getText().toString().trim());
-                res.putExtra("MetadataArtist", etArtist.getText().toString().trim());
-                res.putExtra("MetadataDate", etDate.getText().toString().trim());
-                res.putExtra("MetadataLanguage", etLanguage.getText().toString().trim());
+                res.putExtra("title", etTitle.getText().toString().trim());
+                res.putExtra("album", etAlbum.getText().toString().trim());
+                res.putExtra("artist", etArtist.getText().toString().trim());
+                res.putExtra("date", etDate.getText().toString().trim());
+                res.putExtra("language", etLanguage.getText().toString().trim());
                 setResult(RESULT_OK, res);
                 finish();
             }
