@@ -311,11 +311,11 @@ public class Selecting extends Activity {
                 Intent res = new Intent();
                 res.putExtra("Function", "EncodeWithMetadata");
                 res.putExtra("OutputPath", outputPath);
-                res.putExtra("title", etTitle.getText().toString().trim());
-                res.putExtra("album", etAlbum.getText().toString().trim());
-                res.putExtra("artist", etArtist.getText().toString().trim());
-                res.putExtra("date", etDate.getText().toString().trim());
-                res.putExtra("language", etLanguage.getText().toString().trim());
+                res.putExtra("Title", etTitle.getText().toString().trim());
+                res.putExtra("Album", etAlbum.getText().toString().trim());
+                res.putExtra("Artist", etArtist.getText().toString().trim());
+                res.putExtra("Date", etDate.getText().toString().trim());
+                res.putExtra("Language", etLanguage.getText().toString().trim());
                 setResult(RESULT_OK, res);
                 finish();
             }

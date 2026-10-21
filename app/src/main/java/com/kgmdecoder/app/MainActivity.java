@@ -184,15 +184,15 @@ public class MainActivity extends Activity {
                     passInputToCpp(selectedFilePath + "\n" + function);
                 } else if ("EncodeWithMetadata".equals(function)) {
                     String outputPath = data.getStringExtra("OutputPath");
-                    String title = data.getStringExtra("title");
+                    String title = data.getStringExtra("Title");
                     if (title == null) title = "";
-                    String album = data.getStringExtra("album");
+                    String album = data.getStringExtra("Album");
                     if (album == null) album = "";
-                    String artist = data.getStringExtra("artist");
+                    String artist = data.getStringExtra("Artist");
                     if (artist == null) artist = "";
-                    String language = data.getStringExtra("language");
+                    String language = data.getStringExtra("Language");
                     if (language == null) language = "";
-                    String date = data.getStringExtra("date");
+                    String date = data.getStringExtra("Date");
                     if (date == null) date = "";
 
                     passMetaDataConfig(outputPath, title, album, artist, date, language);
