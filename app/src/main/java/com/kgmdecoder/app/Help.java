@@ -3,6 +3,9 @@ package com.kgmdecoder.app;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ActivityNotFoundException;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -23,6 +26,7 @@ public class Help extends Activity {
     private SwitchMaterial experimentalFunction;
     private EditText et_encodeThreads;
     private EditText et_encodeCommentKeyValue;
+    private TextView tv_projectWebsite;
 
     // 配置文件路径，统一常量，避免硬编码重复
     private static final String CONFIG_PATH = "/data/user/0/com.kgmdecoder.app/files/config.dat";
@@ -33,6 +37,7 @@ public class Help extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.help);
         back = findViewById(R.id.btnBack);
+        tv_projectWebsite = findViewById(R.id.tv_projectWebsite);
         et_encodeThreads = findViewById(R.id.et_encodeThreads);
         et_encodeCommentKeyValue = findViewById(R.id.et_encodeCommentKeyValue);
         experimentalFunction = findViewById(R.id.switch_experimentalFunction);
@@ -104,6 +109,15 @@ public class Help extends Activity {
                 return true;
             }
             return false;
+        });
+
+        tv_projectWebsite.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.Help_projectWebsite)));
+            try {
+                startActivity(intent);
+            } catch (ActivityNotFoundException e) {
+                Toast.makeText(this, getString(R.string.Help_toast_noBrowser), Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
