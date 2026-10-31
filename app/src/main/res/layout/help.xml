@@ -165,6 +165,18 @@
                     app:layout_constraintStart_toEndOf="@id/encodeCommentKeyValue"
                     app:layout_constraintTop_toBottomOf="@id/EncodeThreads" />
 
+                <!-- 项目网址入口，点击后用浏览器打开 -->
+                <TextView
+                    android:id="@+id/tv_projectWebsite"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="32dp"
+                    android:text="@string/Help_projectWebsite"
+                    android:textColor="@color/m3_primary"
+                    android:textSize="15sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/et_encodeCommentKeyValue" />
+
             </androidx.constraintlayout.widget.ConstraintLayout>
 
         </ScrollView>

@@ -26,8 +26,15 @@
 
     <string name="Help_encodeCommentKeyValue">File comment key value: </string>
 
-    <!-- TODO -->
     <string name="Help_encodeCommentKeyValue_desc">Set "comment" key value in encoding</string>
+
+    <!-- 项目网址入口（点击后用浏览器打开） -->
+    <string name="Help_projectWebsite" translatable="false">https://github.com/Xiao-Huang585/kgmdecoder</string>
+
+    <string name="Help_toast_noBrowser">No browser available to open the link</string>
+
+
+
 
     <string name="Selecting_title">Select functions:</string>
 
@@ -44,6 +51,8 @@
     <string name="Selecting_encodeWithBrightness">Encode with specific brightness</string>
 
     <string name="Selecting_encodeWithMetadata">Encode with metadata</string>
+
+    <string name="Selecting_encodeWithAudioFile">Encode with audio</string>
 
     <string name="Selecting_parametersTitle">Set Parameters</string>
 
@@ -84,6 +93,8 @@
     <string name="Selecting_setDate">Date</string>
 
     <string name="Selecting_setLanguage">Language</string>
+
+    <string name="Selecting_setAudioPath">Audio file</string>
 
     <string name="Selecting_confirm">confirm</string>
 

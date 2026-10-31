@@ -82,112 +82,57 @@ public:
     bool getMediaInfo() const;
 
     /**
-     * @brief 用压缩参数完成输出初始化（计算 preset/码率，创建编码器/流，写文件头）
+     * @brief 统一的输出初始化入口：按功能名分派，参数全部取自 enc_par 命名空间
      *
-     * 仅做输出侧初始化，不执行编码。调用后需再调用 encodeToFile() 写出压缩文件。
-     * 复用源文件音视频编码器，不更换编码器；不使用 CRF，采用 ABR 码率模式。
+     * 完成：打开输出 → 创建编码器/流 → 初始化 sws/swr → 写文件头，不执行编码。
+     * 调用后按功能再调 encodeToFile()（截取用 encodeToFile(start,end)、
+     * 亮度用 encodeToFile(brightness,gamma)、其余用 encodeToFile()）。
      *
-     * @param outputPath 输出文件路径（扩展名决定封装格式）
-     * @param presetLevel 预设等级, 1体积最小, 10体积较大
+     * 分派规则：
+     * - "EncodeWithOtherEncoders"：用 enc_par::g_encoderVideoCodec /
+     *   g_encoderAudioCodec 查找编码器，其余参数沿用源；复制源元数据
+     * - "EncodeWithCompress"：用 enc_par::g_compressLevel 缩放码率/帧率/分辨率/采样率
+     * - "EncodeWithTrim" / "EncodeWithBrightness"：复用源编码器与全部源参数；复制源元数据
+     * - "EncodeWithMetadata"：复用源编码器与全部源参数；不复制源元数据（只写用户填写的字段）
+     *
+     * 输出路径取自 enc_par::g_outputPath，为空时返回 -EINVAL。
+     *
+     * @param functionName 功能名（与 Selecting 返回的 Function 一致）
      * @return 0 表示成功，负数表示错误码
      */
-    int openOutputWithCompressMedia(const char* outputPath,
-                                     int presetLevel,
-                                     bool copySourceMetadata = true);
+    int openOutput(const std::string& functionName);
 
     /**
-     * @brief 纯编码循环（可复用），输出必须已由 openOutPutWithEncoder /
-     *        openOutputWithCompressMedia 初始化完成
+     * @brief 编码参数：时间区间 + 亮度/伽马
      *
-     * 读取输入包 → 解码 → 缩放/重采样 → 编码 → 写包 → 冲刷解码器/编码器 → writeTrailer。
+     * 亮度调整是否启用由 brightness/gamma 是否偏离默认值自动判定，
+     * 不再需要单独的开关参数。
+     */
+    struct EncodeOptions {
+        uint64_t startTimeUs = 0;           ///< 起始时间（微秒）
+        uint64_t endTimeUs = (uint64_t)-1;  ///< 结束时间（微秒），(uint64_t)-1 表示不截止
+        int8_t brightness = 0;              ///< 亮度偏移 -128~+127，0=不变
+        float gamma = 1.0f;                 ///< 伽马值 0.5~3.0，1.0=不变
+    };
+
+    /**
+     * @brief 编码循环（唯一实现），输出必须已由 openOutput() 初始化完成
+     *
+     * 读取输入包 → 解码 → 滤镜（brightness/gamma 非默认时插入 eq）→ 缩放/重采样
+     * → 编码 → 写包 → 冲刷解码器/编码器 → writeTrailer。
      * 使用成员变量 outFmtCtx_/venc_/aenc_/outVStream_/outAStream_/swsCtx_/swrCtx_。
+     *
+     * @param opts 编码参数
+     * @return 0 表示成功，负数表示错误码
+     */
+    int encodeToFile(const EncodeOptions& opts);
+
+    /**
+     * @brief 编码完整文件（等价于 encodeToFile(EncodeOptions{}))
      *
      * @return 0 表示成功，负数表示错误码
      */
     int encodeToFile();
-
-    /**
-     * @brief 带时间范围的编码循环（必须显式传入起止时间，无默认值）
-     *
-     * 与无参版本逻辑相同，但只编码 [startTimeUs, endTimeUs) 区间的内容。
-     * 适用于截取/截断功能。参数均为微秒单位（AV_TIME_BASE）。
-     *
-     * @param startTimeUs 起始时间（微秒），从 0 开始
-     * @param endTimeUs   结束时间（微秒），(uint64_t)-1 表示不截止
-     * @return 0 表示成功，负数表示错误码
-     */
-    int encodeToFile(uint64_t startTimeUs, uint64_t endTimeUs);
-
-    /**
-     * @brief 带亮度/伽马调整的编码循环（编码完整文件）
-     *
-     * 使用 FFmpeg 滤镜链(eq=brightness:gamma → format → scale)对每一帧做亮度/伽马调整，
-     * 支持任意位深（8bit/10bit）和任意像素格式，不再限制 YUV420P。
-     *
-     * @param brightness 亮度偏移，-128~+127（0=不变），正值变亮负值变暗
-     * @param gamma      伽马值，建议 0.5~3.0（1.0=不变），<1 变亮 >1 变暗
-     * @return 0 表示成功，负数表示错误码
-     */
-    int encodeToFile(int8_t brightness, float gamma = 1.0);
-
-    /**
-     * @brief 用指定编码器ID完成输出初始化（打开输出、创建编码器/流、写文件头）
-     *
-     * 负责全部输出侧初始化工作，完成后可直接调用 encodeToFile() 进行编码。
-     *
-     * @param videoID 视频编码器ID，AV_CODEC_ID_NONE 表示不输出视频
-     * @param audioID 音频编码器ID，AV_CODEC_ID_NONE 表示不输出音频
-     * @param videoBitrate 视频目标码率(bps)，0=使用编码器默认
-     * @param presetStr 编码器preset字符串（如"medium"/"slow"），nullptr=不设置
-     * @param targetFps 输出视频帧率，0=沿用源帧率
-     * @param audioBitrate 音频目标码率(bps)，0=使用默认128kbps
-     * @warning 调用此函数之前必须调用 setOutputPath() 设置 outPath_
-     * @return 0 表示成功, 负数表示错误码
-     */
-    int openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID,
-                               int64_t videoBitrate = 0,
-                               const char* presetStr = "veryfast",
-                               double targetFps = 0.0,
-                               int64_t audioBitrate = 0,
-                               int outWidth = 0,
-                               int outHeight = 0,
-                               int targetSampleRate = 0,
-                               bool allowHardware = true,
-                               bool copySourceMetadata = true);
-
-    /**
-     * @brief 直接复用源文件所有解码器参数初始化输出（分辨率/帧率/码率/采样率/声道布局均不变）
-     *
-     * 适用于"不需要在初始化编码器期间做任何参数变化"的场景（如快速转码、格式封装转换）。
-     * 唯一会变化的是编码线程数，仍由 config.dat 配置的 encodeThreads 成员控制。
-     * 视频/音频编码器 ID 直接取源流 codecpar->codec_id；若源编码器无对应 FFmpeg 编码器则失败。
-     * 完成后可直接调用 encodeToFile() 进行编码。
-     *
-     * @param outputPath 输出文件路径（扩展名决定封装格式）
-     * @return 0 表示成功，负数表示错误码
-     */
-    int openOutputWithSourceParams(const char* outputPath,
-                                    bool copySourceMetadata = true);
-
-    /**
-     * @brief 便捷重载：用指定名称的编码器初始化输出并编码写出文件
-     *
-     * 内部等价于：name→codec_id → openOutPutWithEncoder() → encodeToFile()。
-     * 封装格式由输出路径的扩展名决定（如 .mp4/.mkv/.wav/.mp3/.flac）。
-     *
-     * @param outputPath 输出文件路径（扩展名决定封装格式）
-     * @param videoEncoderName 视频编码器名称（如 "libx264"/"libx265"/"mpeg4"），
-     *                         空指针或空串表示不输出视频流
-     * @param audioEncoderName 音频编码器名称（如 "aac"/"libmp3lame"/"pcm_s16le"/"flac"），
-     *                         空指针或空串表示不输出音频流
-     * @return 0 表示成功，负数表示错误码
-     *
-     * @note 音频采样格式会根据编码器支持的格式自动匹配
-     *       （aac→FLTP, pcm_s16le→S16, flac→S16 等）
-     */
-    int encodeToFile(const char* outputPath,
-                     const char* videoEncoderName,
-                     const char* audioEncoderName);
 
     /**
      * @brief 设置输出文件的位置
@@ -199,7 +144,7 @@ public:
     /**
      * @brief 额外写入一条元数据到输出文件
      *
-     * 必须在 initOutputContext（写文件头）之前调用，否则元数据不会写入容器。
+     * 必须在 openOutput（写文件头）之前调用，否则元数据不会写入容器。
      * 若键已存在，flags=0 不会覆盖（保留原值）。
      *
      * @param entry 元数据键值对，key 和 value 均不能为空
@@ -209,7 +154,7 @@ public:
     /**
      * @brief 额外写入一条元数据到输出文件
      *
-     * 必须在 initOutputContext（写文件头）之前调用，否则元数据不会写入容器。
+     * 必须在 openOutput（写文件头）之前调用，否则元数据不会写入容器。
      * 若键已存在，flags=0 不会覆盖（保留原值）。
      *
      * @param key 键值
@@ -218,48 +163,6 @@ public:
     void addMetadata(const char* key, const char* value);
 
 private:
-
-    /**
-     * @brief 核心编码循环（所有 encodeToFile 重载的唯一实现）
-     *
-     * 使用 FFmpeg 滤镜链处理视频帧：可选 eq(亮度/伽马) → format(编码器格式) → scale(输出尺寸)。
-     * 不再使用 sws_scale 和 LUT，支持任意像素格式和位深。
-     *
-     * @param startTimeUs      起始时间（微秒）
-     * @param endTimeUs        结束时间（微秒），(uint64_t)-1 表示不截止
-     * @param adjustBrightness 是否启用亮度/伽马调整
-     * @param brightness       亮度偏移，-128~+127（adjustBrightness=false 时忽略）
-     * @param gamma            伽马值（adjustBrightness=false 时忽略）
-     * @return 0 表示成功，负数表示错误码
-     */
-    int encodeToFileCore(uint64_t startTimeUs, uint64_t endTimeUs,
-                         bool adjustBrightness, int8_t brightness, float gamma);
-
-    /**
-     * @brief 通用输出初始化（私有辅助函数，被 openOutPutWithEncoder /
-     *        openOutputWithCompressMedia 各自独立调用，二者互不调用）
-     *
-     * 完成：打开输出 → 创建编码器 → 创建输出流 → 初始化 sws/swr → 写文件头。
-     *
-     * @param videoID 视频编码器ID，AV_CODEC_ID_NONE 表示不输出视频
-     * @param audioID 音频编码器ID，AV_CODEC_ID_NONE 表示不输出音频
-     * @param videoBitrate 视频目标码率(bps)，0=使用编码器默认
-     * @param presetStr 编码器preset字符串，nullptr=不设置
-     * @param targetFps 输出视频帧率，0=沿用源帧率
-     * @param audioBitrate 音频目标码率(bps)，0=使用默认128kbps
-     * @return 0 表示成功, 负数表示错误码
-     */
-    int initOutputContext(AVCodecID videoID, AVCodecID audioID,
-                           int64_t videoBitrate,
-                           const char* presetStr,
-                           double targetFps,
-                           int64_t audioBitrate,
-                           int outWidth = 0,
-                           int outHeight = 0,
-                           int targetSampleRate = 0,
-                           bool allowHardware = true,
-                           bool keepSourceChannelLayout = false,
-                           bool copySourceMetadata = true);
 
     bool inited = false;
 

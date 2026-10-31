@@ -686,33 +686,8 @@ void cppMain(jobject thiz) {
                              ? String("无", "(none)") : String(enc_par::g_encoderAudioCodec.c_str(), enc_par::g_encoderAudioCodec.c_str())) << endl;
                     cout.flush();
 
-                    // 第一步：根据编码器名称查找 codec_id
-                    AVCodecID videoID = AV_CODEC_ID_NONE;
-                    AVCodecID audioID = AV_CODEC_ID_NONE;
-                    if (!enc_par::g_encoderVideoCodec.empty()) {
-                        const AVCodec* vCodec = avcodec_find_encoder_by_name(enc_par::g_encoderVideoCodec.c_str());
-                        if (!vCodec) {
-                            cout << String("找不到视频编码器: ", "Can not find video encoder: ")
-                                 << enc_par::g_encoderVideoCodec << endl;
-                            cout.flush();
-                            continue;
-                        }
-                        videoID = vCodec->id;
-                    }
-                    if (!enc_par::g_encoderAudioCodec.empty()) {
-                        const AVCodec* aCodec = avcodec_find_encoder_by_name(enc_par::g_encoderAudioCodec.c_str());
-                        if (!aCodec) {
-                            cout << String("找不到音频编码器: ", "Can not find audio encoder: ")
-                                 << enc_par::g_encoderAudioCodec << endl;
-                            cout.flush();
-                            continue;
-                        }
-                        audioID = aCodec->id;
-                    }
-
-                    // 第二步：设置输出路径 + 初始化输出（打开输出、创建编码器/流、写文件头）
-                    ffmpeg->setOutputPath(enc_par::g_outputPath);
-                    int initRet = ffmpeg->openOutPutWithEncoder(videoID, audioID);
+                    // 第二步：初始化输出（编码器名/输出路径等参数全部由 enc_par 提供）
+                    int initRet = ffmpeg->openOutput(functionName);
                     if (initRet != 0) {
                         cout << String("输出初始化失败，错误码: ", "Output init failed, error code: ")
                              << initRet << endl;
@@ -750,11 +725,8 @@ void cppMain(jobject thiz) {
                         continue;
                     }
 
-                    // 第一步：用压缩参数初始化输出（复用源编码器，计算码率/preset，创建编码器/流，写文件头）
-                    int initRet = ffmpeg->openOutputWithCompressMedia(
-                            enc_par::g_outputPath.c_str(),
-                            enc_par::g_compressLevel
-                    );
+                    // 第一步：初始化输出（压缩等级由 enc_par::g_compressLevel 提供）
+                    int initRet = ffmpeg->openOutput(functionName);
                     if (initRet != 0) {
                         cout << String("压缩输出初始化失败，错误码: ", "Compress output init failed, error code: ")
                              << initRet << endl;
@@ -801,7 +773,7 @@ void cppMain(jobject thiz) {
                         continue;
                     }
 
-                    int initRet = ffmpeg->openOutputWithSourceParams(enc_par::g_outputPath.c_str());
+                    int initRet = ffmpeg->openOutput(functionName);
                     if (initRet != 0) {
                         cout << String("截取输出初始化失败，错误码: ", "Trim output init failed, error code: ")
                              << initRet << endl;
@@ -809,8 +781,10 @@ void cppMain(jobject thiz) {
                         continue;
                     }
 
-                    int encRet = ffmpeg->encodeToFile(
-                            (uint64_t)enc_par::g_startTimeUs, (uint64_t)enc_par::g_endTimeUs);
+                    FFmpeg::EncodeOptions opts;
+                    opts.startTimeUs = (uint64_t)enc_par::g_startTimeUs;
+                    opts.endTimeUs = (uint64_t)enc_par::g_endTimeUs;
+                    int encRet = ffmpeg->encodeToFile(opts);
                     if (encRet == 0) {
                         cout << String("截取完成！", "Trim finished!") << endl;
                     } else {
@@ -844,7 +818,7 @@ void cppMain(jobject thiz) {
                         continue;
                     }
 
-                    int initRet = ffmpeg->openOutputWithSourceParams(enc_par::g_outputPath.c_str());
+                    int initRet = ffmpeg->openOutput(functionName);
                     if (initRet != 0) {
                         cout << String("亮度输出初始化失败，错误码: ", "Brightness output init failed, error code: ")
                              << initRet << endl;
@@ -852,7 +826,10 @@ void cppMain(jobject thiz) {
                         continue;
                     }
 
-                    int encRet = ffmpeg->encodeToFile(enc_par::g_brightness, enc_par::g_gamma);
+                    FFmpeg::EncodeOptions opts;
+                    opts.brightness = enc_par::g_brightness;
+                    opts.gamma = enc_par::g_gamma;
+                    int encRet = ffmpeg->encodeToFile(opts);
                     if (encRet == 0) {
                         cout << String("亮度编码完成！", "Brightness encoding finished!") << endl;
                     } else {
@@ -892,7 +869,7 @@ void cppMain(jobject thiz) {
                     ffmpeg->addMetadata("album_artist", enc_par::g_albumArtist);
                     ffmpeg->addMetadata("genre", enc_par::g_genre);
 
-                    int initRet = ffmpeg->openOutputWithSourceParams(enc_par::g_outputPath.c_str(), false);
+                    int initRet = ffmpeg->openOutput(functionName);
                     if (initRet != 0) {
                         cout << String("元数据输出初始化失败，错误码: ", "Metadata output init failed, error code: ")
                              << initRet << endl;

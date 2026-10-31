@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:background="@android:color/transparent">
+
+    <!-- 输出路径标签 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:text="@string/Selecting_parameter1"
+        android:textColor="@color/m3_on_surface"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 输出路径 -->
+    <EditText
+        android:id="@+id/et_output_path"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="60dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/bg_input_bar"
+        android:hint="/storage/emulated/0/Download/output.mp4"
+        android:imeOptions="actionDone"
+        android:inputType="textUri"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:selectAllOnFocus="true"
+        android:text="/storage/emulated/0/Download/output.mp4"
+        android:textColor="@color/text_console"
+        android:textColorHint="@color/text_hint"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="10dp"
+        android:text="@string/Selecting_setAudioPath"
+        android:textColor="@color/m3_on_surface"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/et_audioPath" />
+
+    <EditText
+        android:id="@+id/et_audioPath"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="170dp"
+        android:layout_marginEnd="100dp"
+        android:background="@drawable/bg_input_bar"
+        android:imeOptions="actionDone"
+        android:selectAllOnFocus="true"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:textColor="@color/text_console"
+        android:textColorHint="@color/text_hint"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.kgmdecoder.app.FilePickerButton
+        android:id="@+id/pick_audioPath"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:text="选择文件"
+        android:textSize="9sp"
+        app:cornerRadius="16dp"
+        app:layout_constraintBottom_toBottomOf="@id/et_audioPath"
+        app:layout_constraintStart_toEndOf="@id/et_audioPath"
+        tools:ignore="SmallSp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

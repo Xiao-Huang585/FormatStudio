@@ -201,27 +201,9 @@ static AVSampleFormat pickEncoderSampleFormat(const AVCodec *codec) {
     return sampleFmts[0];
 }
 
-// ==================================
-// 用指定编码器ID完成输出初始化（公开入口）
-// ==================================
-int FFmpeg::openOutPutWithEncoder(AVCodecID videoID, AVCodecID audioID,
-                                   int64_t videoBitrate,
-                                   const char* presetStr,
-                                   double targetFps,
-                                   int64_t audioBitrate,
-                                   int outWidth,
-                                   int outHeight,
-                                   int targetSampleRate,
-                                   bool allowHardware,
-                                   bool copySourceMetadata) {
-    return initOutputContext(videoID, audioID, videoBitrate, presetStr, targetFps, audioBitrate,
-                             outWidth, outHeight, targetSampleRate, allowHardware,
-                             false, copySourceMetadata);
-}
-
 // =======================================
 // 额外写入一条元数据到输出文件
-// 必须在 initOutputContext（写文件头）之前调用
+// 必须在 openOutput（写文件头）之前调用
 // ========================================
 void FFmpeg::addMetadata(const AVDictionaryEntry *entry) {
     if (!entry || !entry->key || !entry->value) return;
@@ -247,21 +229,18 @@ void FFmpeg::addMetadata(const char* key, const char* value) {
 }
 
 // ============================
-// 通用输出初始化（私有辅助函数）
-// 被 openOutPutWithEncoder / openOutputWithCompressMedia 各自独立调用，二者互不调用
-// 完成：打开输出 → 创建编码器 → 创建输出流 → 初始化 sws/swr → 写文件头
+// 统一的输出初始化入口：按功能名分派
+// 编码器与全部参数均取自 enc_par 命名空间。
+// 完成：打开输出 → 创建编码器 → 创建输出流 → 初始化 sws/swr → 写文件头；
+// 不执行编码，由调用方随后调用 encodeToFile() 写出。
 // ============================
-int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
-                               int64_t videoBitrate,
-                               const char* presetStr,
-                               double targetFps,
-                               int64_t audioBitrate,
-                               int outWidth,
-                               int outHeight,
-                               int targetSampleRate,
-                               bool allowHardware,
-                               bool keepSourceChannelLayout,
-                               bool copySourceMetadata) {
+int FFmpeg::openOutput(const std::string& functionName) {
+    const std::string& outputPath = enc_par::g_outputPath;
+    if (outputPath.empty()) {
+        cout << String("输出路径为空, 取消编码", "Output path is empty, canceled") << endl;
+        cout.flush();
+        return -EINVAL;
+    }
     if (!fmtCtx_.isOpened()) {
         cout << String("未打开输入文件...", "Didn't open input file...") << endl;
         LOGD("未打开输出文件...");
@@ -273,6 +252,213 @@ int FFmpeg::initOutputContext(AVCodecID videoID, AVCodecID audioID,
         return -EINVAL;
     }
 
+    // ---------- 参数准备：按功能名分派，默认沿用源参数 ----------
+    AVCodecID videoID = AV_CODEC_ID_NONE;
+    AVCodecID audioID = AV_CODEC_ID_NONE;
+    int64_t videoBitrate = 0;
+    int64_t audioBitrate = 0;
+    const char* presetStr = nullptr;
+    double targetFps = 0.0;
+    int outWidth = 0, outHeight = 0;
+    int targetSampleRate = 0;
+    bool allowHardware = true;
+    bool keepSourceChannelLayout = false;
+    bool copySourceMetadata = true;
+
+    if (functionName == "EncodeWithOtherEncoders") {
+        // 编码器由名称指定：name → codec_id
+        if (!enc_par::g_encoderVideoCodec.empty()) {
+            const AVCodec *vCodec =
+                    avcodec_find_encoder_by_name(enc_par::g_encoderVideoCodec.c_str());
+            if (!vCodec) {
+                cout << String("找不到视频编码器: ", "Can not find video encoder: ")
+                     << enc_par::g_encoderVideoCodec << endl;
+                cout.flush();
+                return -EINVAL;
+            }
+            videoID = vCodec->id;
+        }
+        if (!enc_par::g_encoderAudioCodec.empty()) {
+            const AVCodec *aCodec =
+                    avcodec_find_encoder_by_name(enc_par::g_encoderAudioCodec.c_str());
+            if (!aCodec) {
+                cout << String("找不到音频编码器: ", "Can not find audio encoder: ")
+                     << enc_par::g_encoderAudioCodec << endl;
+                cout.flush();
+                return -EINVAL;
+            }
+            audioID = aCodec->id;
+        }
+        presetStr = "veryfast";
+    } else if (functionName == "EncodeWithCompress") {
+        // 压缩等级控制 码率/帧率/分辨率/采样率：level=1 最小体积, level=10 原画质
+        int presetLevel = enc_par::g_compressLevel;
+        if (presetLevel < 1 || presetLevel > 10)
+            throw std::invalid_argument("presetLevel must be 1~10!");
+
+        const double bitrateScale = 0.15 + (presetLevel - 1) * 0.85 / 9.0;
+        const double fpsScale = 0.4 + (presetLevel - 1) * 0.6 / 9.0;
+        const double scaleFactor = 0.6 + (presetLevel - 1) * 0.4 / 9.0;
+        const int sampleRateTable[] = {22050, 24000, 32000, 44100, 48000};
+        const int srIdx = (presetLevel - 1) * 4 / 9;  // 0~4
+        targetSampleRate = sampleRateTable[srIdx];
+
+        int64_t srcVideoBitrate = 0;
+        int64_t srcAudioBitrate = 0;
+        int srcWidth = 0, srcHeight = 0;
+        int srcSampleRate = 0;
+        double srcVideoFps = 25.0;
+
+        if (hasVideo()) {
+            AVStream* st = fmtCtx_.raw()->streams[videoStreamIndex_];
+            videoID = AV_CODEC_ID_H264;  // 强制 H.264，配合 allowHardware=false 走 libx264 软编
+            srcVideoBitrate = st->codecpar->bit_rate;
+            if (srcVideoBitrate <= 0) srcVideoBitrate = 2000000;
+            srcWidth = st->codecpar->width;
+            srcHeight = st->codecpar->height;
+            AVRational fr = st->avg_frame_rate;
+            if (fr.num > 0 && fr.den > 0) srcVideoFps = av_q2d(fr);
+        }
+        if (hasAudio()) {
+            AVStream* st = fmtCtx_.raw()->streams[audioStreamIndex_];
+            audioID = st->codecpar->codec_id;
+            srcAudioBitrate = st->codecpar->bit_rate;
+            if (srcAudioBitrate <= 0) srcAudioBitrate = 128000;
+            srcSampleRate = st->codecpar->sample_rate;
+        }
+
+        // 计算输出分辨率（保证偶数）
+        if (hasVideo()) {
+            outWidth = (int)(srcWidth * scaleFactor / 2) * 2;
+            outHeight = (int)(srcHeight * scaleFactor / 2) * 2;
+            if (outWidth < 16) outWidth = 16;
+            if (outHeight < 16) outHeight = 16;
+        }
+
+        // 计算目标帧率（最低 15fps，不超过源帧率）
+        targetFps = srcVideoFps * fpsScale;
+        if (targetFps < 15.0) targetFps = 15.0;
+        if (targetFps > srcVideoFps) targetFps = srcVideoFps;
+
+        // 码率按等级缩放，音频再叠加采样率比例
+        videoBitrate = (int64_t)(srcVideoBitrate * bitrateScale);
+        audioBitrate = (int64_t)(srcAudioBitrate * bitrateScale);
+        if (hasAudio() && srcSampleRate > 0 && targetSampleRate < srcSampleRate) {
+            audioBitrate = (int64_t)(audioBitrate * (double)targetSampleRate / srcSampleRate);
+        }
+
+        // x264/x265/vp9 支持 preset 私有选项
+        bool codecSupportPreset = false;
+        if (hasVideo() && (videoID == AV_CODEC_ID_H264 || videoID == AV_CODEC_ID_H265 ||
+                           videoID == AV_CODEC_ID_VP9)) {
+            codecSupportPreset = true;
+        }
+        presetStr = codecSupportPreset ? "veryfast" : nullptr;
+
+        // 压缩强制软件编码，避免硬件编码画质差
+        allowHardware = false;
+        keepSourceChannelLayout = false;
+
+        cout << "===== 开始压缩 =====" << endl;
+        cout << String("输出: ", "Output: ") << outputPath << endl;
+        cout << String("压缩等级: ", "Compress level: ") << presetLevel << endl;
+        cout << String("  码率缩放: ", "  Bitrate scale: ") << bitrateScale << endl;
+        cout << String("  帧率缩放: ", "  FPS scale: ") << fpsScale << " (" << targetFps << " fps)" << endl;
+        cout << String("  分辨率缩放: ", "  Resolution scale: ") << scaleFactor << endl;
+        if (hasVideo()) {
+            cout << String("输出分辨率: ", "Output resolution: ") << outWidth << "x" << outHeight << endl;
+            cout << String("视频码率: ", "Video bitrate: ") << (videoBitrate / 1000) << " kbps" << endl;
+        }
+        if (hasAudio()) {
+            cout << String("输出采样率: ", "Output sample rate: ") << targetSampleRate << " Hz" << endl;
+            cout << String("音频码率: ", "Audio bitrate: ") << (audioBitrate / 1000) << " kbps" << endl;
+        }
+        cout.flush();
+    } else if (functionName == "EncodeWithTrim" ||
+               functionName == "EncodeWithBrightness" ||
+               functionName == "EncodeWithMetadata") {
+        // 截取/亮度/元数据：复用源编码器与全部源参数
+        if (hasVideo()) {
+            AVStream* st = fmtCtx_.raw()->streams[videoStreamIndex_];
+            videoID = st->codecpar->codec_id;
+            videoBitrate = st->codecpar->bit_rate;
+        }
+        if (hasAudio()) {
+            AVStream* st = fmtCtx_.raw()->streams[audioStreamIndex_];
+            audioID = st->codecpar->codec_id;
+            audioBitrate = st->codecpar->bit_rate;
+        }
+
+        // 容器兼容性检查 + 自动降级：输出容器不支持源编码器时，自动选择容器支持的默认编码器
+        const AVOutputFormat *ofmt = av_guess_format(nullptr, outputPath.c_str(), nullptr);
+        if (ofmt) {
+            if (hasVideo() && avformat_query_codec(ofmt, videoID, FF_COMPLIANCE_NORMAL) == 0) {
+                cout << String("容器不支持视频编码器 ", "Container doesn't support video encoder ")
+                     << avcodec_get_name(videoID)
+                     << String("，自动降级为 libx264", ", auto fallback to libx264") << endl;
+                LOGD("容器不支持视频编码器 %s, 自动降级为 libx264", avcodec_get_name(videoID));
+                videoID = AV_CODEC_ID_H264;
+                videoBitrate = 0;  // 降级后用编码器默认码率
+            }
+            if (hasAudio() && avformat_query_codec(ofmt, audioID, FF_COMPLIANCE_NORMAL) == 0) {
+                // 根据容器选择兼容的默认音频编码器
+                AVCodecID fallbackAudioID = AV_CODEC_ID_MP3;  // 默认 libmp3lame，兼容性最好
+                const char *ofmtName = ofmt->name;
+                if (strcmp(ofmtName, "wav") == 0) {
+                    fallbackAudioID = AV_CODEC_ID_PCM_S16LE;
+                } else if (strcmp(ofmtName, "mp3") == 0) {
+                    fallbackAudioID = AV_CODEC_ID_MP3;
+                } else if (strcmp(ofmtName, "mp4") == 0 || strcmp(ofmtName, "mov") == 0 ||
+                           strcmp(ofmtName, "m4a") == 0 || strcmp(ofmtName, "aac") == 0) {
+                    fallbackAudioID = AV_CODEC_ID_AAC;
+                } else if (strcmp(ofmtName, "ogg") == 0 || strcmp(ofmtName, "oga") == 0) {
+                    fallbackAudioID = AV_CODEC_ID_VORBIS;
+                }
+                // 确认降级后的编码器确实被容器支持
+                if (avformat_query_codec(ofmt, fallbackAudioID, FF_COMPLIANCE_NORMAL) == 0) {
+                    fallbackAudioID = AV_CODEC_ID_MP3;  // 兜底再试 MP3
+                }
+                cout << String("容器不支持音频编码器 ", "Container doesn't support audio encoder ")
+                     << avcodec_get_name(audioID)
+                     << String("，自动降级为 ", ", auto fallback to ")
+                     << avcodec_get_name(fallbackAudioID) << endl;
+                LOGD("容器不支持音频编码器 %s, 自动降级为 %s",
+                     avcodec_get_name(audioID), avcodec_get_name(fallbackAudioID));
+                audioID = fallbackAudioID;
+                audioBitrate = 0;  // 降级后用编码器默认码率
+            }
+        }
+
+        cout << "===== 直接转码（沿用源参数） =====" << endl;
+        cout << String("输出: ", "Output: ") << outputPath << endl;
+        if (hasVideo()) {
+            cout << String("视频编码器: ", "Video encoder: ") << avcodec_get_name(videoID)
+                 << "  " << vdec_.width() << "x" << vdec_.height() << endl;
+            if (videoBitrate > 0)
+                cout << String("视频码率: ", "Video bitrate: ") << (videoBitrate / 1000) << " kbps" << endl;
+        }
+        if (hasAudio()) {
+            cout << String("音频编码器: ", "Audio encoder: ") << avcodec_get_name(audioID)
+                 << "  " << adec_.sampleRate() << " Hz" << endl;
+            if (audioBitrate > 0)
+                cout << String("音频码率: ", "Audio bitrate: ") << (audioBitrate / 1000) << " kbps" << endl;
+        }
+        cout.flush();
+
+        // 沿用源分辨率/帧率/采样率/声道布局；编码线程数仍由 encodeThreads 控制
+        keepSourceChannelLayout = true;
+        // 元数据功能不复制源元数据，只写入用户填写的字段
+        copySourceMetadata = (functionName != "EncodeWithMetadata");
+    } else {
+        cout << String("未知的输出初始化功能: ", "Unknown output init function: ")
+             << functionName << endl;
+        cout.flush();
+        return -EINVAL;
+    }
+
+    outPath_ = outputPath;
+
+    // ---------- 通用输出初始化（原 initOutputContext 主体） ----------
     bool wantVideo = hasVideo() && videoID != AV_CODEC_ID_NONE;
     bool wantAudio = hasAudio() && audioID != AV_CODEC_ID_NONE;
 
@@ -863,275 +1049,30 @@ bool FFmpeg::getMediaInfo() const {
     return true;
 }
 
+
 // ============================
-// 用压缩参数完成输出初始化（仅初始化，不编码；调用后需再调 encodeToFile() 写出）
-// preset 1=体积最小, 10=体积较大；不改变源编码器；不使用CRF
+// 编码完整文件
 // ============================
-int FFmpeg::openOutputWithCompressMedia(const char* outputPath,
-                                          int presetLevel,
-                                          bool copySourceMetadata) {
-    if (presetLevel < 1 || presetLevel > 10)
-        throw std::invalid_argument("presetLevel must be 1~10!");
-
-    if (!fmtCtx_.isOpened()) {
-        cout << String("未打开输入文件...", "Didn't open input file...") << endl;
-        return -EINVAL;
-    }
-
-    // preset 固定 veryfast（只控制编码速度，不参与压缩等级控制）
-    const std::string preset = "veryfast";
-
-    // 压缩等级通过 码率/帧率/分辨率/采样率 控制：level=1 最小体积, level=10 原画质
-    // 码率缩放: 0.15 ~ 1.0
-    const double bitrateScale = 0.15 + (presetLevel - 1) * 0.85 / 9.0;
-    // 帧率缩放: 0.4 ~ 1.0（最低不低于 15fps）
-    const double fpsScale = 0.4 + (presetLevel - 1) * 0.6 / 9.0;
-    // 分辨率缩放: 0.6 ~ 1.0
-    const double scaleFactor = 0.6 + (presetLevel - 1) * 0.4 / 9.0;
-    // 采样率档位: 22050 ~ 48000
-    const int sampleRateTable[] = {22050, 24000, 32000, 44100, 48000};
-    const int srIdx = (presetLevel - 1) * 4 / 9;  // 0~4
-    const int targetSampleRate = sampleRateTable[srIdx];
-
-    // 读取输入流原始参数（压缩强制用 H.264 软件编码，画质优于硬件编码）
-    AVCodecID videoID = AV_CODEC_ID_NONE;
-    AVCodecID audioID = AV_CODEC_ID_NONE;
-    int64_t srcVideoBitrate = 0;
-    int64_t srcAudioBitrate = 0;
-    int srcWidth = 0, srcHeight = 0;
-    int srcSampleRate = 0;
-    double srcVideoFps = 25.0;
-
-    if (hasVideo()) {
-        AVStream* st = fmtCtx_.raw()->streams[videoStreamIndex_];
-        videoID = AV_CODEC_ID_H264;  // 强制 H.264，配合 allowHardware=false 走 libx264 软编
-        srcVideoBitrate = st->codecpar->bit_rate;
-        if (srcVideoBitrate <= 0) srcVideoBitrate = 2000000;
-        srcWidth = st->codecpar->width;
-        srcHeight = st->codecpar->height;
-        AVRational fr = st->avg_frame_rate;
-        if (fr.num > 0 && fr.den > 0) srcVideoFps = av_q2d(fr);
-    }
-    if (hasAudio()) {
-        AVStream* st = fmtCtx_.raw()->streams[audioStreamIndex_];
-        audioID = st->codecpar->codec_id;
-        srcAudioBitrate = st->codecpar->bit_rate;
-        if (srcAudioBitrate <= 0) srcAudioBitrate = 128000;
-        srcSampleRate = st->codecpar->sample_rate;
-    }
-
-    // 计算输出分辨率（保证偶数）
-    int outWidth = 0, outHeight = 0;
-    if (hasVideo()) {
-        outWidth = (int)(srcWidth * scaleFactor / 2) * 2;
-        outHeight = (int)(srcHeight * scaleFactor / 2) * 2;
-        if (outWidth < 16) outWidth = 16;
-        if (outHeight < 16) outHeight = 16;
-    }
-
-    // 计算目标帧率（最低 15fps，不超过源帧率）
-    double targetFps = srcVideoFps * fpsScale;
-    if (targetFps < 15.0) targetFps = 15.0;
-    if (targetFps > srcVideoFps) targetFps = srcVideoFps;
-
-    // 码率按等级缩放，音频再叠加采样率比例
-    int64_t outVideoBitrate = (int64_t)(srcVideoBitrate * bitrateScale);
-    int64_t outAudioBitrate = (int64_t)(srcAudioBitrate * bitrateScale);
-    if (hasAudio() && srcSampleRate > 0 && targetSampleRate < srcSampleRate) {
-        outAudioBitrate = (int64_t)(outAudioBitrate * (double)targetSampleRate / srcSampleRate);
-    }
-
-    // x264/x265/vp9 支持 preset 私有选项
-    bool codecSupportPreset = false;
-    if (hasVideo()) {
-        if (videoID == AV_CODEC_ID_H264 || videoID == AV_CODEC_ID_H265 ||
-            videoID == AV_CODEC_ID_VP9) {
-            codecSupportPreset = true;
-        }
-    }
-
-    // 设置输出路径
-    outPath_ = outputPath;
-
-    cout << "===== 开始压缩 =====" << endl;
-    cout << String("输出: ", "Output: ") << outputPath << endl;
-    cout << String("压缩等级: ", "Compress level: ") << presetLevel << endl;
-    cout << String("  码率缩放: ", "  Bitrate scale: ") << bitrateScale << endl;
-    cout << String("  帧率缩放: ", "  FPS scale: ") << fpsScale << " (" << targetFps << " fps)" << endl;
-    cout << String("  分辨率缩放: ", "  Resolution scale: ") << scaleFactor << endl;
-    if (hasVideo()) {
-        cout << String("输出分辨率: ", "Output resolution: ") << outWidth << "x" << outHeight << endl;
-        cout << String("视频码率: ", "Video bitrate: ") << (outVideoBitrate / 1000) << " kbps" << endl;
-    }
-    if (hasAudio()) {
-        cout << String("输出采样率: ", "Output sample rate: ") << targetSampleRate << " Hz" << endl;
-        cout << String("音频码率: ", "Audio bitrate: ") << (outAudioBitrate / 1000) << " kbps" << endl;
-    }
-    cout.flush();
-
-    // 输出初始化（直接调用私有 initOutputContext，与 openOutPutWithEncoder 独立，互不调用）
-    // allowHardware=false：压缩强制 libx264 软件编码，避免硬件编码画质差
-    int ret = initOutputContext(
-            videoID, audioID,
-            outVideoBitrate,
-            codecSupportPreset ? preset.c_str() : nullptr,
-            targetFps,
-            outAudioBitrate,
-            outWidth, outHeight,
-            targetSampleRate,
-            false,  // allowHardware=false
-            false,  // keepSourceChannelLayout=false
-            copySourceMetadata
-    );
-    if (ret != 0) {
-        return ret;
-    }
-
-    // 仅完成输出初始化，编码由调用方后续调用 encodeToFile() 执行
-    return 0;
-}
-
-// =============================================================
-// 直接复用源文件所有解码器参数初始化输出
-// 分辨率/帧率/码率/采样率/声道布局均不变，仅编码线程数由 config.dat 控制
-// =============================================================
-int FFmpeg::openOutputWithSourceParams(const char* outputPath,
-                                        bool copySourceMetadata) {
-    if (!fmtCtx_.isOpened()) {
-        cout << String("未打开输入文件...", "Didn't open input file...") << endl;
-        return -EINVAL;
-    }
-    if (!hasVideo() && !hasAudio()) {
-        cout << String("未找到音视频流...", "Can not find video/audio stream...") << endl;
-        return -EINVAL;
-    }
-
-    outPath_ = outputPath;
-
-    // 直接从源流 codecpar 提取原始编码器 ID 和码率，不做任何缩放/修改
-    AVCodecID videoID = AV_CODEC_ID_NONE;
-    AVCodecID audioID = AV_CODEC_ID_NONE;
-    int64_t srcVideoBitrate = 0;
-    int64_t srcAudioBitrate = 0;
-
-    if (hasVideo()) {
-        AVStream* st = fmtCtx_.raw()->streams[videoStreamIndex_];
-        videoID = st->codecpar->codec_id;
-        srcVideoBitrate = st->codecpar->bit_rate;
-    }
-    if (hasAudio()) {
-        AVStream* st = fmtCtx_.raw()->streams[audioStreamIndex_];
-        audioID = st->codecpar->codec_id;
-        srcAudioBitrate = st->codecpar->bit_rate;
-    }
-
-    // 容器兼容性检查 + 自动降级：输出容器不支持源编码器时，自动选择容器支持的默认编码器
-    const AVOutputFormat *ofmt = av_guess_format(nullptr, outputPath, nullptr);
-    if (ofmt) {
-        if (hasVideo() && avformat_query_codec(ofmt, videoID, FF_COMPLIANCE_NORMAL) == 0) {
-            cout << String("容器不支持视频编码器 ", "Container doesn't support video encoder ")
-                 << avcodec_get_name(videoID)
-                 << String("，自动降级为 libx264", ", auto fallback to libx264") << endl;
-            LOGD("容器不支持视频编码器 %s, 自动降级为 libx264", avcodec_get_name(videoID));
-            videoID = AV_CODEC_ID_H264;
-            srcVideoBitrate = 0;  // 降级后用编码器默认码率
-        }
-        if (hasAudio() && avformat_query_codec(ofmt, audioID, FF_COMPLIANCE_NORMAL) == 0) {
-            // 根据容器选择兼容的默认音频编码器
-            AVCodecID fallbackAudioID = AV_CODEC_ID_MP3;  // 默认 libmp3lame，兼容性最好
-            const char *ofmtName = ofmt->name;
-            if (strcmp(ofmtName, "wav") == 0) {
-                fallbackAudioID = AV_CODEC_ID_PCM_S16LE;
-            } else if (strcmp(ofmtName, "mp3") == 0) {
-                fallbackAudioID = AV_CODEC_ID_MP3;
-            } else if (strcmp(ofmtName, "mp4") == 0 || strcmp(ofmtName, "mov") == 0 ||
-                       strcmp(ofmtName, "m4a") == 0 || strcmp(ofmtName, "aac") == 0) {
-                fallbackAudioID = AV_CODEC_ID_AAC;
-            } else if (strcmp(ofmtName, "ogg") == 0 || strcmp(ofmtName, "oga") == 0) {
-                fallbackAudioID = AV_CODEC_ID_VORBIS;
-            }
-            // 确认降级后的编码器确实被容器支持
-            if (avformat_query_codec(ofmt, fallbackAudioID, FF_COMPLIANCE_NORMAL) == 0) {
-                fallbackAudioID = AV_CODEC_ID_MP3;  // 兜底再试 MP3
-            }
-            cout << String("容器不支持音频编码器 ", "Container doesn't support audio encoder ")
-                 << avcodec_get_name(audioID)
-                 << String("，自动降级为 ", ", auto fallback to ")
-                 << avcodec_get_name(fallbackAudioID) << endl;
-            LOGD("容器不支持音频编码器 %s, 自动降级为 %s",
-                 avcodec_get_name(audioID), avcodec_get_name(fallbackAudioID));
-            audioID = fallbackAudioID;
-            srcAudioBitrate = 0;  // 降级后用编码器默认码率
-        }
-    }
-
-    cout << "===== 直接转码（沿用源参数） =====" << endl;
-    cout << String("输出: ", "Output: ") << outputPath << endl;
-    if (hasVideo()) {
-        cout << String("视频编码器: ", "Video encoder: ") << avcodec_get_name(videoID)
-             << "  " << vdec_.width() << "x" << vdec_.height() << endl;
-        if (srcVideoBitrate > 0)
-            cout << String("视频码率: ", "Video bitrate: ") << (srcVideoBitrate / 1000) << " kbps" << endl;
-    }
-    if (hasAudio()) {
-        cout << String("音频编码器: ", "Audio encoder: ") << avcodec_get_name(audioID)
-             << "  " << adec_.sampleRate() << " Hz" << endl;
-        if (srcAudioBitrate > 0)
-            cout << String("音频码率: ", "Audio bitrate: ") << (srcAudioBitrate / 1000) << " kbps" << endl;
-    }
-    cout.flush();
-
-    // 所有"变化类"参数传 0 / nullptr，initOutputContext 内部会自动沿用源值：
-    //   outWidth=0 / outHeight=0  → 沿用源分辨率
-    //   targetFps=0.0             → 沿用源帧率
-    //   targetSampleRate=0        → 沿用源采样率
-    //   presetStr=nullptr         → 不设置 preset
-    //   videoBitrate/audioBitrate → 直接传源码率（若源为 0 则由 initOutputContext 回退默认）
-    // keepSourceChannelLayout=true → 沿用源声道布局（不强制立体声）
-    // 编码线程数仍由成员变量 encodeThreads（config.dat 配置）控制，在此函数内无需额外设置
-    return initOutputContext(
-            videoID, audioID,
-            srcVideoBitrate,
-            nullptr,
-            0.0,
-            srcAudioBitrate,
-            0, 0,
-            0,
-            true,   // allowHardware=true：若源为 H264/H265 可自动启用 mediacodec 硬编
-            true,   // keepSourceChannelLayout=true：沿用源声道布局
-            copySourceMetadata
-    );
-}
-
-// ====================================================
-// 无参编码循环：编码完整文件（从 0 到结束），内部委托给核心实现
-// ====================================================
 int FFmpeg::encodeToFile() {
-    return encodeToFileCore(0, (uint64_t)-1, false, 0, 1.0f);
+    return encodeToFile(EncodeOptions{});
 }
 
 // ============================
-// 带时间范围的编码循环：必须显式传入起止时间，无默认值
+// 编码循环（唯一实现）：区间截取 + 可选亮度/伽马
+// 亮度/伽马偏离默认值时自动插入 eq 滤镜
 // ============================
-int FFmpeg::encodeToFile(uint64_t startTimeUs, uint64_t endTimeUs) {
-    return encodeToFileCore(startTimeUs, endTimeUs, false, 0, 1.0f);
-}
+int FFmpeg::encodeToFile(const EncodeOptions& opts) {
+    const uint64_t startTimeUs = opts.startTimeUs;
+    const uint64_t endTimeUs   = opts.endTimeUs;
+    const int8_t brightness    = opts.brightness;
+    const float gamma          = opts.gamma;
+    const bool adjustBrightness = (brightness != 0 || gamma != 1.0f);
 
-// ==================================================
-// 带亮度/伽马调整的编码循环：使用滤镜链(eq)做亮度/伽马调整
-// ==================================================
-int FFmpeg::encodeToFile(int8_t brightness, float gamma) {
-    cout << String("亮度调整: ", "Brightness: ")
-         << "brightness=" << (int)brightness << " gamma=" << gamma << endl;
-    return encodeToFileCore(0, (uint64_t)-1, true, brightness, gamma);
-}
+    if (adjustBrightness) {
+        cout << String("亮度调整: ", "Brightness: ")
+             << "brightness=" << (int)brightness << " gamma=" << gamma << endl;
+    }
 
-// ============================
-// 核心编码循环：所有 encodeToFile 重载的唯一实现
-// 使用 FFmpeg 滤镜链处理视频帧：可选 eq(亮度/伽马) → format → scale
-// ============================
-int FFmpeg::encodeToFileCore(uint64_t startTimeUs, uint64_t endTimeUs,
-                              bool adjustBrightness, int8_t brightness, float gamma) {
     LOGI("遍码线程: %hhu", encodeThreads);
     if (!outFmtCtx_.isOpened()) {
         cout << String("输出未初始化...", "Output not initialized...") << endl;
@@ -1631,66 +1572,6 @@ int FFmpeg::encodeToFileCore(uint64_t startTimeUs, uint64_t endTimeUs,
     if (afifo) av_audio_fifo_free(afifo);
     if (filterGraph) avfilter_graph_free(&filterGraph);
     return 0;
-}
-
-// ============================
-// 便捷重载：用指定名称的编码器初始化输出并编码写出文件
-// 内部等价于：name→codec_id → openOutPutWithEncoder() → encodeToFile()
-// ============================
-[[maybe_unused]]
-int FFmpeg::encodeToFile(const char* outputPath,
-                         const char* videoEncoderName,
-                         const char* audioEncoderName) {
-    if (!fmtCtx_.isOpened() || !outputPath || !outputPath[0]) {
-        return -EINVAL;
-    }
-
-    bool wantVideo = videoEncoderName && videoEncoderName[0] && hasVideo();
-    bool wantAudio = audioEncoderName && audioEncoderName[0] && hasAudio();
-    if (!wantVideo && !wantAudio) {
-        cout << String("没有可编码的音视频流...", "No audio/video stream to encode...") << endl;
-        return -EINVAL;
-    }
-
-    LOGD("开始编码: video=%s audio=%s",
-         wantVideo ? videoEncoderName : "(none)",
-         wantAudio ? audioEncoderName : "(none)");
-    cout << "===== 开始编码 =====" << endl;
-    cout << String("输出: ", "Output: ") << outputPath << endl;
-
-    // 根据编码器名称查找 codec_id
-    AVCodecID videoID = AV_CODEC_ID_NONE;
-    AVCodecID audioID = AV_CODEC_ID_NONE;
-    if (wantVideo) {
-        const AVCodec *vCodec = avcodec_find_encoder_by_name(videoEncoderName);
-        if (!vCodec) {
-            cout << String("找不到视频编码器: ", "Can not find video encoder: ")
-                 << videoEncoderName << endl;
-            return -EINVAL;
-        }
-        videoID = vCodec->id;
-    }
-    if (wantAudio) {
-        const AVCodec *aCodec = avcodec_find_encoder_by_name(audioEncoderName);
-        if (!aCodec) {
-            cout << String("找不到音频编码器: ", "Can not find audio encoder: ")
-                 << audioEncoderName << endl;
-            return -EINVAL;
-        }
-        audioID = aCodec->id;
-    }
-
-    // 设置输出路径
-    outPath_ = outputPath;
-
-    // 输出初始化（打开输出 + 创建编码器 + 创建流 + 写文件头）
-    int ret = openOutPutWithEncoder(videoID, audioID);
-    if (ret != 0) {
-        return ret;
-    }
-
-    // 执行编码循环（调用无参可复用版本）
-    return encodeToFile();
 }
 
 // ============================

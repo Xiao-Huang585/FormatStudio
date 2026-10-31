@@ -1,6 +1,6 @@
 package com.kgmdecoder.app;
 
-import android.app.Activity;
+import androidx.activity.ComponentActivity;
 import android.app.LocaleManager;
 import android.content.Context;
 import android.content.Intent;
@@ -46,7 +46,7 @@ import java.util.Locale;
  * 3. 当 C++ 层播放视频时，显示 SurfaceView
  * 4. 新增获取App生效语言接口 getCurrentEffectiveLanguageTag()
  */
-public class MainActivity extends Activity {
+public class MainActivity extends ComponentActivity {
     private static final String TAG = "MainActivity";
     private static MainActivity sInstance;
     private TextView tvConsole;

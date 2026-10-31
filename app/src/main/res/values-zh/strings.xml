@@ -22,6 +22,14 @@
     <string name="Help_encodeThreads">"编码线程: "</string>
     <string name="Help_encodeCommentKeyValue">"设置文件信息: "</string>
     <string name="Help_encodeCommentKeyValue_desc">设置文件的comment键值对</string>
+    <string name="Help_toast_noBrowser">未找到可用的浏览器</string>
+
+
+
+
+
+
+
     <string name="Selecting_title">选择功能:</string>
 
     <string name="Selecting_showMediaInfo">显示文件信息</string>
@@ -35,6 +43,7 @@
     <string name="Selecting_encodeWithTrim">截断时长</string>
 
     <string name="Selecting_encodeWithMetadata">修改元数据</string>
+    <string name="Selecting_encodeWithAudioFile">外部音频编码</string>
     <string name="Selecting_parametersTitle">设置参数</string>
 
     <string name="Selecting_subtitle">请选择要执行的功能</string>
@@ -64,6 +73,7 @@
     <string name="Selecting_gamma_desc">0.5~3.0, 1.0=不变, &gt;gt1.0变亮, &lt;1.0变暗</string>
 
     <string name="Selecting_setLanguage">语言</string>
+    <string name="Selecting_setAudioPath">音频文件</string>
     <string name="Selecting_confirm">确认</string>
 
     <!-- Toast 提示文本 -->
