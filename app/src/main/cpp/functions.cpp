@@ -44,6 +44,7 @@ char* g_albumArtist = nullptr;     // 专辑艺术家数据
 char* g_genre = nullptr;           // 流派数据
 char* g_date = nullptr;            // 日期元数据
 char* g_language = nullptr;        // 语言元数据
+char* g_audioPath = nullptr;       // 音频路径
 } // namespace enc_par
 
 // ====== 应用路径（由 MainActivity 通过 passAppPaths 传入，替代硬编码） ======
@@ -623,7 +624,7 @@ Java_com_kgmdecoder_app_MainActivity_passBrightnessConfig(JNIEnv *env, jobject t
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_kgmdecoder_app_MainActivity_passMetaDataConfig(JNIEnv *env, jobject thiz,
+Java_com_kgmdecoder_app_MainActivity_passMetadataConfig(JNIEnv *env, jobject thiz,
                                                         jstring jOutputPath, jstring jTitle, jstring jAlbum,
                                                         jstring jArtist, jstring jAlbumArtist, jstring jGenre,
                                                         jstring jDate, jstring jLanguage
@@ -659,6 +660,20 @@ Java_com_kgmdecoder_app_MainActivity_passMetaDataConfig(JNIEnv *env, jobject thi
          enc_par::g_genre ? enc_par::g_genre : "(null)",
          enc_par::g_date ? enc_par::g_date : "(null)",
          enc_par::g_language ? enc_par::g_language : "(null)");
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_kgmdecoder_app_MainActivity_passExtraAudioConfig(JNIEnv *env, jobject thiz,
+                                                          jstring jOutputPath, jstring jAudioPath) {
+    std::lock_guard<std::mutex> lock(g_inputMutex);
+    const char* outputPath = env->GetStringUTFChars(jOutputPath, nullptr);
+    enc_par::g_outputPath = outputPath;
+    env->ReleaseStringUTFChars(jOutputPath, outputPath);
+
+    const char* audioPath = env->GetStringUTFChars(jAudioPath, nullptr);
+    enc_par::g_audioPath = strdup(audioPath);
+    env->ReleaseStringUTFChars(jAudioPath, audioPath);
+    LOGD("音频参数: output=%s audioPath=%s", enc_par::g_outputPath.c_str(), enc_par::g_audioPath);
 }
 
 // ============================

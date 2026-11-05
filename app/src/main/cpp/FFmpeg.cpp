@@ -235,7 +235,7 @@ void FFmpeg::addMetadata(const char* key, const char* value) {
 // 不执行编码，由调用方随后调用 encodeToFile() 写出。
 // ============================
 int FFmpeg::openOutput(const std::string& functionName) {
-    const std::string& outputPath = enc_par::g_outputPath;
+    const std::string &outputPath = enc_par::g_outputPath;
     if (outputPath.empty()) {
         cout << String("输出路径为空, 取消编码", "Output path is empty, canceled") << endl;
         cout.flush();
@@ -257,7 +257,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
     AVCodecID audioID = AV_CODEC_ID_NONE;
     int64_t videoBitrate = 0;
     int64_t audioBitrate = 0;
-    const char* presetStr = nullptr;
+    const char *presetStr = nullptr;
     double targetFps = 0.0;
     int outWidth = 0, outHeight = 0;
     int targetSampleRate = 0;
@@ -310,7 +310,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
         double srcVideoFps = 25.0;
 
         if (hasVideo()) {
-            AVStream* st = fmtCtx_.raw()->streams[videoStreamIndex_];
+            AVStream *st = fmtCtx_.raw()->streams[videoStreamIndex_];
             videoID = AV_CODEC_ID_H264;  // 强制 H.264，配合 allowHardware=false 走 libx264 软编
             srcVideoBitrate = st->codecpar->bit_rate;
             if (srcVideoBitrate <= 0) srcVideoBitrate = 2000000;
@@ -320,7 +320,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
             if (fr.num > 0 && fr.den > 0) srcVideoFps = av_q2d(fr);
         }
         if (hasAudio()) {
-            AVStream* st = fmtCtx_.raw()->streams[audioStreamIndex_];
+            AVStream *st = fmtCtx_.raw()->streams[audioStreamIndex_];
             audioID = st->codecpar->codec_id;
             srcAudioBitrate = st->codecpar->bit_rate;
             if (srcAudioBitrate <= 0) srcAudioBitrate = 128000;
@@ -329,8 +329,8 @@ int FFmpeg::openOutput(const std::string& functionName) {
 
         // 计算输出分辨率（保证偶数）
         if (hasVideo()) {
-            outWidth = (int)(srcWidth * scaleFactor / 2) * 2;
-            outHeight = (int)(srcHeight * scaleFactor / 2) * 2;
+            outWidth = (int) (srcWidth * scaleFactor / 2) * 2;
+            outHeight = (int) (srcHeight * scaleFactor / 2) * 2;
             if (outWidth < 16) outWidth = 16;
             if (outHeight < 16) outHeight = 16;
         }
@@ -344,7 +344,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
         videoBitrate = (int64_t)(srcVideoBitrate * bitrateScale);
         audioBitrate = (int64_t)(srcAudioBitrate * bitrateScale);
         if (hasAudio() && srcSampleRate > 0 && targetSampleRate < srcSampleRate) {
-            audioBitrate = (int64_t)(audioBitrate * (double)targetSampleRate / srcSampleRate);
+            audioBitrate = (int64_t)(audioBitrate * (double) targetSampleRate / srcSampleRate);
         }
 
         // x264/x265/vp9 支持 preset 私有选项
@@ -363,17 +363,86 @@ int FFmpeg::openOutput(const std::string& functionName) {
         cout << String("输出: ", "Output: ") << outputPath << endl;
         cout << String("压缩等级: ", "Compress level: ") << presetLevel << endl;
         cout << String("  码率缩放: ", "  Bitrate scale: ") << bitrateScale << endl;
-        cout << String("  帧率缩放: ", "  FPS scale: ") << fpsScale << " (" << targetFps << " fps)" << endl;
+        cout << String("  帧率缩放: ", "  FPS scale: ") << fpsScale << " (" << targetFps << " fps)"
+             << endl;
         cout << String("  分辨率缩放: ", "  Resolution scale: ") << scaleFactor << endl;
         if (hasVideo()) {
-            cout << String("输出分辨率: ", "Output resolution: ") << outWidth << "x" << outHeight << endl;
-            cout << String("视频码率: ", "Video bitrate: ") << (videoBitrate / 1000) << " kbps" << endl;
+            cout << String("输出分辨率: ", "Output resolution: ") << outWidth << "x" << outHeight
+                 << endl;
+            cout << String("视频码率: ", "Video bitrate: ") << (videoBitrate / 1000) << " kbps"
+                 << endl;
         }
         if (hasAudio()) {
-            cout << String("输出采样率: ", "Output sample rate: ") << targetSampleRate << " Hz" << endl;
-            cout << String("音频码率: ", "Audio bitrate: ") << (audioBitrate / 1000) << " kbps" << endl;
+            cout << String("输出采样率: ", "Output sample rate: ") << targetSampleRate << " Hz"
+                 << endl;
+            cout << String("音频码率: ", "Audio bitrate: ") << (audioBitrate / 1000) << " kbps"
+                 << endl;
         }
         cout.flush();
+    } else if (functionName == "EncodeWithExtraAudio") {
+        if (!hasVideo()) {
+            cout << String("缺少视频流...", "No video stream...") << endl;
+            LOGD("缺少视频流...");
+            return -EINVAL;
+        }
+
+        if (!enc_par::g_audioPath || enc_par::g_audioPath[0] == '\0') {
+            cout << String("音频路径为空...", "Audio path is empty...") << endl;
+            LOGD("音频路径为空...");
+            return -EINVAL;
+        }
+
+        std::error_code ec;
+        extraFmtCtx_.openInput(enc_par::g_audioPath, ec);
+        if (ec) {
+            cout << String("无法打开音频文件...", "Can not open audio file...") << endl;
+            LOGD("无法打开音频文件...");
+            return ec.value();
+        }
+
+        extraFmtCtx_.findStreamInfo(ec);
+        if (ec) {
+            cout << String("无法查找流信息...", "Can not find stream info...");
+            LOGD("无法查找流信息...");
+            return ec.value();
+        }
+
+        extraAudioStreamIndex_ = -1;
+        for (int i = 0; i < extraFmtCtx_.streamsCount(); i++) {
+            if (extraFmtCtx_.stream(i).isAudio()) { extraAudioStreamIndex_ = i; break; }
+        }
+
+        if (extraAudioStreamIndex_ < 0) {
+            cout << String("无法找到音频流...", "Can not find audio stream...");
+            LOGD("无法找到音频流...");
+            return -EINVAL;
+        }
+
+        // 取外部音频文件里已找到的音频流（不能在输入上下文上 addStream：
+        // 那会新建一个空的 codecpar，导致 audioID=NONE / 采样率=0，并在读上下文里引发崩溃）
+        av::Stream aStream = extraFmtCtx_.stream(extraAudioStreamIndex_);
+
+        extraAdec_ = av::AudioDecoderContext(aStream);
+        extraAdec_.open(ec);
+        if (ec) {
+            cout << String("外部音频解码器打开失败...", "Can not open extra audio decoder...") << endl;
+            LOGD("外部音频解码器打开失败...");
+            return ec.value();
+        }
+
+        useExtraAudio = true;
+
+        AVStream *vStream = fmtCtx_.raw()->streams[videoStreamIndex_];
+        videoID = vStream->codecpar->codec_id;
+        videoBitrate = vStream->codecpar->bit_rate;
+
+        AVCodecParameters *codecpar = aStream.codecParameters().raw();
+        audioID = codecpar->codec_id;
+        audioBitrate = codecpar->bit_rate;
+        targetSampleRate = codecpar->sample_rate;
+        keepSourceChannelLayout = true;
+        copySourceMetadata = true;
+        presetStr = "veryfast";
     } else if (functionName == "EncodeWithTrim" ||
                functionName == "EncodeWithBrightness" ||
                functionName == "EncodeWithMetadata") {
@@ -460,7 +529,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
 
     // ---------- 通用输出初始化（原 initOutputContext 主体） ----------
     bool wantVideo = hasVideo() && videoID != AV_CODEC_ID_NONE;
-    bool wantAudio = hasAudio() && audioID != AV_CODEC_ID_NONE;
+    bool wantAudio = (hasAudio() || useExtraAudio) && audioID != AV_CODEC_ID_NONE;
 
     // 根据输出路径扩展名猜测封装格式，并检查容器兼容性
     const AVOutputFormat *ofmt = av_guess_format(nullptr, outPath_.c_str(), nullptr);
@@ -616,7 +685,6 @@ int FFmpeg::openOutput(const std::string& functionName) {
             LOGD("libx264 提速参数: subme=2 refs=1 rc-lookahead=10 aq-mode=0 scenecut=0");
         }
 
-//      venc_.open(ec);
         int openRet = avcodec_open2(venc_.raw(), vCodec.raw(), nullptr);
         LOGD("venc after open: %dx%d pix=%d tb=%d/%d fr=%d/%d br=%ld gop=%d flags=0x%x openRet=%d",
              venc_.width(), venc_.height(), static_cast<int>(venc_.pixelFormat().get()),
@@ -659,7 +727,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
             aenc_ = av::AudioEncoderContext(aCodec);
 
             AVSampleFormat outSampleFmt = pickEncoderSampleFormat(aCodec.raw());
-            int outSampleRate = (targetSampleRate > 0) ? targetSampleRate : adec_.sampleRate();
+            int outSampleRate = (targetSampleRate > 0) ? targetSampleRate : activeAudioDecoder().sampleRate();
             // Opus 只支持 8/12/16/24/48 kHz。若仍按源采样率(常见 44.1kHz)交给编码器，
             // 编码器会按 48kHz 处理，而重采样器仍输出源采样率，时间戳推进过快 → 播放加速。
             if (audioID == AV_CODEC_ID_OPUS &&
@@ -678,7 +746,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
 
             if (keepSourceChannelLayout) {
                 // 沿用源声道布局（单声道/立体声/5.1 等保持不变）
-                av_channel_layout_copy(&aenc_.raw()->ch_layout, &adec_.raw()->ch_layout);
+                av_channel_layout_copy(&aenc_.raw()->ch_layout, &activeAudioDecoder().raw()->ch_layout);
             } else {
                 AVChannelLayout stereoLayout = AV_CHANNEL_LAYOUT_STEREO;
                 av_channel_layout_copy(&aenc_.raw()->ch_layout, &stereoLayout);
@@ -759,17 +827,17 @@ int FFmpeg::openOutput(const std::string& functionName) {
                 } else {
                     AVChannelLayout outLayout;
                     if (keepSourceChannelLayout) {
-                        av_channel_layout_copy(&outLayout, &adec_.raw()->ch_layout);
+                        av_channel_layout_copy(&outLayout, &activeAudioDecoder().raw()->ch_layout);
                     } else {
                         outLayout = AV_CHANNEL_LAYOUT_STEREO;
                     }
                     AVChannelLayout inLayout = {};
-                    av_channel_layout_copy(&inLayout, &adec_.raw()->ch_layout);
+                    av_channel_layout_copy(&inLayout, &activeAudioDecoder().raw()->ch_layout);
 
                     int swrRet = swr_alloc_set_opts2(&swrCtx_,
                                                      &outLayout, outSampleFmt, outSampleRate,
-                                                     &inLayout, adec_.sampleFormat(),
-                                                     adec_.sampleRate(), 0, nullptr
+                                                     &inLayout, activeAudioDecoder().sampleFormat(),
+                                                     activeAudioDecoder().sampleRate(), 0, nullptr
                     );
                     av_channel_layout_uninit(&inLayout);
                     if (keepSourceChannelLayout) av_channel_layout_uninit(&outLayout);
@@ -1062,11 +1130,12 @@ int FFmpeg::encodeToFile() {
 // 亮度/伽马偏离默认值时自动插入 eq 滤镜
 // ============================
 int FFmpeg::encodeToFile(const EncodeOptions& opts) {
-    const uint64_t startTimeUs = opts.startTimeUs;
-    const uint64_t endTimeUs   = opts.endTimeUs;
-    const int8_t brightness    = opts.brightness;
-    const float gamma          = opts.gamma;
+    const uint64_t startTimeUs  = opts.startTimeUs;
+    const uint64_t endTimeUs    = opts.endTimeUs;
+    const int8_t brightness     = opts.brightness;
+    const float gamma           = opts.gamma;
     const bool adjustBrightness = (brightness != 0 || gamma != 1.0f);
+    const bool extraAudioFile   = opts.extraAudioFile || useExtraAudio;
 
     if (adjustBrightness) {
         cout << String("亮度调整: ", "Brightness: ")
@@ -1129,7 +1198,10 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
     AVRational vInTimeBase = {0, 0};
     AVRational aInTimeBase = {0, 0};
     if (videoStreamOk) vInTimeBase = fmtCtx_.raw()->streams[videoStreamIndex_]->time_base;
-    if (audioStreamOk) aInTimeBase = fmtCtx_.raw()->streams[audioStreamIndex_]->time_base;
+
+    if (audioStreamOk) aInTimeBase = extraAudioFile ?
+            extraFmtCtx_.raw()->streams[extraAudioStreamIndex_]->time_base :
+            fmtCtx_.raw()->streams[audioStreamIndex_]->time_base;
 
     // 帧率转换：目标帧率低于源帧率时丢帧，保持音视频同步
     double srcFps = 25.0;
@@ -1321,7 +1393,9 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
     auto feedAudioSamples = [&](av::AudioSamples &decSamples) {
         if (!swrCtx_ || !aenc_.isOpened() || !decSamples) return;
         // 更新时间进度（与视频取max，音视频不同步时进度取较大者）
-        if (durationKnown && decSamples.raw()->pts != AV_NOPTS_VALUE && aInTimeBase.num > 0) {
+        // 外部音频模式不让音频参与进度：否则音频时间轴会先把进度顶到 100%，
+        // 而主循环还在处理剩余视频，看起来像“卡在 100% 不结束”
+        if (!extraAudioFile && durationKnown && decSamples.raw()->pts != AV_NOPTS_VALUE && aInTimeBase.num > 0) {
             int64_t samplesUs = av_rescale_q(decSamples.raw()->pts, aInTimeBase, AV_TIME_BASE_Q);
             if (samplesUs > currentTimeUs) currentTimeUs = samplesUs;
         }
@@ -1369,6 +1443,24 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
             if (writePkt(encPkt, outAStream_, aenc_.raw()->time_base, nbSmpl)) {
                 ++writtenAPkts;
             }
+        }
+    };
+
+    bool extraAudioEof = false;
+
+    auto pullAnExtraAudioPacket = [&]() {
+        if (extraAudioEof || !audioStreamOk) return;
+        while (true) {
+            std::error_code readEc;
+            av::Packet pkt = extraFmtCtx_.readPacket(readEc);
+            if (readEc || !pkt) { extraAudioEof = true; return; }
+            if (pkt.streamIndex() != extraAudioStreamIndex_) continue;
+
+            std::error_code decEc;
+            av::AudioSamples dst = extraAdec_.decode(pkt, decEc);
+            if (decEc) { LOGD("外部音频解码错误: %s", decEc.message().c_str()); continue; }
+            if (dst) feedAudioSamples(dst);
+            return;
         }
     };
 
@@ -1423,7 +1515,7 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
         if (readEc) { LOGD("读包结束/出错: %s", readEc.message().c_str()); break; }
         if (!pkt) break;
         bool isVideo = (videoStreamOk && pkt.streamIndex() == videoStreamIndex_);
-        bool isAudio = (audioStreamOk && pkt.streamIndex() == audioStreamIndex_);
+        bool isAudio = (audioStreamOk && !extraAudioFile && pkt.streamIndex() == audioStreamIndex_);
         if (!isVideo && !isAudio) continue;
         if ((++processedPkts % 200) == 0) {
             if (durationKnown) {
@@ -1445,14 +1537,29 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
             if (decEc) { LOGD("视频解码错误: %s", decEc.message().c_str()); continue; }
             if (decFrame) feedVideoFrame(decFrame);
         }
-        if (isAudio && swrCtx_) {
+        if (isAudio && swrCtx_ && !extraAudioFile) {
             std::error_code decEc;
             av::AudioSamples decSamples = adec_.decode(pkt, decEc);
             if (decEc) { LOGD("音频解码错误: %s", decEc.message().c_str()); continue; }
             if (decSamples) feedAudioSamples(decSamples);
         }
+        if (extraAudioFile && audioStreamOk) {
+            pullAnExtraAudioPacket();
+        }
         // 截止判断：feed 内部已过滤当前帧，这里用于及时退出主循环（避免解码剩余全部文件）
         if (endTimeUs != static_cast<uint64_t>(-1) && currentTimeUs > (int64_t)endTimeUs) break;
+    }
+
+    // 外部音频的解码器收尾（注意：flush 的是解码器；音频编码器由后面的
+    // “冲刷 swr 缓冲与音频 FIFO”和“冲刷编码器”两步统一收尾）
+    if (extraAudioFile && audioStreamOk) {
+        avcodec_send_packet(extraAdec_.raw(), nullptr);
+        while (true) {
+            std::error_code decEc;
+            av::AudioSamples dst = extraAdec_.decode(av::Packet(),decEc);
+            if (decEc || !dst) break;
+            feedAudioSamples(dst);
+        }
     }
 
     // ========== 冲刷解码器 ==========
@@ -1465,7 +1572,7 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
             feedVideoFrame(decFrame);
         }
     }
-    if (audioStreamOk && swrCtx_) {
+    if (audioStreamOk && swrCtx_ && !extraAudioFile) {
         avcodec_send_packet(adec_.raw(), nullptr);
         while (true) {
             std::error_code decEc;

@@ -20,11 +20,13 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.ComponentActivity;
+
 enum FunctionWindow {
-    METADATA, BRIGHTNESS, TRIM, COMPRESS, ENCODER, NONE
+    EXTRA_AUDIO, METADATA, BRIGHTNESS, TRIM, COMPRESS, ENCODER, NONE
 }
 
-public class Selecting extends Activity {
+public class Selecting extends ComponentActivity {
     private Button showMediaInfoBtn;
     private Button playVideoBtn;
     private Button encodeWithOtherEncoderBtn;
@@ -32,6 +34,7 @@ public class Selecting extends Activity {
     private Button encodeWithTrimBtn;
     private Button encodeWithBrightnessBtn;
     private Button encodeWithMetadataBtn;
+    private Button encodeWithExtraAudioBtn;
 
     // 外壳控件（在主selecting.xml，可以onCreate直接find）
     private View parametersWindow;
@@ -69,21 +72,22 @@ public class Selecting extends Activity {
         inputFilePath = getIntent().getStringExtra("InputPath");
         if (inputFilePath == null) inputFilePath = "";
 
-        showMediaInfoBtn = <Button>findViewById(R.id.ShowMediaInfo);
-        playVideoBtn = <Button>findViewById(R.id.PlayVideo);
-        encodeWithOtherEncoderBtn = <Button>findViewById(R.id.EncodeWithOtherEncoders);
-        encodeWithCompressBtn = <Button>findViewById(R.id.EncodeWithCompress);
-        encodeWithTrimBtn = <Button>findViewById(R.id.EncodeWithTrim);
-        encodeWithBrightnessBtn = <Button>findViewById(R.id.EncodeWithBrightness);
-        encodeWithMetadataBtn = <Button>findViewById(R.id.EncodeWithMetaData);
+        showMediaInfoBtn = findViewById(R.id.ShowMediaInfo);
+        playVideoBtn = findViewById(R.id.PlayVideo);
+        encodeWithOtherEncoderBtn = findViewById(R.id.EncodeWithOtherEncoders);
+        encodeWithCompressBtn = findViewById(R.id.EncodeWithCompress);
+        encodeWithTrimBtn = findViewById(R.id.EncodeWithTrim);
+        encodeWithBrightnessBtn = findViewById(R.id.EncodeWithBrightness);
+        encodeWithMetadataBtn = findViewById(R.id.EncodeWithMetadata);
+        encodeWithExtraAudioBtn = findViewById(R.id.EncodeWithExtraAudio);
 
 
         // 外壳控件
-        parametersWindow = <View>findViewById(R.id.parameters_window);
-        backArrow = <ImageButton>findViewById(R.id.backArrow);
-        btnConfirmEncode = <Button>findViewById(R.id.btn_confirm_encode);
-        contentPlaceholder = <FrameLayout>findViewById(R.id.content_placeholder);
-        tvParametersTitle = <TextView>findViewById(R.id.tv_parameters_title);
+        parametersWindow = findViewById(R.id.parameters_window);
+        backArrow = findViewById(R.id.backArrow);
+        btnConfirmEncode = findViewById(R.id.btn_confirm_encode);
+        contentPlaceholder = findViewById(R.id.content_placeholder);
+        tvParametersTitle = findViewById(R.id.tv_parameters_title);
 
         // 原生获取流信息
         fileHasVideo = hasVideo();
@@ -94,6 +98,7 @@ public class Selecting extends Activity {
 
         if (!hasVideo()) {
             encodeWithBrightnessBtn.setVisibility(View.GONE);
+            encodeWithExtraAudioBtn.setVisibility(View.GONE);
         }
 
         showMediaInfoBtn.setOnClickListener(v -> {
@@ -153,6 +158,12 @@ public class Selecting extends Activity {
             }
         );
 
+        encodeWithExtraAudioBtn.setOnClickListener(v -> {
+            showParamWindow(R.layout.layout_extra_audio_params, getString(R.string.Selecting_parametersTitle));
+            window = FunctionWindow.EXTRA_AUDIO;
+            }
+        );
+
         // 返回箭头
         backArrow.setOnClickListener(v -> {
             if (parametersWindow.getVisibility() == View.VISIBLE) {
@@ -169,7 +180,7 @@ public class Selecting extends Activity {
                 if (currentSubView == null) return;
 
                 // 从 currentSubView 查找输入框
-                EditText etOutputPath = currentSubView.<EditText>findViewById(R.id.et_output_path);
+                EditText etOutputPath = currentSubView.findViewById(R.id.et_output_path);
                 String outputPath = etOutputPath.getText().toString().trim();
 
                 if (outputPath.isEmpty()) {
@@ -193,7 +204,7 @@ public class Selecting extends Activity {
                 if (currentSubView == null) return;
 
                 // 从 currentSubView 查找输入框
-                EditText etOutputPath = currentSubView.<EditText>findViewById(R.id.et_output_path);
+                EditText etOutputPath = currentSubView.findViewById(R.id.et_output_path);
                 String outputPath = etOutputPath.getText().toString().trim();
 
                 if (outputPath.isEmpty()) {
@@ -201,7 +212,7 @@ public class Selecting extends Activity {
                     return;
                 }
 
-                EditText et_compressLevel = currentSubView.<EditText>findViewById(R.id.compressLevel);
+                EditText et_compressLevel = currentSubView.findViewById(R.id.compressLevel);
                 String compressLevel = et_compressLevel.getText().toString().trim();
                 if ((compressLevel.length() != 1 && (compressLevel.length() == 2 && !compressLevel.equals("10"))) || compressLevel.isEmpty() ||
                         !('0' <= compressLevel.charAt(0) || compressLevel.charAt(0) <= '9') ) {
@@ -217,7 +228,7 @@ public class Selecting extends Activity {
             }
             if (window == FunctionWindow.TRIM) {
                 if (currentSubView == null) return;
-                EditText etOutputPath = currentSubView.<EditText>findViewById(R.id.et_output_path);
+                EditText etOutputPath = currentSubView.findViewById(R.id.et_output_path);
                 String outputPath = etOutputPath.getText().toString().trim();
 
                 if (outputPath.isEmpty()) {
@@ -227,7 +238,7 @@ public class Selecting extends Activity {
 
                 int AV_TIME_BASE = 1000000; // C++ AV_TIME_BASE兼容
 
-                EditText etStartTime = currentSubView.<EditText>findViewById(R.id.startTimeSecond);
+                EditText etStartTime = currentSubView.findViewById(R.id.startTimeSecond);
                 double startTime = Double.parseDouble(etStartTime.getText().toString().trim());
 
                 // duration 未知（=0）时跳过上限检查，避免合法时间被误判为非法
@@ -237,7 +248,7 @@ public class Selecting extends Activity {
                     return;
                 }
 
-                EditText etEndTime = currentSubView.<EditText>findViewById(R.id.endTimeSecond);
+                EditText etEndTime = currentSubView.findViewById(R.id.endTimeSecond);
                 double endTime = Double.parseDouble(etEndTime.getText().toString().trim());
                 if (endTime <= startTime) {
                     Toast.makeText(this, R.string.Selecting_toast_invalidEndTime, Toast.LENGTH_SHORT).show();
@@ -254,7 +265,7 @@ public class Selecting extends Activity {
             }
             if (window == FunctionWindow.BRIGHTNESS) {
                 if (currentSubView == null) return;
-                EditText etOutputPath = currentSubView.<EditText>findViewById(R.id.et_output_path);
+                EditText etOutputPath = currentSubView.findViewById(R.id.et_output_path);
                 String outputPath = etOutputPath.getText().toString().trim();
 
                 if (outputPath.isEmpty()) {
@@ -267,14 +278,14 @@ public class Selecting extends Activity {
                     return;
                 }
 
-                EditText etBrightness = currentSubView.<EditText>findViewById(R.id.et_brightness);
+                EditText etBrightness = currentSubView.findViewById(R.id.et_brightness);
                 int brightness = Integer.parseInt(etBrightness.getText().toString().trim());
                 if (-128 > brightness || 127 < brightness) {
                     Toast.makeText(this, R.string.Selecting_toast_invalidBrightness, Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                EditText etGamma = currentSubView.<EditText>findViewById(R.id.et_gamma);
+                EditText etGamma = currentSubView.findViewById(R.id.et_gamma);
                 String gammaStr = etGamma.getText().toString().trim();
                 float gamma = gammaStr.isEmpty() ? 1.0f : Float.parseFloat(gammaStr);
 
@@ -293,20 +304,20 @@ public class Selecting extends Activity {
             }
             if (window == FunctionWindow.METADATA) {
                 if (currentSubView == null) return;
-                EditText etOutputPath = currentSubView.<EditText>findViewById(R.id.et_output_path);
+                EditText etOutputPath = currentSubView.findViewById(R.id.et_output_path);
                 String outputPath = etOutputPath.getText().toString().trim();
                 if (outputPath.isEmpty()) {
                     Toast.makeText(this, R.string.Selecting_toast_emptyOutputPath, Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                EditText etTitle = currentSubView.<EditText>findViewById(R.id.et_title);
-                EditText etAlbum = currentSubView.<EditText>findViewById(R.id.et_album);
-                EditText etArtist = currentSubView.<EditText>findViewById(R.id.et_artist);
-                EditText etDate = currentSubView.<EditText>findViewById(R.id.et_date);
-                EditText etLanguage = currentSubView.<EditText>findViewById(R.id.et_language);
-                EditText etAlbumArtist = currentSubView.<EditText>findViewById(R.id.et_albumArtist);
-                EditText etGenre = currentSubView.<EditText>findViewById(R.id.et_genre);
+                EditText etTitle = currentSubView.findViewById(R.id.et_title);
+                EditText etAlbum = currentSubView.findViewById(R.id.et_album);
+                EditText etArtist = currentSubView.findViewById(R.id.et_artist);
+                EditText etDate = currentSubView.findViewById(R.id.et_date);
+                EditText etLanguage = currentSubView.findViewById(R.id.et_language);
+                EditText etAlbumArtist = currentSubView.findViewById(R.id.et_albumArtist);
+                EditText etGenre = currentSubView.findViewById(R.id.et_genre);
 
                 Intent res = new Intent();
                 res.putExtra("Function", "EncodeWithMetadata");
@@ -318,6 +329,29 @@ public class Selecting extends Activity {
                 res.putExtra("Language", etLanguage.getText().toString().trim());
                 res.putExtra("AlbumArtist", etAlbumArtist.getText().toString().trim());
                 res.putExtra("Genre", etGenre.getText().toString().trim());
+                setResult(RESULT_OK, res);
+                finish();
+            }
+            if (window == FunctionWindow.EXTRA_AUDIO) {
+                if (currentSubView == null) return;
+                EditText etOutputPath = currentSubView.findViewById(R.id.et_output_path);
+                String outputPath = etOutputPath.getText().toString().trim();
+                if (outputPath.isEmpty()) {
+                    Toast.makeText(this, getString(R.string.Selecting_toast_emptyOutputPath), Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                EditText etAudioPath = currentSubView.findViewById(R.id.et_audioPath);
+                String audioPath = etAudioPath.getText().toString().trim();
+                if (audioPath.isEmpty()) {
+                    Toast.makeText(this, getString(R.string.Selecting_toast_invalidAudioPath), Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Intent res = new Intent();
+                res.putExtra("Function", "EncodeWithExtraAudio");
+                res.putExtra("OutputPath", outputPath);
+                res.putExtra("AudioPath", audioPath);
                 setResult(RESULT_OK, res);
                 finish();
             }
@@ -340,7 +374,7 @@ public class Selecting extends Activity {
         }
 
         // 自动填充输出路径：/Download/<输入文件名>
-        EditText etOutput = currentSubView.<EditText>findViewById(R.id.et_output_path);
+        EditText etOutput = currentSubView.findViewById(R.id.et_output_path);
         if (etOutput != null && !inputFilePath.isEmpty()) {
             String fileName = inputFilePath.substring(inputFilePath.lastIndexOf('/') + 1);
             String downloadDir = android.os.Environment.getExternalStoragePublicDirectory(
@@ -352,6 +386,13 @@ public class Selecting extends Activity {
         if (layoutId == R.layout.layout_metadata_params) {
             attachEnterToHideKeyboard(currentSubView);
         }
+
+        // 外部音频文件布局: 绑定filePicker和EditText
+        if (layoutId == R.layout.layout_extra_audio_params) {
+            FilePickerButton pickerBtn = currentSubView.findViewById(R.id.pick_audioPath);
+            pickerBtn.setTargetEditText(currentSubView.findViewById(R.id.et_audioPath));
+        }
+
 
         // 入场动画：上滑 + 轻微缩放 + 淡入
         isParamAnimating = true;

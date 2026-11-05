@@ -891,6 +891,43 @@ void cppMain(jobject thiz) {
                     continue;
                 }
 
+                if (functionName == "EncodeWithExtraAudio" && (ffmpeg->hasVideo())) {
+                    cout << String("===== 开始外部音频编码 =====", "===== Start extra audio encoding =====") << endl;
+                    cout << String("输出路径: ", "Output path: ") << enc_par::g_outputPath << endl;
+                    cout << String("外部音频路径: ", "Extra audio file path: ") << enc_par::g_audioPath << endl;
+                    cout.flush();
+
+                    if (enc_par::g_outputPath.empty()) {
+                        cout << String("输出路径为空, 取消编码", "Output path is empty, canceled") << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    int initRet = ffmpeg->openOutput("EncodeWithExtraAudio");
+                    if (initRet != 0) {
+                        cout << String("外部音频输出初始化失败, 错误码: ", "Extra audio init failed, error code: ")
+                             << initRet << endl;
+                        cout.flush();
+                        continue;
+                    }
+
+                    FFmpeg::EncodeOptions opts;
+                    opts.extraAudioFile = true;
+                    int encRet = ffmpeg->encodeToFile(opts);
+                    if (encRet == 0) {
+                        cout << String("外部音频编码完成! ", "Extra audio encoding finished!") << endl;
+                    } else {
+                        cout << String("外部音频编码失败, 错误码: ", "Extra audio encoding failed, error code: ")
+                             << encRet << endl;
+                    }
+
+                    finalizeOutput(encRet);
+                    cout.flush();
+
+                    // 结果保留在控制台，下一条命令到达时主循环会自动清空
+                    continue;
+                }
+
                 if (functionName == "PlayVideo" && (ffmpeg->hasVideo() || ffmpeg->hasAudio())) {
                     callJavaClear();
                     bool hasAudio = ffmpeg->hasAudio(), hasVideo = ffmpeg->hasVideo();

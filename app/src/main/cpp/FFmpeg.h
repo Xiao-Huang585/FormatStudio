@@ -94,6 +94,7 @@ public:
      * - "EncodeWithCompress"：用 enc_par::g_compressLevel 缩放码率/帧率/分辨率/采样率
      * - "EncodeWithTrim" / "EncodeWithBrightness"：复用源编码器与全部源参数；复制源元数据
      * - "EncodeWithMetadata"：复用源编码器与全部源参数；不复制源元数据（只写用户填写的字段）
+     * - "EncodeWithExtraAudio"：初始化新的音频文件
      *
      * 输出路径取自 enc_par::g_outputPath，为空时返回 -EINVAL。
      *
@@ -113,6 +114,7 @@ public:
         uint64_t endTimeUs = (uint64_t)-1;  ///< 结束时间（微秒），(uint64_t)-1 表示不截止
         int8_t brightness = 0;              ///< 亮度偏移 -128~+127，0=不变
         float gamma = 1.0f;                 ///< 伽马值 0.5~3.0，1.0=不变
+        bool extraAudioFile = false;
     };
 
     /**
@@ -140,6 +142,7 @@ public:
     inline void setOutputPath(std::string path) { outPath_ = path; }
     inline int videoStreamIndex() const { return videoStreamIndex_; }
     inline int audioStreamIndex() const { return audioStreamIndex_; }
+    inline av::AudioDecoderContext &activeAudioDecoder() { return useExtraAudio ? extraAdec_ : adec_; }
 
     /**
      * @brief 额外写入一条元数据到输出文件
@@ -165,6 +168,7 @@ public:
 private:
 
     bool inited = false;
+    bool useExtraAudio = false;
 
     // 解码线程数(初始化输入式同步配置文件)
     uint8_t encodeThreads;
@@ -173,6 +177,8 @@ private:
     av::FormatContext fmtCtx_;
     av::FormatContext outFmtCtx_;
 
+    av::FormatContext extraFmtCtx_;
+
     // 视频解码器（RAII 管理）
     av::VideoDecoderContext vdec_;
     int videoStreamIndex_ = -1;
@@ -180,6 +186,8 @@ private:
     // 音频解码器（RAII 管理）
     av::AudioDecoderContext adec_;
     int audioStreamIndex_ = -1;
+    av::AudioDecoderContext extraAdec_;
+    int extraAudioStreamIndex_ = -1;
 
     // 封面流（纯音频文件）
     int coverStreamIndex_ = -1;

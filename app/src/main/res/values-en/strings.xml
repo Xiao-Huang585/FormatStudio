@@ -92,5 +92,6 @@
     <string name="Selecting_setGenre">Genre</string>
     <string name="Selecting_setTitle">Title</string>
     <string name="Selecting_toast_invalidMetadata">Invalid metadata</string>
+    <string name="Selecting_toast_invalidAudioPath">Invalid audio path</string>
 </resources>
 

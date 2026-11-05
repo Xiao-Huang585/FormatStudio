@@ -125,13 +125,23 @@
                 app:icon="@drawable/encode_with_brightness"
                 android:text="@string/Selecting_encodeWithBrightness" />
 
+            <!-- 按钮7: 元数据 -->
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/EncodeWithMetaData"
+                android:id="@+id/EncodeWithMetadata"
                 style="@style/Widget.KgmDecoder.SelectingButton"
                 android:layout_marginBottom="4dp"
                 app:backgroundTint="@color/btn_seventh_bg"
                 app:icon="@drawable/encode_with_metadata"
-                android:text="设置元数据"/>
+                android:text="@string/Selecting_encodeWithMetadata" />
+
+            <!-- 按钮8: 调用外部音频 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/EncodeWithExtraAudio"
+                style="@style/Widget.KgmDecoder.SelectingButton"
+                android:layout_marginBottom="4dp"
+                app:backgroundTint="@color/btn_eighth_bg"
+                app:icon="@drawable/encode_with_extra_audio"
+                android:text="@string/Selecting_encodeWithAudioFile" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

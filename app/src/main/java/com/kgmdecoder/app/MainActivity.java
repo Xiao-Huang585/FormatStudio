@@ -1,6 +1,8 @@
 package com.kgmdecoder.app;
 
 import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import android.app.LocaleManager;
 import android.content.Context;
 import android.content.Intent;
@@ -10,7 +12,6 @@ import android.os.Build;
 import android.os.LocaleList;
 import android.provider.DocumentsContract;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -25,7 +26,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.util.Log;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -34,7 +34,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.android.material.textfield.TextInputLayout;
-import java.io.File;
+
 import java.util.Locale;
 
 /**
@@ -77,8 +77,9 @@ public class MainActivity extends ComponentActivity {
     public native void passCompressConfig(String outputPath, int level);
     public native void passTrimConfig(String outputPath, long startTimeUs, long endTimeUs);
     public native void passBrightnessConfig(String outputPath, short brightness, float gamma);
-    public native void passMetaDataConfig(String outputPath, String title, String album,
+    public native void passMetadataConfig(String outputPath, String title, String album,
                                           String artist, String albumArtist, String genre, String date, String language);
+    public native void passExtraAudioConfig(String outputPath, String audioPath);
     // 传递应用常用路径（替代 C++ 侧硬编码 /sdcard、/storage/emulated/0 等）
     public native void passAppPaths(String externalStorageDir, String downloadDir, String filesDir);
     // 同步打开媒体文件（跳转 Selecting 前调用，使 hasVideo/hasAudio 生效）
@@ -110,12 +111,21 @@ public class MainActivity extends ComponentActivity {
     }
 
     // ============================
-    // 文件选择 / 子 Activity 返回值回调
+    // 文件选择 / 子 Activity 返回值回调（ActivityResultLauncher，替代已废弃的 onActivityResult）
     // ============================
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode != RESULT_OK || data == null) return;
+    private final ActivityResultLauncher<Intent> pickFileLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() != RESULT_OK || result.getData() == null) return;
+                handleActivityResult(100, result.getData());
+            });
+
+    private final ActivityResultLauncher<Intent> selectingLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() != RESULT_OK || result.getData() == null) return;
+                handleActivityResult(200, result.getData());
+            });
+
+    private void handleActivityResult(int requestCode, Intent data) {
         if (requestCode == 100) {
             // 文件选择完成
             Uri uri = data.getData();
@@ -133,7 +143,7 @@ public class MainActivity extends ComponentActivity {
                 Log.d(TAG, "预打开文件: " + path + " → " + (opened ? "成功" : "失败"));
                 Intent intent = new Intent(this, Selecting.class);
                 intent.putExtra("InputPath", path);
-                startActivityForResult(intent, 200);
+                selectingLauncher.launch(intent);
             }
         } else if (requestCode == 200) {
             // 来自 Selecting 的功能选择
@@ -199,7 +209,13 @@ public class MainActivity extends ComponentActivity {
                     String date = data.getStringExtra("Date");
                     if (date == null) date = "";
 
-                    passMetaDataConfig(outputPath, title, album, artist, albumArtist, genre, date, language);
+                    passMetadataConfig(outputPath, title, album, artist, albumArtist, genre, date, language);
+                    passInputToCpp(selectedFilePath + "\n" + function);
+                } else if ("EncodeWithExtraAudio".equals(function)) {
+                    String outputPath = data.getStringExtra("OutputPath");
+                    String audioPath = data.getStringExtra("AudioPath");
+
+                    passExtraAudioConfig(outputPath, audioPath);
                     passInputToCpp(selectedFilePath + "\n" + function);
                 } else {
                     // 传给 C++ 处理，格式: 路径\n功能名
@@ -705,7 +721,7 @@ public class MainActivity extends ComponentActivity {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("*/*");
-            sInstance.startActivityForResult(intent, 100);
+            sInstance.pickFileLauncher.launch(intent);
         }
     }
 

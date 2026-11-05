@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.util.AttributeSet;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.activity.ComponentActivity;
@@ -46,6 +47,7 @@ public class FilePickerButton extends MaterialButton {
     private String selectedPath;
     private Uri selectedUri;
     private OnFileSelectedListener selectedListener;
+    private EditText targetEditText;
     private ActivityResultLauncher<Intent> launcher;
 
     public FilePickerButton(Context context) {
@@ -82,6 +84,14 @@ public class FilePickerButton extends MaterialButton {
         this.selectedListener = listener;
     }
 
+    /**
+     * 绑定一个 EditText：选中文件后自动把路径填入该控件，无需再写回调。
+     * 无法还原绝对路径时（第三方 provider）填入 Uri 字符串。
+     */
+    public void setTargetEditText(EditText editText) {
+        this.targetEditText = editText;
+    }
+
     private void showPicker() {
         Context context = getContext();
         ComponentActivity activity = findComponentActivity(context);
@@ -104,6 +114,11 @@ public class FilePickerButton extends MaterialButton {
                         Uri uri = data.getData();
                         selectedUri = uri;
                         selectedPath = resolvePath(context, uri);
+                        if (targetEditText != null) {
+                            targetEditText.setText(selectedPath != null
+                                    ? selectedPath
+                                    : uri.toString());
+                        }
                         if (selectedListener != null) {
                             selectedListener.onFileSelected(selectedPath, uri);
                         }
