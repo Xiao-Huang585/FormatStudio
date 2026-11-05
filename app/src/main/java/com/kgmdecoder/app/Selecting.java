@@ -36,7 +36,7 @@ public class Selecting extends ComponentActivity {
     private Button encodeWithMetadataBtn;
     private Button encodeWithExtraAudioBtn;
 
-    // 外壳控件（在主selecting.xml，可以onCreate直接find）
+    // 外壳控件(在主selecting.xml，可以onCreate直接find)
     private View parametersWindow;
     private ImageButton backArrow;
     private Button btnConfirmEncode;
@@ -57,7 +57,7 @@ public class Selecting extends ComponentActivity {
     // 目前使用的函数窗口类型
     FunctionWindow window = FunctionWindow.NONE;
 
-    // 输入文件路径（由 MainActivity 通过 Intent 传入）
+    // 输入文件路径(由 MainActivity 通过 Intent 传入)
     private String inputFilePath = "";
 
     // 参数窗口动画状态，防止动画期间重复触发

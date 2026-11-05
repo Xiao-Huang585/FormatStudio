@@ -64,12 +64,50 @@
             android:contentDescription="@null" />
     </LinearLayout>
 
+    <!-- ====== 编码进度（默认隐藏，编码开始时显示） ====== -->
+    <LinearLayout
+        android:id="@+id/progress_panel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="8dp"
+        app:layout_constraintTop_toBottomOf="@id/title_bar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:visibility="visible">
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progress_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:progress="0"
+            app:indicatorColor="@color/m3_primary"
+            app:trackColor="@color/m3_surface_container_high"
+            app:trackThickness="3dp"
+            app:trackCornerRadius="2dp" />
+
+        <TextView
+            android:id="@+id/tv_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/m3_on_surface_variant"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif"
+            tools:text="45% · 12.3s / 45.0s" />
+    </LinearLayout>
+
     <!-- 顶部栏底部分割线（Material 3 描边风格） -->
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/m3_outline_variant"
-        app:layout_constraintTop_toBottomOf="@id/title_bar"
+        app:layout_constraintTop_toBottomOf="@id/progress_panel"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -80,7 +118,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="16dp"
-        app:layout_constraintTop_toBottomOf="@id/title_bar"
+        app:layout_constraintTop_toBottomOf="@id/progress_panel"
         app:layout_constraintBottom_toTopOf="@id/input_bar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">

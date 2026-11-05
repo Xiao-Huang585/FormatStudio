@@ -33,6 +33,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.Locale;
@@ -57,6 +58,8 @@ public class MainActivity extends ComponentActivity {
     private ImageButton btnSetting;
     private static ImageView playArrow;
     private TextView btnPick;
+    private LinearProgressIndicator progress;
+    private TextView tvProgress;
     // 视频播放 SurfaceView
     private SurfaceView surfaceView;
     // 视频原始尺寸（用于自适应宽高比）
@@ -278,6 +281,8 @@ public class MainActivity extends ComponentActivity {
         playArrow = findViewById(R.id.playArrow);
         inputBar = findViewById(R.id.input_bar);
         inputBarDivider = findViewById(R.id.input_bar_divider);
+        progress = findViewById(R.id.progress_bar);
+        tvProgress = findViewById(R.id.tv_progress);
 
         // 关闭按钮
         ivClose.setOnClickListener(new CloseButtonClickListener());
@@ -472,6 +477,14 @@ public class MainActivity extends ComponentActivity {
                 sInstance.updateSurfaceViewSize();
             });
         }
+    }
+
+    /**
+     * C++ 层调用: 回调进度条更新
+     * @param percent 0~100的整数
+     */
+    public static void callJavaSetProgress(int percent, long currentMs, long totalMs, int state) {
+        if ()
     }
 
     /**
