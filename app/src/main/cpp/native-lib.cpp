@@ -571,7 +571,7 @@ void cppMain(jobject thiz) {
         callJavaClear();
 
         if (input == "exit") {
-            Jexit();
+            callJavaExit();
             return;
         }
         if (input == "clear") {

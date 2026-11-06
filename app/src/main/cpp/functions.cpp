@@ -23,6 +23,7 @@ jmethodID g_callJavaSetETHintTextMethodID = nullptr;
 jmethodID g_callJavaSetPlayingStateMethodID = nullptr;
 jmethodID g_callJavaSetVideoSizeMethodID = nullptr;
 jmethodID g_callJavaGetLanguageID = nullptr;
+jmethodID g_callJavaSetProgressMethodID = nullptr;
 std::mutex g_inputMutex;
 std::condition_variable g_inputCv;
 std::string g_inputData;
@@ -175,6 +176,7 @@ bool initGlobalRefs(JNIEnv *env) {
     g_callJavaSetPlayingStateMethodID = env->GetStaticMethodID(g_MainActivityClass, "callJavaSetPlayingState", "(Z)V");
     g_callJavaSetVideoSizeMethodID = env->GetStaticMethodID(g_MainActivityClass, "callJavaSetVideoSize", "(II)V");
     g_callJavaGetLanguageID = env->GetStaticMethodID(g_MainActivityClass, "callJavaGetLanguage", "()Ljava/lang/String;");
+    g_callJavaSetProgressMethodID = env->GetStaticMethodID(g_MainActivityClass, "callJavaSetProgress", "(IJJI)V");
     return true;
 }
 void releaseGlobalRefs(JNIEnv *env) {
@@ -318,7 +320,7 @@ void callJavaShowText(JNIEnv *env, const char *text) {
 // ============================
 // 业务回调函数实现（修复g_callExitMethodID笔误）
 // ============================
-void Jexit() {
+void callJavaExit() {
     releaseGlobalFFmpeg();
     JNIEnv *env = getThreadJNIEnv();
     env->CallStaticVoidMethod(g_MainActivityClass, g_callJavaExitMethodID);
@@ -460,6 +462,19 @@ int callJavaGetLanguage() {
         env->ReleaseStringUTFChars(jstr, str.c_str());
     }
     return String::EN;
+}
+
+void callJavaSetProgress(EncodeState state, int64_t currentMs, int64_t totalMs, int percent) {
+    JNIEnv *env = getThreadJNIEnv();
+    if (env == nullptr) {
+        LOGD("callJavaSetProgress: 获取JNIEnv失败");
+        return;
+    }
+    if (!g_MainActivityClass || !g_callJavaSetProgressMethodID) {
+        LOGD("callJavaSetProgress: 未初始化");
+        return;
+    }
+    env->CallStaticVoidMethod(g_MainActivityClass, g_callJavaSetProgressMethodID, percent, currentMs, totalMs, (int)state);
 }
 
 // ============================

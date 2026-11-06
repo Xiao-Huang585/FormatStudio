@@ -106,6 +106,7 @@ extern jmethodID g_callJavaSetETHintTextMethodID;
 extern jmethodID g_callJavaSetPlayingStateMethodID;
 extern jmethodID g_callJavaSetVideoSizeMethodID;
 extern jmethodID g_callJavaGetLanguageID;
+extern jmethodID g_callJavaSetProgressMethodID;
 // ====== 线程相关 ======
 extern std::mutex g_inputMutex;
 extern std::condition_variable g_inputCv;
@@ -181,6 +182,14 @@ enum class NetEase {
     Others = -3,
 };
 
+enum class EncodeState {
+    Preparing = 0,
+    Encoding = 1,
+    Finalizing = 2,
+    Done = 3,
+    Failed = 4
+};
+
 
 String to_string(KuGou k_);
 String to_string(NetEase n_);
@@ -205,7 +214,7 @@ JNIEnv *getThreadJNIEnv();
 // ============================
 // Java 回调函数声明
 // ============================
-void Jexit();
+void callJavaExit();
 void callJavaClear();
 void callJavaShowVideoView(bool show);
 bool callJavaIsSurfaceClicked();
@@ -214,6 +223,7 @@ void callJavaSetETHintText(const String text);
 void callJavaSetPlayingState(bool playing);
 void callJavaSetVideoSize(int width, int height);
 int callJavaGetLanguage();
+void callJavaSetProgress(EncodeState state, jlong currentMs = -1, jlong totalMs = -1, int percent = -1);
 
 // ============================
 // Surface 管理函数

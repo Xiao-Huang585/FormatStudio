@@ -15,6 +15,7 @@
 
     <string name="MainActivity_pickBtnHint">Pick</string>
 
+    <string name="MainActivity_failed">Failed</string>
     <string name="Help_title">Help</string>
 
     <string name="Help_experimental_functions">"Experimental functions(unused): "</string>
@@ -93,5 +94,9 @@
     <string name="Selecting_setTitle">Title</string>
     <string name="Selecting_toast_invalidMetadata">Invalid metadata</string>
     <string name="Selecting_toast_invalidAudioPath">Invalid audio path</string>
+    <string name="MainActivity_preparing">Preparing</string>
+    <string name="MainActivity_encoding">Encoding</string>
+    <string name="MainActivity_finalizing">Finalizing</string>
+    <string name="MainActivity_done">Done</string>
 </resources>
 

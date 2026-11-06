@@ -3,6 +3,8 @@ package com.kgmdecoder.app;
 import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+
+import android.annotation.SuppressLint;
 import android.app.LocaleManager;
 import android.content.Context;
 import android.content.Intent;
@@ -24,6 +26,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.util.Log;
@@ -60,6 +63,7 @@ public class MainActivity extends ComponentActivity {
     private TextView btnPick;
     private LinearProgressIndicator progress;
     private TextView tvProgress;
+    private LinearLayout progressBar;
     // 视频播放 SurfaceView
     private SurfaceView surfaceView;
     // 视频原始尺寸（用于自适应宽高比）
@@ -96,6 +100,13 @@ public class MainActivity extends ComponentActivity {
     private static long clickTimestamp = 0; // 点击时间戳, 0表示无效
     private static final long CLICK_TIME_OUT_MS = 300; // 按钮的超时时间
     private String selectedFilePath = null; // 选中的文件路径（等 Selecting 返回后使用）
+
+    // 编码状态常量
+    private static final int STATE_PREPARING     = 0; // 准备中
+    private static final int STATE_ENCODING      = 1; // 编码中
+    private static final int STATE_FINALIZING    = 2; // 结束中
+    private static final int STATE_DONE          = 3; // 结束
+    private static final int STATE_FAILED        = 4; // 失败
 
     // ====== 静态加载本地库 ======
     static {
@@ -283,6 +294,7 @@ public class MainActivity extends ComponentActivity {
         inputBarDivider = findViewById(R.id.input_bar_divider);
         progress = findViewById(R.id.progress_bar);
         tvProgress = findViewById(R.id.tv_progress);
+        progressBar = findViewById(R.id.progress_panel);
 
         // 关闭按钮
         ivClose.setOnClickListener(new CloseButtonClickListener());
@@ -481,10 +493,48 @@ public class MainActivity extends ComponentActivity {
 
     /**
      * C++ 层调用: 回调进度条更新
-     * @param percent 0~100的整数
+     * @param percent 0~100的整数(-1不是Encoding状态或无法获取百分比)
      */
+    @SuppressLint("DefaultLocale")
     public static void callJavaSetProgress(int percent, long currentMs, long totalMs, int state) {
-        if ()
+        if (state == STATE_PREPARING) {
+            sInstance.runOnUiThread(() -> {
+                sInstance.progressBar.setVisibility(View.VISIBLE);
+                sInstance.tvProgress.setText(sInstance.getText(R.string.MainActivity_preparing));
+            });
+        } else if (state == STATE_FINALIZING) {
+            sInstance.runOnUiThread(() -> {
+                sInstance.progressBar.setVisibility(View.VISIBLE);
+                sInstance.tvProgress.setText(sInstance.getString(R.string.MainActivity_finalizing));
+            });
+        } else if (state == STATE_DONE) {
+            sInstance.runOnUiThread(() -> {
+                sInstance.progressBar.setVisibility(View.GONE);
+                sInstance.tvProgress.setText(sInstance.getString(R.string.MainActivity_done));
+            });
+        } else if (state == STATE_FAILED) {
+            sInstance.runOnUiThread(() -> {
+                sInstance.progressBar.setVisibility(View.GONE);
+                sInstance.tvProgress.setText(sInstance.getString(R.string.MainActivity_failed));
+            });
+        } else if (state == STATE_ENCODING) {
+            sInstance.runOnUiThread(() -> {
+                sInstance.progressBar.setVisibility(View.VISIBLE);
+                final int TIME_BASE = 1000;
+                if (percent >= 0) {
+                    sInstance.tvProgress.setText(String.format("%d%% · %.1fs / %.1fs",
+                            percent,                // 百分比数值
+                            (float)currentMs / TIME_BASE,  // 编码秒数
+                            (float)totalMs / TIME_BASE     // 总秒数
+                    ));
+                } else {
+                    sInstance.tvProgress.setText(String.format("%.1fs / %.1fs",
+                            (float)currentMs / TIME_BASE,
+                            (float)totalMs / TIME_BASE
+                    ));
+                }
+            });
+        }
     }
 
     /**

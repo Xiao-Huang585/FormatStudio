@@ -265,6 +265,8 @@ int FFmpeg::openOutput(const std::string& functionName) {
     bool keepSourceChannelLayout = false;
     bool copySourceMetadata = true;
 
+    callJavaSetProgress(EncodeState::Preparing);
+
     if (functionName == "EncodeWithOtherEncoders") {
         // 编码器由名称指定：name → codec_id
         if (!enc_par::g_encoderVideoCodec.empty()) {
@@ -274,6 +276,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
                 cout << String("找不到视频编码器: ", "Can not find video encoder: ")
                      << enc_par::g_encoderVideoCodec << endl;
                 cout.flush();
+                callJavaSetProgress(EncodeState::Failed);
                 return -EINVAL;
             }
             videoID = vCodec->id;
@@ -285,6 +288,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
                 cout << String("找不到音频编码器: ", "Can not find audio encoder: ")
                      << enc_par::g_encoderAudioCodec << endl;
                 cout.flush();
+                callJavaSetProgress(EncodeState::Failed);
                 return -EINVAL;
             }
             audioID = aCodec->id;
@@ -383,12 +387,14 @@ int FFmpeg::openOutput(const std::string& functionName) {
         if (!hasVideo()) {
             cout << String("缺少视频流...", "No video stream...") << endl;
             LOGD("缺少视频流...");
+            callJavaSetProgress(EncodeState::Failed);
             return -EINVAL;
         }
 
         if (!enc_par::g_audioPath || enc_par::g_audioPath[0] == '\0') {
             cout << String("音频路径为空...", "Audio path is empty...") << endl;
             LOGD("音频路径为空...");
+            callJavaSetProgress(EncodeState::Failed);
             return -EINVAL;
         }
 
@@ -397,6 +403,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
         if (ec) {
             cout << String("无法打开音频文件...", "Can not open audio file...") << endl;
             LOGD("无法打开音频文件...");
+            callJavaSetProgress(EncodeState::Failed);
             return ec.value();
         }
 
@@ -404,6 +411,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
         if (ec) {
             cout << String("无法查找流信息...", "Can not find stream info...");
             LOGD("无法查找流信息...");
+            callJavaSetProgress(EncodeState::Failed);
             return ec.value();
         }
 
@@ -415,6 +423,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
         if (extraAudioStreamIndex_ < 0) {
             cout << String("无法找到音频流...", "Can not find audio stream...");
             LOGD("无法找到音频流...");
+            callJavaSetProgress(EncodeState::Failed);
             return -EINVAL;
         }
 
@@ -427,6 +436,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
         if (ec) {
             cout << String("外部音频解码器打开失败...", "Can not open extra audio decoder...") << endl;
             LOGD("外部音频解码器打开失败...");
+            callJavaSetProgress(EncodeState::Failed);
             return ec.value();
         }
 
@@ -522,6 +532,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
         cout << String("未知的输出初始化功能: ", "Unknown output init function: ")
              << functionName << endl;
         cout.flush();
+        callJavaSetProgress(EncodeState::Failed);
         return -EINVAL;
     }
 
@@ -537,6 +548,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
         cout << String("无法根据扩展名识别输出格式: ", "Can't recognize output format by extension: ")
              << outPath_ << endl;
         LOGD("无法根据扩展名识别输出格式: %s", outPath_.c_str());
+        callJavaSetProgress(EncodeState::Failed);
         return -EINVAL;
     }
     if (wantVideo && avformat_query_codec(ofmt, videoID, FF_COMPLIANCE_NORMAL) == 0) {
@@ -556,6 +568,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
     if (!wantVideo && !wantAudio) {
         cout << String("没有可编码的音视频流...", "No audio/video stream to encode...") << endl;
         LOGD("没有可编码的音视频流...");
+        callJavaSetProgress(EncodeState::Failed);
         return -EINVAL;
     }
 
@@ -566,6 +579,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
     if (ec) {
         cout << String("打开输出文件失败...", "Fail to open output file...") << endl;
         LOGD("打开输出文件失败...");
+        callJavaSetProgress(EncodeState::Failed);
         return ec.value();
     }
 
@@ -585,6 +599,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
         if (vCodec.isNull()) {
             cout << String("找不到视频编码器: ", "Can not find video encoder: ") << videoID << endl;
             LOGD("找不到视频编码器: %s", avcodec_get_name(videoID));
+            callJavaSetProgress(EncodeState::Failed);
             return -EINVAL;
         }
 
@@ -697,6 +712,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
             av_strerror(openRet, errbuf, sizeof(errbuf));
             cout << String("打开视频编码器失败: ", "Fail to open video encoder: ") << errbuf << endl;
             LOGD("打开视频编码器%s失败: ret=%d, %s", avcodec_get_name(videoID), openRet, errbuf);
+            callJavaSetProgress(EncodeState::Failed);
             return openRet;
         }
 
@@ -705,6 +721,7 @@ int FFmpeg::openOutput(const std::string& functionName) {
             cout << String("创建输出视频流失败: ", "Fail to create output video stream: ")
                  << ec.message() << endl;
             LOGD("创建输出视频流失败: %s", ec.message().c_str());
+            callJavaSetProgress(EncodeState::Failed);
             return ec.value();
         }
         // 显式将输出流的 time_base 与编码器对齐：avformat_new_stream 只给出默认值，
@@ -967,8 +984,9 @@ int FFmpeg::openOutput(const std::string& functionName) {
         cout << String("（提示: 输出扩展名对应的容器可能不支持所选编码器组合）",
                        "(Hint: the container of the output extension may not support the selected encoders)")
              << endl;
-        return ec.value();
         LOGD("写文件头失败: %s \n(提示: 输出扩展名对应的容器可能不支持所选编码器组合)", ec.message().c_str());
+        callJavaSetProgress(EncodeState::Failed);
+        return ec.value();
     }
 
     if (hasVideo()) LOGI("视频码率: %li", venc_.bitRate());
