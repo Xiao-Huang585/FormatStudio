@@ -16,6 +16,7 @@ extern "C" {
 }
 
 #include <cmath>
+#include <chrono>
 #include <algorithm>
 #include <utility>
 #include "functions.h"
@@ -1164,6 +1165,7 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
     if (!outFmtCtx_.isOpened()) {
         cout << String("输出未初始化...", "Output not initialized...") << endl;
         LOGD("输出未初始化...");
+        callJavaSetProgress(EncodeState::Failed);
         return -EINVAL;
     }
 
@@ -1174,6 +1176,7 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
         cout << String("音视频输出流均未建立，编码取消...",
                        "No output stream created, encoding canceled...") << endl;
         LOGD("没有视频和音频流, 编码结束");
+        callJavaSetProgress(EncodeState::Failed);
         return -EINVAL;
     }
 
@@ -1241,6 +1244,7 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
         if (endTimeUs > startTimeUs) totalDurationUs = (int64_t)(endTimeUs - startTimeUs);
         else {
             cout << String("设置时间失败...", "Failed to set duration...") << endl;
+            callJavaSetProgress(EncodeState::Failed);
             return -EINVAL;
         }
     }
@@ -1269,7 +1273,7 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
                 rawPkt->duration = 1;
             }
         }
-        // 关键修复：FFmpeg 内置原生 opus 编码器会忽略输入 frame->pts，
+        // FFmpeg 内置原生 opus 编码器会忽略输入 frame->pts，
         // 自己维护一个从 0 开始的内部 pts 计数器，导致输出包的 pts 完全错误。
         // 这里对所有音频包手动维护 pts 序列，不依赖编码器输出的 pts。
         if (isAudioPkt) {
@@ -1527,6 +1531,8 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
 
     // ========== 主循环：读包 → 解码 → 编码 ==========
     int processedPkts = 0;
+    int lastPercent = -1;
+    auto lastProgressTime = std::chrono::steady_clock::now();
     while (true) {
         std::error_code readEc;
         av::Packet pkt = fmtCtx_.readPacket(readEc);
@@ -1535,19 +1541,33 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
         bool isVideo = (videoStreamOk && pkt.streamIndex() == videoStreamIndex_);
         bool isAudio = (audioStreamOk && !extraAudioFile && pkt.streamIndex() == audioStreamIndex_);
         if (!isVideo && !isAudio) continue;
-        if ((++processedPkts % 200) == 0) {
-            if (durationKnown) {
+        ++processedPkts;
+
+        // 进度回调节流：距上次 >=100ms 且百分比前进；无时长时 500ms 报一次已处理包数
+        const auto now = std::chrono::steady_clock::now();
+        const int64_t sinceLastMs =
+                std::chrono::duration_cast<std::chrono::milliseconds>(now - lastProgressTime).count();
+        if (durationKnown) {
+            if (sinceLastMs >= 100) {
                 int64_t elapsedUs = (currentTimeUs > (int64_t)startTimeUs)
                                         ? (currentTimeUs - (int64_t)startTimeUs) : 0;
                 int percent = (int)(elapsedUs * 100 / totalDurationUs);
                 if (percent > 100) percent = 100;
-                cout << String("进度: ", "Progress: ") << percent << "%  ("
-                     << elapsedUs / 1000000 << "s / " << totalDurationUs / 1000000 << "s)"
-                     << endl;
-            } else {
-                cout << String("进度: 已处理 ", "Progress: processed ") << processedPkts
-                     << String(" 包", " packets") << endl;
+                if (percent > lastPercent) {
+                    cout << String("进度: ", "Progress: ") << percent << "%  ("
+                         << elapsedUs / 1000000 << "s / " << totalDurationUs / 1000000 << "s)"
+                         << endl;
+                    callJavaSetProgress(EncodeState::Encoding, currentTimeUs / 1000,
+                                        totalDurationUs / 1000, percent);
+                    lastPercent = percent;
+                    lastProgressTime = now;
+                }
             }
+        } else if (sinceLastMs >= 500) {
+            cout << String("进度: 已处理 ", "Progress: processed ") << processedPkts
+                 << String(" 包", " packets") << endl;
+            callJavaSetProgress(EncodeState::Encoding);
+            lastProgressTime = now;
         }
         if (isVideo && venc_.isOpened()) {
             std::error_code decEc;
@@ -1671,6 +1691,7 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
     // 编码完成，进度打满
     if (durationKnown) {
         cout << String("进度: 100%", "Progress: 100%") << endl;
+        callJavaSetProgress(EncodeState::Encoding, totalDurationUs / 1000, totalDurationUs / 1000, 100);
     }
 
     // ========== 写文件尾 ==========
@@ -1686,6 +1707,7 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
     }
     if (ec) {
         cout << String("写文件尾失败: ", "Fail to write trailer: ") << ec.message() << endl;
+        callJavaSetProgress(EncodeState::Failed);
     }
 
     cout << String("编码完成！写出视频包: ", "Encoding finished! Video packets written: ")
@@ -1696,6 +1718,7 @@ int FFmpeg::encodeToFile(const EncodeOptions& opts) {
 
     if (afifo) av_audio_fifo_free(afifo);
     if (filterGraph) avfilter_graph_free(&filterGraph);
+    callJavaSetProgress(EncodeState::Done);
     return 0;
 }
 

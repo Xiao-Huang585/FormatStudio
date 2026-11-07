@@ -497,44 +497,40 @@ public class MainActivity extends ComponentActivity {
      */
     @SuppressLint("DefaultLocale")
     public static void callJavaSetProgress(int percent, long currentMs, long totalMs, int state) {
-        if (state == STATE_PREPARING) {
-            sInstance.runOnUiThread(() -> {
-                sInstance.progressBar.setVisibility(View.VISIBLE);
-                sInstance.tvProgress.setText(sInstance.getText(R.string.MainActivity_preparing));
-            });
-        } else if (state == STATE_FINALIZING) {
-            sInstance.runOnUiThread(() -> {
-                sInstance.progressBar.setVisibility(View.VISIBLE);
-                sInstance.tvProgress.setText(sInstance.getString(R.string.MainActivity_finalizing));
-            });
-        } else if (state == STATE_DONE) {
-            sInstance.runOnUiThread(() -> {
-                sInstance.progressBar.setVisibility(View.GONE);
-                sInstance.tvProgress.setText(sInstance.getString(R.string.MainActivity_done));
-            });
-        } else if (state == STATE_FAILED) {
-            sInstance.runOnUiThread(() -> {
-                sInstance.progressBar.setVisibility(View.GONE);
-                sInstance.tvProgress.setText(sInstance.getString(R.string.MainActivity_failed));
-            });
-        } else if (state == STATE_ENCODING) {
-            sInstance.runOnUiThread(() -> {
-                sInstance.progressBar.setVisibility(View.VISIBLE);
+        MainActivity inst = sInstance;
+        if (inst == null) return;
+
+        inst.runOnUiThread(() -> {
+            if (state == STATE_PREPARING) {
+                inst.progressBar.setVisibility(View.VISIBLE);
+                inst.tvProgress.setText(inst.getText(R.string.MainActivity_preparing));
+                inst.progress.setProgress(0);
+            } else if (state == STATE_FINALIZING) {
+                inst.progressBar.setVisibility(View.VISIBLE);
+                inst.tvProgress.setText(inst.getString(R.string.MainActivity_finalizing));
+            } else if (state == STATE_DONE) {
+                inst.progressBar.setVisibility(View.GONE);
+                inst.tvProgress.setText(inst.getString(R.string.MainActivity_done));
+                inst.progress.setProgress(0);
+            } else if (state == STATE_FAILED) {
+                inst.progressBar.setVisibility(View.GONE);
+                inst.tvProgress.setText(inst.getString(R.string.MainActivity_failed));
+                inst.progress.setProgress(0);
+            } else if (state == STATE_ENCODING) {
+                inst.progressBar.setVisibility(View.VISIBLE);
                 final int TIME_BASE = 1000;
                 if (percent >= 0) {
-                    sInstance.tvProgress.setText(String.format("%d%% · %.1fs / %.1fs",
-                            percent,                // 百分比数值
+                    inst.tvProgress.setText(String.format("%d%% · %.1fs / %.1fs",
+                            percent,                       // 百分比数值
                             (float)currentMs / TIME_BASE,  // 编码秒数
                             (float)totalMs / TIME_BASE     // 总秒数
                     ));
+                    inst.progress.setProgress(percent);
                 } else {
-                    sInstance.tvProgress.setText(String.format("%.1fs / %.1fs",
-                            (float)currentMs / TIME_BASE,
-                            (float)totalMs / TIME_BASE
-                    ));
+                    inst.tvProgress.setText(inst.getString(R.string.MainActivity_encoding));
                 }
-            });
-        }
+            }
+        });
     }
 
     /**
